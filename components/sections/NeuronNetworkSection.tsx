@@ -142,10 +142,10 @@ function computeLayout(w: number, h: number) {
   const posLayerIdx = new Uint8Array(totalNeurons);
   const posNeuronIdx = new Uint8Array(totalNeurons);
 
-  const marginX = 80, marginY = 60;
+  const marginX = Math.max(16, Math.min(80, w * 0.06)), marginY = Math.max(30, Math.min(60, h * 0.08));
   const availW = w - marginX * 2, availH = h - marginY * 2;
   const layerSpacing = availW / (LAYERS.length - 1);
-  const radius = Math.min(7, 24 * 0.32);
+  const radius = Math.min(w < 500 ? 4 : 7, 24 * 0.32);
 
   // Pre-compute per-layer start indices and bottom Y for labels
   const layerStartIdx: number[] = [];
@@ -1088,7 +1088,7 @@ export function NeuronNetworkSection() {
 
   const expandedCanvasSize = useMemo(() => {
     if (!viewport.w) return 320;
-    return clamp(Math.round(viewport.w * 0.45), 250, 360);
+    return clamp(Math.round(viewport.w * 0.55), 200, 360);
   }, [viewport.w]);
 
   const floatingCanvasSize = useMemo(() => {
@@ -1096,12 +1096,12 @@ export function NeuronNetworkSection() {
     return clamp(Math.round(viewport.w * 0.23), 92, 126);
   }, [viewport.w]);
 
-  const expandedCardWidth = expandedCanvasSize + 56;
+  const expandedCardWidth = expandedCanvasSize + (viewport.w < 640 ? 24 : 56);
   const floatingCardWidth = floatingCanvasSize + 10;
   const floatingCardHeight = floatingCanvasSize + 40;
 
   const expandedX = viewport.w ? (viewport.w - expandedCardWidth) / 2 : 16;
-  const expandedY = viewport.h ? Math.max(100, viewport.h * 0.22) : 120;
+  const expandedY = viewport.h ? Math.max(viewport.w < 640 ? 80 : 100, viewport.h * (viewport.w < 640 ? 0.18 : 0.22)) : 120;
 
   const maxFloatingX = Math.max(12, viewport.w - floatingCardWidth - 12);
   const maxFloatingY = Math.max(12, viewport.h - floatingCardHeight - 12);
@@ -1250,12 +1250,12 @@ export function NeuronNetworkSection() {
   return (
     <motion.section
       id="neuron-network"
-      className="relative overflow-hidden px-3 sm:px-5"
+      className="relative overflow-hidden px-1 sm:px-3 md:px-5"
       initial={false}
       animate={{
-        minHeight: isDrawingStage ? stageHeight : 560,
-        paddingTop: isDrawingStage ? 56 : 48,
-        paddingBottom: isDrawingStage ? 36 : 20,
+        minHeight: isDrawingStage ? stageHeight : Math.max(400, Math.min(560, viewport.h * 0.75)),
+        paddingTop: isDrawingStage ? 56 : (viewport.w < 640 ? 12 : 48),
+        paddingBottom: isDrawingStage ? 36 : (viewport.w < 640 ? 8 : 20),
       }}
       transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
     >
@@ -1394,7 +1394,7 @@ export function NeuronNetworkSection() {
           className={`border ${
             shouldUseFloatingLayout
               ? "rounded-md border-border/50 bg-surface/92 p-1 shadow-lg shadow-black/30 backdrop-blur-xl"
-              : "rounded-xl border-border/60 bg-surface p-4 sm:p-5"
+              : "rounded-xl border-border/60 bg-surface p-2 sm:p-4 md:p-5"
           }`}
         >
           {shouldUseFloatingLayout && (

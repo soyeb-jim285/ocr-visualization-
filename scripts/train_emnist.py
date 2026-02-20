@@ -224,26 +224,26 @@ def export_onnx_final(model, path):
 
 
 def export_onnx_checkpoint(model, path):
-    """Export a single-output model with softmax for epoch prediction slider."""
+    """Export multi-output model for epoch network visualization."""
     base = unwrap_model(model)
     base.eval()
-
-    class WithSoftmax(nn.Module):
-        def __init__(self, base):
-            super().__init__()
-            self.base = base
-
-        def forward(self, x):
-            return torch.softmax(self.base(x), dim=1)
-
-    wrapped = WithSoftmax(base)
-    wrapped.eval()
+    multi = EMNISTNetMultiOutput(base)
+    multi.eval()
+    multi.to(DEVICE)
 
     dummy = torch.randn(1, 1, 28, 28).to(DEVICE)
+    output_names = [
+        "conv1", "relu1",
+        "conv2", "relu2", "pool1",
+        "conv3", "relu3", "pool2",
+        "dense1", "relu4",
+        "output",
+    ]
+
     torch.onnx.export(
-        wrapped, dummy, path,
+        multi, dummy, path,
         input_names=["input"],
-        output_names=["output"],
+        output_names=output_names,
         dynamic_axes={"input": {0: "batch"}},
         opset_version=17,
     )
