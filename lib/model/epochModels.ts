@@ -23,7 +23,9 @@ export async function loadEpochModel(
   }
 
   const paddedEpoch = String(epoch).padStart(2, "0");
-  const modelUrl = `/models/checkpoints/epoch-${paddedEpoch}/model.onnx`;
+  const hfBase = process.env.NEXT_PUBLIC_MODEL_BASE_URL
+    || "https://huggingface.co/soyeb-jim285/ocr-visualization-models/resolve/main";
+  const modelUrl = `${hfBase}/checkpoints/epoch-${paddedEpoch}/model.onnx`;
   const loadPromise = ort.InferenceSession.create(modelUrl)
     .then((session) => {
       sessionCache.set(epoch, session);
