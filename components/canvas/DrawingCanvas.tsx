@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useDrawingCanvas } from "@/hooks/useDrawingCanvas";
 import { useInference } from "@/hooks/useInference";
+import { useInferenceStore } from "@/stores/inferenceStore";
 
 const CANVAS_SIZE = 280; // Display size (pixels)
 const INTERNAL_SIZE = 280; // Internal resolution
@@ -17,7 +18,7 @@ export function DrawingCanvas() {
     [infer]
   );
 
-  const { canvasRef, clear, hasDrawn, startDrawing, draw, stopDrawing } =
+  const { canvasRef, clear: rawClear, hasDrawn, startDrawing, draw, stopDrawing } =
     useDrawingCanvas({
       width: INTERNAL_SIZE,
       height: INTERNAL_SIZE,
@@ -26,6 +27,11 @@ export function DrawingCanvas() {
       backgroundColor: "#000000",
       onStrokeEnd,
     });
+
+  const clear = useCallback(() => {
+    rawClear();
+    useInferenceStore.getState().reset();
+  }, [rawClear]);
 
   return (
     <div className="flex flex-col items-center gap-3">

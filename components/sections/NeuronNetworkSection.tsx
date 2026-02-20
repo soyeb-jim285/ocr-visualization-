@@ -1059,10 +1059,20 @@ export function NeuronNetworkSection({ children }: { children?: React.ReactNode 
   const waveTargetRef = useRef(0);
   const hasData = Object.keys(layerActivations).length > 0;
 
+  // Reset wave on clear (hasData→false) or new inference (layerActivations changes)
+  const prevHasDataRef = useRef(false);
   useEffect(() => {
-    waveTargetRef.current = hasData ? LAYERS.length + 1 : 0;
-    if (!hasData) waveRef.current = 0;
-  }, [hasData]);
+    if (!hasData) {
+      // Canvas was cleared
+      waveRef.current = 0;
+      waveTargetRef.current = 0;
+    } else {
+      // New inference result — restart the layer-by-layer wave
+      waveRef.current = 0;
+      waveTargetRef.current = LAYERS.length + 1;
+    }
+    prevHasDataRef.current = hasData;
+  }, [hasData, layerActivations]);
 
   // Wave animation via RAF — no React state updates
   useEffect(() => {
