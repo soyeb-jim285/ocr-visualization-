@@ -75,10 +75,57 @@ export async function predictAtEpoch(
  * Prefetch adjacent epoch models for smooth slider scrubbing.
  */
 export function prefetchAdjacentEpochs(currentEpoch: number): void {
-  const toLoad = [currentEpoch - 1, currentEpoch + 1].filter(
-    (e) => e >= 0 && e < 50 && !sessionCache.has(e)
-  );
-  toLoad.forEach((e) => loadEpochModel(e).catch(() => {}));
+  // Prefetch ±3 epochs around current position
+  for (let offset = -3; offset <= 3; offset++) {
+    const e = currentEpoch + offset;
+    if (e >= 0 && e < 50 && !sessionCache.has(e)) {
+      loadEpochModel(e).catch(() => {});
+    }
+  }
+}
+
+/** Number of total epochs available */
+export const TOTAL_EPOCHS = 50;
+
+let prefetchAllStarted = false;
+
+/**
+ * Prefetch ALL epoch models in the background, 3 at a time.
+ * Call once when the epoch timeline component mounts.
+ * Loads sequentially in small batches to avoid saturating bandwidth.
+ */
+export function prefetchAllEpochs(
+  onProgress?: (loaded: number, total: number) => void
+): void {
+  if (prefetchAllStarted) return;
+  prefetchAllStarted = true;
+
+  const queue = Array.from({ length: TOTAL_EPOCHS }, (_, i) => i)
+    .filter((e) => !sessionCache.has(e));
+
+  let loaded = sessionCache.size;
+  const total = TOTAL_EPOCHS;
+
+  async function loadBatch() {
+    while (queue.length > 0) {
+      const batch = queue.splice(0, 3);
+      await Promise.allSettled(
+        batch.map((e) =>
+          loadEpochModel(e)
+            .then(() => {
+              loaded++;
+              onProgress?.(loaded, total);
+            })
+            .catch(() => {
+              loaded++;
+              onProgress?.(loaded, total);
+            })
+        )
+      );
+    }
+  }
+
+  loadBatch();
 }
 
 /** Get number of cached sessions */

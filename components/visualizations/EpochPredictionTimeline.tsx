@@ -2,7 +2,13 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { predictAtEpoch, prefetchAdjacentEpochs } from "@/lib/model/epochModels";
+import {
+  predictAtEpoch,
+  prefetchAdjacentEpochs,
+  prefetchAllEpochs,
+  TOTAL_EPOCHS,
+  getCachedModelCount,
+} from "@/lib/model/epochModels";
 import { preprocessCanvas } from "@/lib/model/preprocess";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { EMNIST_CLASSES } from "@/lib/model/classes";
@@ -14,7 +20,17 @@ export function EpochPredictionTimeline() {
   const [epochPrediction, setEpochPrediction] = useState<number[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadedCount, setLoadedCount] = useState(() => getCachedModelCount());
   const tensorRef = useRef<Float32Array | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingEpochRef = useRef<number>(0);
+
+  // Prefetch all models in background on mount
+  useEffect(() => {
+    prefetchAllEpochs((loaded, _total) => {
+      setLoadedCount(loaded);
+    });
+  }, []);
 
   // Preprocess input once and cache the Float32Array
   useEffect(() => {
@@ -25,8 +41,8 @@ export function EpochPredictionTimeline() {
     }
   }, [inputImageData]);
 
-  // Run prediction at current epoch
-  const predict = useCallback(async () => {
+  // Run prediction at a given epoch
+  const predictEpoch = useCallback(async (epoch: number) => {
     if (!tensorRef.current) {
       setEpochPrediction(null);
       return;
@@ -35,21 +51,50 @@ export function EpochPredictionTimeline() {
     setIsLoading(true);
     setError(null);
     try {
-      const pred = await predictAtEpoch(tensorRef.current, currentEpoch);
-      setEpochPrediction(pred);
-      prefetchAdjacentEpochs(currentEpoch);
+      const pred = await predictAtEpoch(tensorRef.current, epoch);
+      // Only update if this is still the latest requested epoch
+      if (pendingEpochRef.current === epoch) {
+        setEpochPrediction(pred);
+      }
+      prefetchAdjacentEpochs(epoch);
     } catch {
-      setError("Model checkpoint not available");
-      setEpochPrediction(null);
+      if (pendingEpochRef.current === epoch) {
+        setError("Model checkpoint not available");
+        setEpochPrediction(null);
+      }
     } finally {
-      setIsLoading(false);
+      if (pendingEpochRef.current === epoch) {
+        setIsLoading(false);
+      }
     }
-  }, [currentEpoch]);
+  }, []);
 
-  // Re-predict when epoch or input changes
+  // Debounced epoch change — waits 150ms after slider stops moving
+  const handleEpochChange = useCallback(
+    (epoch: number) => {
+      setCurrentEpoch(epoch);
+      pendingEpochRef.current = epoch;
+
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        predictEpoch(epoch);
+      }, 150);
+    },
+    [predictEpoch],
+  );
+
+  // Re-predict when input changes
   useEffect(() => {
-    predict();
-  }, [predict, inputImageData]);
+    pendingEpochRef.current = currentEpoch;
+    predictEpoch(currentEpoch);
+  }, [inputImageData, currentEpoch, predictEpoch]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const topPrediction = epochPrediction
     ? (() => {
@@ -62,9 +107,26 @@ export function EpochPredictionTimeline() {
     : null;
 
   const hasInput = inputImageData !== null;
+  const allLoaded = loadedCount >= TOTAL_EPOCHS;
 
   return (
     <div className="flex flex-col items-center gap-8">
+      {/* Download progress */}
+      {!allLoaded && (
+        <div className="flex w-full max-w-xl flex-col items-center gap-1">
+          <div className="flex w-full items-center justify-between text-xs text-foreground/30">
+            <span>Loading epoch models...</span>
+            <span>{loadedCount}/{TOTAL_EPOCHS}</span>
+          </div>
+          <div className="h-1 w-full overflow-hidden rounded-full bg-surface-elevated">
+            <div
+              className="h-full rounded-full bg-accent-primary/50 transition-all duration-300"
+              style={{ width: `${(loadedCount / TOTAL_EPOCHS) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Epoch slider */}
       <div className="flex w-full max-w-xl flex-col items-center gap-3">
         <div className="flex w-full items-center justify-between">
@@ -80,7 +142,7 @@ export function EpochPredictionTimeline() {
           min={0}
           max={49}
           value={currentEpoch}
-          onChange={(e) => setCurrentEpoch(parseInt(e.target.value))}
+          onChange={(e) => handleEpochChange(parseInt(e.target.value))}
           className="w-full accent-accent-primary"
           disabled={!hasInput}
         />
@@ -90,7 +152,7 @@ export function EpochPredictionTimeline() {
           {[0, 10, 20, 30, 40, 49].map((e) => (
             <button
               key={e}
-              onClick={() => setCurrentEpoch(e)}
+              onClick={() => handleEpochChange(e)}
               className={`rounded px-2 py-0.5 font-mono text-xs transition-colors ${
                 currentEpoch === e
                   ? "bg-accent-primary/20 text-accent-primary"
