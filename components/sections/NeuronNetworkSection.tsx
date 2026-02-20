@@ -244,16 +244,23 @@ function extractActivations(
     rawValues.set("output", valid.slice(0, 10).map(d => d.val));
   }
 
-  // Global normalization: find max across ALL layers
+  // Global normalization for all layers except output
   let globalMax = 0;
-  for (const [, vals] of rawValues) {
+  for (const [name, vals] of rawValues) {
+    if (name === "output") continue;
     for (const v of vals) if (v > globalMax) globalMax = v;
   }
   globalMax = Math.max(globalMax, 0.001);
 
-  // Normalize globally then apply sqrt compression
   for (const [name, vals] of rawValues) {
-    result.set(name, vals.map(v => Math.sqrt(v / globalMax)));
+    if (name === "output") {
+      // Output: use raw softmax probabilities directly — no sqrt, no normalization
+      // This makes 93% visibly bright and 1% nearly invisible
+      result.set(name, vals);
+    } else {
+      // All other layers: global normalization + sqrt compression
+      result.set(name, vals.map(v => Math.sqrt(v / globalMax)));
+    }
   }
 
   return result;
@@ -475,7 +482,7 @@ function NeuronNetworkCanvas({
         }
       }
 
-      // --- Neurons (batched per layer) ---
+      // --- Neurons ---
       {
         const r = l.radius;
         const TAU = 6.2832;
@@ -488,87 +495,50 @@ function NeuronNetworkCanvas({
           const isHovered = hoveredLayer === li;
           const startI = l.layerStartIdx[li];
           const count = layer.displayNeurons;
-
-          // Pass 1: Glow (batch all glowing neurons in this layer)
-          const glowPath = new Path2D();
-          let hasGlow = false;
-          let maxGlowAct = 0;
-          for (let ni = 0; ni < count; ni++) {
-            const idx = startI + ni;
-            const activation = acts?.[ni] ?? 0;
-            const effectiveAct = activation * wClamp;
-            if (effectiveAct > 0.15) {
-              glowPath.moveTo(l.posX[idx] + r * 2.2, l.posY[idx]);
-              glowPath.arc(l.posX[idx], l.posY[idx], r * 2.2, 0, TAU);
-              hasGlow = true;
-              if (effectiveAct > maxGlowAct) maxGlowAct = effectiveAct;
-            }
-          }
-          if (hasGlow) {
-            ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${maxGlowAct * 0.2})`;
-            ctx.fill(glowPath);
-          }
-
-          // Pass 2: Neuron bodies — batch active and inactive separately
-          const activePath = new Path2D();
-          const dimPath = new Path2D();
-          let maxBodyAct = 0;
-          let hasActive = false, hasDim = false;
-          for (let ni = 0; ni < count; ni++) {
-            const idx = startI + ni;
-            const activation = acts?.[ni] ?? 0;
-            const effectiveAct = activation * wClamp;
-            const x = l.posX[idx], y = l.posY[idx];
-            if (effectiveAct > 0.01) {
-              activePath.moveTo(x + r, y);
-              activePath.arc(x, y, r, 0, TAU);
-              hasActive = true;
-              if (effectiveAct > maxBodyAct) maxBodyAct = effectiveAct;
-            } else {
-              dimPath.moveTo(x + r, y);
-              dimPath.arc(x, y, r, 0, TAU);
-              hasDim = true;
-            }
-          }
-          if (hasActive) {
-            ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.15 + maxBodyAct * 0.85})`;
-            ctx.fill(activePath);
-          }
-          if (hasDim) {
-            ctx.fillStyle = isHovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)";
-            ctx.fill(dimPath);
-          }
-
-          // Pass 3: Borders — batch per layer
-          const borderPath = new Path2D();
-          for (let ni = 0; ni < count; ni++) {
-            const idx = startI + ni;
-            const x = l.posX[idx], y = l.posY[idx];
-            borderPath.moveTo(x + r, y);
-            borderPath.arc(x, y, r, 0, TAU);
-          }
           const hovNeuronInLayer = hoveredNeuron?.layerIdx === li;
-          if (isHovered) {
-            ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.6)`;
-            ctx.lineWidth = 1.5;
-          } else {
-            ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.25)`;
-            ctx.lineWidth = 0.8;
-          }
-          ctx.stroke(borderPath);
 
-          // Hovered neuron highlight (individual — rare)
-          if (hovNeuronInLayer && hoveredNeuron) {
-            const ni = hoveredNeuron.neuronIdx;
+          // Draw each neuron individually (count is small: 10-32 per layer)
+          for (let ni = 0; ni < count; ni++) {
             const idx = startI + ni;
+            const activation = acts?.[ni] ?? 0;
+            const effectiveAct = activation * wClamp;
+            const x = l.posX[idx], y = l.posY[idx];
+
+            // Glow
+            if (effectiveAct > 0.15) {
+              ctx.beginPath();
+              ctx.arc(x, y, r * 2.2, 0, TAU);
+              ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${effectiveAct * 0.2})`;
+              ctx.fill();
+            }
+
+            // Body
             ctx.beginPath();
-            ctx.arc(l.posX[idx], l.posY[idx], r, 0, TAU);
-            ctx.strokeStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-            ctx.lineWidth = 2.5;
+            ctx.arc(x, y, r, 0, TAU);
+            if (effectiveAct > 0.01) {
+              ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.15 + effectiveAct * 0.85})`;
+            } else {
+              ctx.fillStyle = isHovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)";
+            }
+            ctx.fill();
+
+            // Border
+            const isThis = hovNeuronInLayer && hoveredNeuron?.neuronIdx === ni;
+            if (isThis) {
+              ctx.strokeStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+              ctx.lineWidth = 2.5;
+            } else if (isHovered) {
+              ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.6)`;
+              ctx.lineWidth = 1.5;
+            } else {
+              const ba = effectiveAct > 0.01 ? 0.3 + effectiveAct * 0.5 : 0.12;
+              ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${ba})`;
+              ctx.lineWidth = 0.8;
+            }
             ctx.stroke();
           }
 
-          // Output labels (only 10 max, cheap)
+          // Output labels (only 10 max)
           if (layer.type === "output") {
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
@@ -679,13 +649,14 @@ function NeuronNetworkCanvas({
 // ---------------------------------------------------------------------------
 
 function NeuronHeatmapTooltip({
-  neuron, layerActivations, inputTensor, outputLabels, containerRect,
+  neuron, layerActivations, inputTensor, outputLabels, containerRect, prediction,
 }: {
   neuron: HoveredNeuron;
   layerActivations: Record<string, number[][][] | number[]>;
   inputTensor: number[][] | null;
   outputLabels: string[];
   containerRect: DOMRect | null;
+  prediction: number[] | null;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layer = LAYERS[neuron.layerIdx];
@@ -754,23 +725,19 @@ function NeuronHeatmapTooltip({
           ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.strokeRect(4, h / 2 - 10, w - 8, 20);
         }
       }
-    } else if (isOutput) {
-      const acts = layerActivations["output"];
-      if (acts && !Array.isArray(acts[0])) {
-        const vals = acts as number[];
-        const valid: { val: number; idx: number }[] = [];
-        for (let i = 0; i < vals.length; i++) if (!BYMERGE_MERGED_INDICES.has(i)) valid.push({ val: vals[i], idx: i });
-        valid.sort((a, b) => b.val - a.val);
-        if (neuron.neuronIdx < valid.length) {
-          const d = valid[neuron.neuronIdx];
-          const [cr, cg, cb] = viridis(d.val);
-          ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
-          ctx.fillRect(4, h / 2 - 10, d.val * (w - 8), 20);
-          ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.strokeRect(4, h / 2 - 10, w - 8, 20);
-        }
+    } else if (isOutput && prediction) {
+      const valid: { val: number; idx: number }[] = [];
+      for (let i = 0; i < prediction.length; i++) if (!BYMERGE_MERGED_INDICES.has(i)) valid.push({ val: prediction[i], idx: i });
+      valid.sort((a, b) => b.val - a.val);
+      if (neuron.neuronIdx < valid.length) {
+        const d = valid[neuron.neuronIdx];
+        const [cr, cg, cb] = viridis(d.val);
+        ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
+        ctx.fillRect(4, h / 2 - 10, d.val * (w - 8), 20);
+        ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.strokeRect(4, h / 2 - 10, w - 8, 20);
       }
     }
-  }, [neuron, layerActivations, inputTensor, layer, actualIdx, isConv3D, isDense, isInput, isOutput, canvasSize]);
+  }, [neuron, layerActivations, inputTensor, prediction, layer, actualIdx, isConv3D, isDense, isInput, isOutput, canvasSize]);
 
   let label = "";
   if (isInput) { const pc = neuron.neuronIdx % 5, pr = Math.floor(neuron.neuronIdx / 5); label = `Patch [${pr},${pc}]`; }
@@ -802,32 +769,55 @@ function NeuronHeatmapTooltip({
         if (actualIdx < vals.length) valueText = `value: ${vals[actualIdx].toFixed(4)}`;
       }
     }
-  } else if (isOutput) {
-    const acts = layerActivations["output"];
-    if (acts && !Array.isArray(acts[0])) {
-      const vals = acts as number[];
-      const valid: { val: number; idx: number }[] = [];
-      for (let i = 0; i < vals.length; i++) if (!BYMERGE_MERGED_INDICES.has(i)) valid.push({ val: vals[i], idx: i });
-      valid.sort((a, b) => b.val - a.val);
-      if (neuron.neuronIdx < valid.length) valueText = `prob: ${(valid[neuron.neuronIdx].val * 100).toFixed(2)}%`;
-    }
+  } else if (isOutput && prediction) {
+    const valid: { val: number; idx: number }[] = [];
+    for (let i = 0; i < prediction.length; i++) if (!BYMERGE_MERGED_INDICES.has(i)) valid.push({ val: prediction[i], idx: i });
+    valid.sort((a, b) => b.val - a.val);
+    if (neuron.neuronIdx < valid.length) valueText = `confidence: ${(valid[neuron.neuronIdx].val * 100).toFixed(2)}%`;
   }
 
-  if (!containerRect) return null;
-  const tooltipX = neuron.screenX - containerRect.left + 20;
-  const tooltipY = neuron.screenY - containerRect.top - 30;
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+
+  useEffect(() => {
+    if (!containerRect || !tooltipRef.current) return;
+    const el = tooltipRef.current;
+    const tw = el.offsetWidth, th = el.offsetHeight;
+    const gap = 12;
+
+    // Position relative to container
+    const neuronX = neuron.screenX - containerRect.left;
+    const neuronY = neuron.screenY - containerRect.top;
+
+    // Try right of neuron
+    let left = neuronX + gap;
+    let top = neuronY - th / 2;
+
+    // Flip left if overflows right edge
+    if (left + tw > containerRect.width) left = neuronX - tw - gap;
+    // Flip below if overflows top
+    if (top < 0) top = neuronY + gap;
+    // Flip above if overflows bottom
+    if (top + th > containerRect.height) top = neuronY - th - gap;
+    // Clamp
+    left = Math.max(4, Math.min(left, containerRect.width - tw - 4));
+    top = Math.max(4, Math.min(top, containerRect.height - th - 4));
+
+    setPos({ left, top });
+  });
 
   return (
-    <div style={{
-      position: "absolute", left: tooltipX, top: tooltipY, transform: "translateY(-100%)",
-      background: "#15151f", border: `1px solid ${layer.color}50`, borderRadius: 8, padding: 8,
-      pointerEvents: "none", zIndex: 60, boxShadow: `0 4px 20px rgba(0,0,0,0.6)`, minWidth: 120,
+    <div ref={tooltipRef} style={{
+      position: "absolute", left: pos?.left ?? -9999, top: pos?.top ?? -9999,
+      background: "#15151f", border: `1px solid ${layer.color}50`, borderRadius: 10, padding: "10px 12px",
+      pointerEvents: "none", zIndex: 60, boxShadow: `0 8px 30px rgba(0,0,0,0.7), 0 0 1px ${layer.color}30`,
+      minWidth: 120, backdropFilter: "blur(8px)",
     }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: layer.color, marginBottom: 4 }}>{layer.displayName} — {label}</div>
+      <div style={{ fontSize: 11, fontWeight: 600, color: layer.color, marginBottom: 6 }}>{layer.displayName} — {label}</div>
       <canvas ref={canvasRef} width={canvasSize} height={isDense || isOutput ? 40 : canvasSize}
-        style={{ width: canvasSize, height: isDense || isOutput ? 40 : canvasSize, borderRadius: 4, imageRendering: (isInput || isConv3D) ? "pixelated" : "auto", display: "block" }}
+        style={{ width: canvasSize, height: isDense || isOutput ? 40 : canvasSize, borderRadius: 6, imageRendering: (isInput || isConv3D) ? "pixelated" : "auto", display: "block" }}
       />
-      {valueText && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 4, fontFamily: "monospace" }}>{valueText}</div>}
+      {valueText && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 6, fontFamily: "monospace" }}>{valueText}</div>}
     </div>
   );
 }
@@ -842,9 +832,11 @@ function LayerTooltip({ layer, activationMap }: { layer: NeuronLayerDef; activat
   return (
     <div style={{
       position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)",
-      background: "#1a1a28", border: `1px solid ${layer.color}40`, borderRadius: 8,
+      background: "#15151f", border: `1px solid ${layer.color}40`, borderRadius: 10,
       padding: "10px 16px", display: "flex", alignItems: "center", gap: 12,
       pointerEvents: "none", zIndex: 50, whiteSpace: "nowrap",
+      boxShadow: `0 8px 30px rgba(0,0,0,0.7), 0 0 1px ${layer.color}30`,
+      backdropFilter: "blur(8px)",
     }}>
       <div style={{ width: 10, height: 10, borderRadius: "50%", background: layer.color }} />
       <div>
@@ -1175,6 +1167,7 @@ export function NeuronNetworkSection({ children }: { children?: React.ReactNode 
             layerActivations={layerActivations}
             inputTensor={inputTensor}
             outputLabels={outputLabels}
+            prediction={prediction}
             containerRect={canvasContainerRef.current?.getBoundingClientRect() ?? null}
           />
         )}
