@@ -10,660 +10,36 @@ import {
 import { motion, useDragControls, type PanInfo } from "framer-motion";
 import { DrawingCanvas } from "@/components/canvas/DrawingCanvas";
 import { ImageUploader } from "@/components/canvas/ImageUploader";
+import { NeuronNetworkCanvas } from "@/components/canvas/NeuronNetworkCanvas";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ChartContainer } from "@/components/ui/chart";
+import { Bar, BarChart, XAxis, YAxis, LabelList } from "recharts";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { useUIStore } from "@/stores/uiStore";
 import { EMNIST_CLASSES, BYMERGE_MERGED_INDICES } from "@/lib/model/classes";
+import {
+  LAYERS,
+  extractActivations,
+  getOutputLabels,
+  displayToActualIndex,
+  viridis,
+  clamp,
+  type NeuronLayerDef,
+  type HoveredNeuron,
+} from "@/lib/network/networkConstants";
 
 // ---------------------------------------------------------------------------
-// Layer definitions
+// NeuronHeatmapTooltipContent
 // ---------------------------------------------------------------------------
 
-interface NeuronLayerDef {
-  name: string;
-  displayName: string;
-  type: "input" | "conv" | "relu" | "pool" | "dense" | "output";
-  totalNeurons: number;
-  displayNeurons: number;
-  color: string;
-  rgb: [number, number, number]; // pre-parsed
-  description: string;
-}
-
-function parseHex(hex: string): [number, number, number] {
-  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value));
-}
-
-const LAYERS: NeuronLayerDef[] = [
-  { name: "input", displayName: "Input", type: "input", totalNeurons: 784, displayNeurons: 20, color: "#94a3b8", rgb: parseHex("#94a3b8"), description: "28×28 pixels" },
-  { name: "conv1", displayName: "Conv1", type: "conv", totalNeurons: 32, displayNeurons: 16, color: "#6366f1", rgb: parseHex("#6366f1"), description: "32 channels (3×3)" },
-  { name: "relu1", displayName: "ReLU1", type: "relu", totalNeurons: 32, displayNeurons: 16, color: "#818cf8", rgb: parseHex("#818cf8"), description: "32 channels" },
-  { name: "conv2", displayName: "Conv2", type: "conv", totalNeurons: 64, displayNeurons: 24, color: "#a78bfa", rgb: parseHex("#a78bfa"), description: "64 channels (3×3)" },
-  { name: "relu2", displayName: "ReLU2", type: "relu", totalNeurons: 64, displayNeurons: 24, color: "#8b5cf6", rgb: parseHex("#8b5cf6"), description: "64 channels" },
-  { name: "pool1", displayName: "Pool1", type: "pool", totalNeurons: 64, displayNeurons: 18, color: "#06b6d4", rgb: parseHex("#06b6d4"), description: "64 ch → 14×14" },
-  { name: "conv3", displayName: "Conv3", type: "conv", totalNeurons: 128, displayNeurons: 30, color: "#0891b2", rgb: parseHex("#0891b2"), description: "128 channels (3×3)" },
-  { name: "relu3", displayName: "ReLU3", type: "relu", totalNeurons: 128, displayNeurons: 30, color: "#0e7490", rgb: parseHex("#0e7490"), description: "128 channels" },
-  { name: "pool2", displayName: "Pool2", type: "pool", totalNeurons: 128, displayNeurons: 20, color: "#22c55e", rgb: parseHex("#22c55e"), description: "128 ch → 7×7" },
-  { name: "dense1", displayName: "Dense", type: "dense", totalNeurons: 256, displayNeurons: 32, color: "#f59e0b", rgb: parseHex("#f59e0b"), description: "256 neurons" },
-  { name: "relu4", displayName: "ReLU4", type: "relu", totalNeurons: 256, displayNeurons: 32, color: "#d97706", rgb: parseHex("#d97706"), description: "256 neurons" },
-  { name: "output", displayName: "Output", type: "output", totalNeurons: 47, displayNeurons: 10, color: "#ef4444", rgb: parseHex("#ef4444"), description: "Top predictions" },
-];
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface HoveredNeuron {
-  layerIdx: number;
-  neuronIdx: number;
-  screenX: number;
-  screenY: number;
-}
-
-// ---------------------------------------------------------------------------
-// Deterministic PRNG
-// ---------------------------------------------------------------------------
-
-function makePRNG(seed: number) {
-  let s = seed;
-  return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
-}
-
-// ---------------------------------------------------------------------------
-// Pre-computed connections (SoA layout for cache efficiency)
-// ---------------------------------------------------------------------------
-
-const CONN_COUNT = (() => {
-  let c = 0;
-  for (let li = 0; li < LAYERS.length - 1; li++) {
-    c += LAYERS[li].displayNeurons * Math.min(3, LAYERS[li + 1].displayNeurons);
-  }
-  return c;
-})();
-
-// Struct-of-arrays for connections
-const connFromLayer = new Uint8Array(CONN_COUNT);
-const connFromNeuron = new Uint8Array(CONN_COUNT);
-const connToLayer = new Uint8Array(CONN_COUNT);
-const connToNeuron = new Uint8Array(CONN_COUNT);
-
-(() => {
-  const rand = makePRNG(42);
-  let ci = 0;
-  for (let li = 0; li < LAYERS.length - 1; li++) {
-    const fromN = LAYERS[li].displayNeurons;
-    const toN = LAYERS[li + 1].displayNeurons;
-    const perNeuron = Math.min(3, toN);
-    for (let fi = 0; fi < fromN; fi++) {
-      const targets = new Set<number>();
-      targets.add(Math.floor((fi / fromN) * toN));
-      while (targets.size < perNeuron) targets.add(Math.floor(rand() * toN));
-      for (const ti of targets) {
-        connFromLayer[ci] = li;
-        connFromNeuron[ci] = fi;
-        connToLayer[ci] = li + 1;
-        connToNeuron[ci] = ti;
-        ci++;
-      }
-    }
-  }
-})();
-
-// Signal highlights — ~1 per 6 connections for performance
-const SIGNAL_COUNT = Math.ceil(CONN_COUNT / 6);
-const sigConnIdx = new Uint16Array(SIGNAL_COUNT);
-const sigProgress = new Float32Array(SIGNAL_COUNT);
-const sigSpeed = new Float32Array(SIGNAL_COUNT);
-const sigIntensity = new Float32Array(SIGNAL_COUNT);
-const sigSize = new Float32Array(SIGNAL_COUNT);
-
-(() => {
-  const rand = makePRNG(123);
-  for (let i = 0; i < SIGNAL_COUNT; i++) {
-    sigConnIdx[i] = Math.floor(rand() * CONN_COUNT);
-    sigProgress[i] = rand();
-    sigSpeed[i] = 0.003 + rand() * 0.007;
-    sigIntensity[i] = 0.5 + rand() * 0.5;
-    sigSize[i] = 1.5 + rand() * 1.5;
-  }
-})();
-
-// ---------------------------------------------------------------------------
-// Neuron position computation (flat arrays)
-// ---------------------------------------------------------------------------
-
-function computeLayout(w: number, h: number) {
-  const totalNeurons = LAYERS.reduce((s, l) => s + l.displayNeurons, 0);
-  const posX = new Float32Array(totalNeurons);
-  const posY = new Float32Array(totalNeurons);
-  const posLayerIdx = new Uint8Array(totalNeurons);
-  const posNeuronIdx = new Uint8Array(totalNeurons);
-
-  const marginX = Math.max(16, Math.min(80, w * 0.06)), marginY = Math.max(30, Math.min(60, h * 0.08));
-  const availW = w - marginX * 2, availH = h - marginY * 2;
-  const layerSpacing = availW / (LAYERS.length - 1);
-  const radius = Math.min(w < 500 ? 4 : 7, 24 * 0.32);
-
-  // Pre-compute per-layer start indices and bottom Y for labels
-  const layerStartIdx: number[] = [];
-  const layerBottomY: number[] = [];
-  const layerX: number[] = [];
-
-  let idx = 0;
-  for (let li = 0; li < LAYERS.length; li++) {
-    layerStartIdx.push(idx);
-    const n = LAYERS[li].displayNeurons;
-    const x = marginX + li * layerSpacing;
-    layerX.push(x);
-    const spacing = Math.min(24, availH / (n + 1));
-    const totalH = (n - 1) * spacing;
-    const startY = h / 2 - totalH / 2;
-    let maxY = 0;
-    for (let ni = 0; ni < n; ni++) {
-      posX[idx] = x;
-      posY[idx] = startY + ni * spacing;
-      posLayerIdx[idx] = li;
-      posNeuronIdx[idx] = ni;
-      if (posY[idx] > maxY) maxY = posY[idx];
-      idx++;
-    }
-    layerBottomY.push(maxY);
-  }
-
-  // Build neuron lookup: [layerIdx][neuronIdx] → flat index
-  const lookup: number[][] = [];
-  for (let li = 0; li < LAYERS.length; li++) lookup[li] = [];
-  for (let i = 0; i < totalNeurons; i++) {
-    lookup[posLayerIdx[i]][posNeuronIdx[i]] = i;
-  }
-
-  return { posX, posY, posLayerIdx, posNeuronIdx, totalNeurons, radius, lookup, layerStartIdx, layerBottomY, layerX };
-}
-
-// ---------------------------------------------------------------------------
-// Extract activation values (global normalization + sqrt compression)
-// Sqrt compression keeps dim layers visible while dominant layer stands out.
-// e.g. a value at 4% of global max → sqrt(0.04) ≈ 0.20 (visible)
-//      a value at 100% of global max → sqrt(1.0) = 1.0 (brightest)
-// ---------------------------------------------------------------------------
-
-function extractActivations(
-  layerActivations: Record<string, number[][][] | number[]>,
-  inputTensor: number[][] | null,
-  prediction: number[] | null,
-): Map<string, number[]> {
-  const result = new Map<string, number[]>();
-  const rawValues = new Map<string, number[]>();
-
-  // Input: 20 image segments (5 cols × 4 rows grid)
-  if (inputTensor) {
-    const patchCols = 5, patchRows = 4;
-    const pw = 28 / patchCols, ph = 28 / patchRows;
-    const patches: number[] = [];
-    for (let pr = 0; pr < patchRows; pr++) {
-      for (let pc = 0; pc < patchCols; pc++) {
-        const r0 = Math.floor(pr * ph), r1 = Math.floor((pr + 1) * ph);
-        const c0 = Math.floor(pc * pw), c1 = Math.floor((pc + 1) * pw);
-        let sum = 0, count = 0;
-        for (let r = r0; r < r1; r++) for (let c = c0; c < c1; c++) { sum += inputTensor[r]?.[c] ?? 0; count++; }
-        patches.push(count > 0 ? sum / count : 0);
-      }
-    }
-    rawValues.set("input", patches);
-  }
-
-  // Conv/ReLU/Pool layers (3D or 1D)
-  for (const layer of LAYERS) {
-    if (layer.name === "input" || layer.name === "output") continue;
-    const acts = layerActivations[layer.name];
-    if (!acts) continue;
-
-    const sampled: number[] = [];
-    if (Array.isArray(acts[0]) && Array.isArray((acts[0] as number[][])[0])) {
-      const acts3d = acts as number[][][];
-      const means: number[] = [];
-      for (const ch of acts3d) {
-        let sum = 0, count = 0;
-        for (const row of ch) for (const v of row) { sum += Math.abs(v); count++; }
-        means.push(sum / count);
-      }
-      for (let i = 0; i < layer.displayNeurons; i++) {
-        sampled.push(means[Math.floor(i * means.length / layer.displayNeurons)]);
-      }
-    } else {
-      const acts1d = acts as number[];
-      for (let i = 0; i < layer.displayNeurons; i++) {
-        sampled.push(Math.abs(acts1d[Math.floor(i * acts1d.length / layer.displayNeurons)]));
-      }
-    }
-    rawValues.set(layer.name, sampled);
-  }
-
-  // Output: use softmax probabilities (0-1 range) instead of raw logits
-  if (prediction && prediction.length > 0) {
-    const valid: { val: number; idx: number }[] = [];
-    for (let i = 0; i < prediction.length; i++) {
-      if (!BYMERGE_MERGED_INDICES.has(i)) valid.push({ val: prediction[i], idx: i });
-    }
-    valid.sort((a, b) => b.val - a.val);
-    rawValues.set("output", valid.slice(0, 10).map(d => d.val));
-  }
-
-  // Global normalization for all layers except output
-  let globalMax = 0;
-  for (const [name, vals] of rawValues) {
-    if (name === "output") continue;
-    for (const v of vals) if (v > globalMax) globalMax = v;
-  }
-  globalMax = Math.max(globalMax, 0.001);
-
-  for (const [name, vals] of rawValues) {
-    if (name === "output") {
-      // Output: use raw softmax probabilities directly — no sqrt, no normalization
-      // This makes 93% visibly bright and 1% nearly invisible
-      result.set(name, vals);
-    } else {
-      // All other layers: global normalization + sqrt compression
-      result.set(name, vals.map(v => Math.sqrt(v / globalMax)));
-    }
-  }
-
-  return result;
-}
-
-function getOutputLabels(prediction: number[] | null): string[] {
-  if (!prediction || prediction.length === 0) return [];
-  const valid: { val: number; idx: number }[] = [];
-  for (let i = 0; i < prediction.length; i++) {
-    if (!BYMERGE_MERGED_INDICES.has(i)) valid.push({ val: prediction[i], idx: i });
-  }
-  valid.sort((a, b) => b.val - a.val);
-  return valid.slice(0, 10).map(d => EMNIST_CLASSES[d.idx]);
-}
-
-// ---------------------------------------------------------------------------
-// Bezier point (inlined for perf — avoid tuple allocation)
-// ---------------------------------------------------------------------------
-
-let _bx = 0, _by = 0;
-function bezierPointInline(
-  x0: number, y0: number, cx1: number, cy1: number,
-  cx2: number, cy2: number, x1: number, y1: number, t: number,
-) {
-  const u = 1 - t;
-  const uu = u * u, tt = t * t;
-  _bx = uu * u * x0 + 3 * uu * t * cx1 + 3 * u * tt * cx2 + tt * t * x1;
-  _by = uu * u * y0 + 3 * uu * t * cy1 + 3 * u * tt * cy2 + tt * t * y1;
-}
-
-function displayToActualIndex(layerIdx: number, displayIdx: number): number {
-  const layer = LAYERS[layerIdx];
-  if (layer.displayNeurons >= layer.totalNeurons) return displayIdx;
-  return Math.floor(displayIdx * layer.totalNeurons / layer.displayNeurons);
-}
-
-function viridis(t: number): [number, number, number] {
-  t = Math.max(0, Math.min(1, t));
-  return [
-    Math.round(255 * Math.max(0, Math.min(1, -0.33 + 2.2 * t * t))),
-    Math.round(255 * Math.max(0, Math.min(1, -0.15 + 1.5 * t - 0.5 * t * t))),
-    Math.round(255 * Math.max(0, Math.min(1, 0.52 + 0.6 * t - 1.2 * t * t))),
-  ];
-}
-
-// ---------------------------------------------------------------------------
-// NeuronNetworkCanvas — OPTIMIZED: no React state in render loop
-// ---------------------------------------------------------------------------
-
-function NeuronNetworkCanvas({
-  width,
-  height,
-  activationMapRef,
-  outputLabelsRef,
-  hoveredLayerRef,
-  hoveredNeuronRef,
-  waveRef,
-  onHoverLayer,
-  onHoverNeuron,
-  onClickLayer,
-}: {
-  width: number;
-  height: number;
-  activationMapRef: React.RefObject<Map<string, number[]>>;
-  outputLabelsRef: React.RefObject<string[]>;
-  hoveredLayerRef: React.RefObject<number | null>;
-  hoveredNeuronRef: React.RefObject<HoveredNeuron | null>;
-  waveRef: React.RefObject<number>;
-  onHoverLayer: (li: number | null) => void;
-  onHoverNeuron: (n: HoveredNeuron | null) => void;
-  onClickLayer: (li: number, neuronIdx: number | null) => void;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
-
-  const layout = useMemo(() => computeLayout(width, height), [width, height]);
-  const layoutRef = useRef(layout);
-  layoutRef.current = layout;
-
-  // Pre-compute resolved connection positions for current layout
-  const connResolved = useMemo(() => {
-    const l = layout;
-    const fromXArr = new Float32Array(CONN_COUNT);
-    const fromYArr = new Float32Array(CONN_COUNT);
-    const toXArr = new Float32Array(CONN_COUNT);
-    const toYArr = new Float32Array(CONN_COUNT);
-    for (let ci = 0; ci < CONN_COUNT; ci++) {
-      const fi = l.lookup[connFromLayer[ci]]?.[connFromNeuron[ci]];
-      const ti = l.lookup[connToLayer[ci]]?.[connToNeuron[ci]];
-      if (fi !== undefined && ti !== undefined) {
-        fromXArr[ci] = l.posX[fi];
-        fromYArr[ci] = l.posY[fi];
-        toXArr[ci] = l.posX[ti];
-        toYArr[ci] = l.posY[ti];
-      }
-    }
-    return { fromXArr, fromYArr, toXArr, toYArr };
-  }, [layout]);
-
-  // Animation loop — reads refs only, zero React state updates
-  useEffect(() => {
-    let raf = 0;
-    const animate = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) { raf = requestAnimationFrame(animate); return; }
-      const ctx = canvas.getContext("2d");
-      if (!ctx) { raf = requestAnimationFrame(animate); return; }
-
-      const activationMap = activationMapRef.current;
-      const outputLabels = outputLabelsRef.current;
-      const hoveredLayer = hoveredLayerRef.current;
-      const hoveredNeuron = hoveredNeuronRef.current;
-      const waveProgress = waveRef.current;
-      const l = layoutRef.current;
-      const hasData = activationMap.size > 0;
-      const { fromXArr, fromYArr, toXArr, toYArr } = connResolved;
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, width, height);
-
-      // --- Connections (batched into 8 alpha buckets = 8 draw calls) ---
-      {
-        const ALPHA_BUCKETS = 8;
-        const bucketPaths: Path2D[] = [];
-        for (let b = 0; b < ALPHA_BUCKETS; b++) bucketPaths[b] = new Path2D();
-
-        for (let ci = 0; ci < CONN_COUNT; ci++) {
-          const fl = connFromLayer[ci], tl = connToLayer[ci];
-          const fn = connFromNeuron[ci], tn = connToNeuron[ci];
-          const fromActs = activationMap.get(LAYERS[fl].name);
-          const toActs = activationMap.get(LAYERS[tl].name);
-          const connStrength = ((fromActs?.[fn] ?? 0) + (toActs?.[tn] ?? 0)) * 0.5;
-
-          const fromWave = waveProgress - fl;
-          const toWave = waveProgress - tl;
-          const waveAlpha = Math.min(
-            fromWave < 0 ? 0 : fromWave > 1 ? 1 : fromWave,
-            toWave < 0 ? 0 : toWave > 1 ? 1 : toWave,
-          );
-
-          let baseAlpha: number;
-          if (hasData) {
-            baseAlpha = 0.03 + connStrength * 0.55;
-            if (hoveredLayer !== null && (fl === hoveredLayer || tl === hoveredLayer)) {
-              baseAlpha = 0.15 + connStrength * 0.7;
-            }
-          } else {
-            baseAlpha = hoveredLayer !== null && (fl === hoveredLayer || tl === hoveredLayer) ? 0.08 : 0.025;
-          }
-          const alpha = hasData ? baseAlpha * waveAlpha : baseAlpha;
-          if (alpha < 0.005) continue;
-
-          const bucket = Math.min((alpha * ALPHA_BUCKETS) | 0, ALPHA_BUCKETS - 1);
-          const fx = fromXArr[ci], fy = fromYArr[ci], tx = toXArr[ci], ty = toYArr[ci];
-          const dx = (tx - fx) * 0.4;
-          const p = bucketPaths[bucket];
-          p.moveTo(fx, fy);
-          p.bezierCurveTo(fx + dx, fy, tx - dx, ty, tx, ty);
-        }
-
-        ctx.lineWidth = 0.6;
-        for (let b = 0; b < ALPHA_BUCKETS; b++) {
-          const a = (b + 0.5) / ALPHA_BUCKETS;
-          ctx.strokeStyle = `rgba(140,160,200,${a})`;
-          ctx.stroke(bucketPaths[b]);
-        }
-      }
-
-      // --- Signal highlights (bright segment sliding along connections) ---
-      if (hasData) {
-        // Batch by layer color (LAYERS.length buckets)
-        const sigPaths: Path2D[] = [];
-        const sigAlphas: number[] = [];
-        for (let li = 0; li < LAYERS.length; li++) { sigPaths[li] = new Path2D(); sigAlphas[li] = 0; }
-
-        for (let i = 0; i < SIGNAL_COUNT; i++) {
-          sigProgress[i] += sigSpeed[i];
-          if (sigProgress[i] > 1) {
-            sigProgress[i] -= 1;
-            sigIntensity[i] = 0.4 + Math.random() * 0.6;
-          }
-
-          const ci = sigConnIdx[i];
-          const fl = connFromLayer[ci];
-          const layerWave = waveProgress - fl;
-          if (layerWave < 0.5) continue;
-
-          const fromActs = activationMap.get(LAYERS[fl].name);
-          const val = fromActs?.[connFromNeuron[ci]] ?? 0;
-          if (val < 0.1) continue;
-
-          const tl = connToLayer[ci];
-          const fx = fromXArr[ci], fy = fromYArr[ci], tx = toXArr[ci], ty = toYArr[ci];
-          const ddx = (tx - fx) * 0.4;
-          const cx1 = fx + ddx, cy1 = fy, cx2 = tx - ddx, cy2 = ty;
-          const a = val * sigIntensity[i] * 0.7;
-          if (a > sigAlphas[tl]) sigAlphas[tl] = a;
-
-          // 4-step segment (fast)
-          const t0 = sigProgress[i];
-          const p = sigPaths[tl];
-          bezierPointInline(fx, fy, cx1, cy1, cx2, cy2, tx, ty, Math.min(t0, 1));
-          p.moveTo(_bx, _by);
-          bezierPointInline(fx, fy, cx1, cy1, cx2, cy2, tx, ty, Math.min(t0 + 0.04, 1));
-          p.lineTo(_bx, _by);
-          bezierPointInline(fx, fy, cx1, cy1, cx2, cy2, tx, ty, Math.min(t0 + 0.08, 1));
-          p.lineTo(_bx, _by);
-          bezierPointInline(fx, fy, cx1, cy1, cx2, cy2, tx, ty, Math.min(t0 + 0.12, 1));
-          p.lineTo(_bx, _by);
-        }
-
-        ctx.lineWidth = 1.8;
-        ctx.lineCap = "round";
-        for (let li = 0; li < LAYERS.length; li++) {
-          if (sigAlphas[li] < 0.01) continue;
-          const rgb = LAYERS[li].rgb;
-          ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${sigAlphas[li] * 0.8})`;
-          ctx.stroke(sigPaths[li]);
-        }
-      }
-
-      // --- Neurons ---
-      {
-        const r = l.radius;
-        const TAU = 6.2832;
-        for (let li = 0; li < LAYERS.length; li++) {
-          const layer = LAYERS[li];
-          const rgb = layer.rgb;
-          const acts = activationMap.get(layer.name);
-          const layerWave = hasData ? waveProgress - li : 0;
-          const wClamp = layerWave < 0 ? 0 : layerWave > 1 ? 1 : layerWave;
-          const isHovered = hoveredLayer === li;
-          const startI = l.layerStartIdx[li];
-          const count = layer.displayNeurons;
-          const hovNeuronInLayer = hoveredNeuron?.layerIdx === li;
-
-          // Draw each neuron individually (count is small: 10-32 per layer)
-          for (let ni = 0; ni < count; ni++) {
-            const idx = startI + ni;
-            const activation = acts?.[ni] ?? 0;
-            const effectiveAct = activation * wClamp;
-            const x = l.posX[idx], y = l.posY[idx];
-
-            // Glow
-            if (effectiveAct > 0.15) {
-              ctx.beginPath();
-              ctx.arc(x, y, r * 2.2, 0, TAU);
-              ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${effectiveAct * 0.2})`;
-              ctx.fill();
-            }
-
-            // Body
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, TAU);
-            if (effectiveAct > 0.01) {
-              ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.15 + effectiveAct * 0.85})`;
-            } else {
-              ctx.fillStyle = isHovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)";
-            }
-            ctx.fill();
-
-            // Border
-            const isThis = hovNeuronInLayer && hoveredNeuron?.neuronIdx === ni;
-            if (isThis) {
-              ctx.strokeStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-              ctx.lineWidth = 2.5;
-            } else if (isHovered) {
-              ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.6)`;
-              ctx.lineWidth = 1.5;
-            } else {
-              const ba = effectiveAct > 0.01 ? 0.3 + effectiveAct * 0.5 : 0.12;
-              ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${ba})`;
-              ctx.lineWidth = 0.8;
-            }
-            ctx.stroke();
-          }
-
-          // Output labels (only 10 max)
-          if (layer.type === "output") {
-            ctx.textAlign = "left";
-            ctx.textBaseline = "middle";
-            for (let ni = 0; ni < count; ni++) {
-              if (!outputLabels[ni]) continue;
-              const idx = startI + ni;
-              const activation = acts?.[ni] ?? 0;
-              const effectiveAct = activation * wClamp;
-              const la = effectiveAct > 0.3 ? 0.4 + effectiveAct * 0.6 : 0.25;
-              ctx.fillStyle = `rgba(255,255,255,${la})`;
-              ctx.font = effectiveAct > 0.5 ? "bold 10px system-ui,sans-serif" : "10px system-ui,sans-serif";
-              ctx.fillText(outputLabels[ni], l.posX[idx] + r + 6, l.posY[idx]);
-            }
-          }
-        }
-      }
-
-      // --- Layer labels (cheap, drawn once per layer) ---
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      for (let li = 0; li < LAYERS.length; li++) {
-        const layer = LAYERS[li];
-        const x = l.layerX[li];
-        const maxY = l.layerBottomY[li];
-        const isHov = hoveredLayer === li;
-
-        ctx.fillStyle = isHov ? layer.color : "rgba(255,255,255,0.4)";
-        ctx.font = isHov ? "bold 10px system-ui,sans-serif" : "10px system-ui,sans-serif";
-        ctx.fillText(layer.displayName, x, maxY + 16);
-
-        const unit = (layer.type === "conv" || layer.type === "relu" || layer.type === "pool") && layer.name !== "relu4" ? "ch" : "";
-        ctx.fillStyle = "rgba(255,255,255,0.15)";
-        ctx.font = "8px system-ui,sans-serif";
-        ctx.fillText(`${layer.totalNeurons}${unit ? " " + unit : " neurons"}`, x, maxY + 28);
-
-        if (layer.totalNeurons > layer.displayNeurons) {
-          ctx.fillStyle = "rgba(255,255,255,0.12)";
-          for (let d = 0; d < 3; d++) {
-            ctx.beginPath();
-            ctx.arc(x - 4 + d * 4, maxY + 8, 1, 0, 6.2832);
-            ctx.fill();
-          }
-        }
-      }
-
-      raf = requestAnimationFrame(animate);
-    };
-
-    raf = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(raf);
-  }, [width, height, connResolved, activationMapRef, outputLabelsRef, hoveredLayerRef, hoveredNeuronRef, waveRef]);
-
-  // Mouse handling
-  const findNearest = useCallback((clientX: number, clientY: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { layer: null as number | null, neuron: null as HoveredNeuron | null };
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = width / rect.width, scaleY = height / rect.height;
-    const mx = (clientX - rect.left) * scaleX, my = (clientY - rect.top) * scaleY;
-    const l = layoutRef.current;
-
-    let closestNeuron: HoveredNeuron | null = null;
-    let closestLayer: number | null = null;
-    let minNeuronDist = 18, minLayerDist = 40;
-
-    for (let i = 0; i < l.totalNeurons; i++) {
-      const dx = mx - l.posX[i], dy = my - l.posY[i];
-      const absDx = dx < 0 ? -dx : dx;
-      if (absDx < minLayerDist) { minLayerDist = absDx; closestLayer = l.posLayerIdx[i]; }
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < minNeuronDist) {
-        minNeuronDist = dist;
-        closestNeuron = {
-          layerIdx: l.posLayerIdx[i], neuronIdx: l.posNeuronIdx[i],
-          screenX: l.posX[i] / scaleX + rect.left, screenY: l.posY[i] / scaleY + rect.top,
-        };
-      }
-    }
-    return { layer: closestLayer, neuron: closestNeuron };
-  }, [width, height]);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const { layer, neuron } = findNearest(e.clientX, e.clientY);
-    onHoverLayer(layer);
-    onHoverNeuron(neuron);
-  }, [findNearest, onHoverLayer, onHoverNeuron]);
-
-  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const { layer, neuron } = findNearest(e.clientX, e.clientY);
-    if (layer !== null) onClickLayer(layer, neuron?.neuronIdx ?? null);
-  }, [findNearest, onClickLayer]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={width * dpr}
-      height={height * dpr}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => { onHoverLayer(null); onHoverNeuron(null); }}
-      onClick={handleClick}
-      style={{ width, height, cursor: "pointer" }}
-    />
-  );
-}
-
-// ---------------------------------------------------------------------------
-// NeuronHeatmapTooltip
-// ---------------------------------------------------------------------------
-
-function NeuronHeatmapTooltip({
-  neuron, layerActivations, inputTensor, outputLabels, containerRect, prediction,
+function NeuronHeatmapTooltipContent({
+  neuron, layerActivations, inputTensor, outputLabels, prediction,
 }: {
   neuron: HoveredNeuron;
   layerActivations: Record<string, number[][][] | number[]>;
   inputTensor: number[][] | null;
   outputLabels: string[];
-  containerRect: DOMRect | null;
   prediction: number[] | null;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -694,8 +70,10 @@ function NeuronHeatmapTooltip({
       }
       const patchCols = 5, patchRows = 4;
       const pc = neuron.neuronIdx % patchCols, pr = Math.floor(neuron.neuronIdx / patchCols);
-      const px = Math.floor(pc * 28 / patchCols) * cellW, py = Math.floor(pr * 28 / patchRows) * cellH;
-      const pw = Math.floor(28 / patchCols) * cellW, ph = Math.floor(28 / patchRows) * cellH;
+      const c0 = Math.floor(pc * 28 / patchCols), c1 = Math.floor((pc + 1) * 28 / patchCols);
+      const r0 = Math.floor(pr * 28 / patchRows), r1 = Math.floor((pr + 1) * 28 / patchRows);
+      const px = c0 * cellW, py = r0 * cellH;
+      const pw = (c1 - c0) * cellW, ph = (r1 - r0) * cellH;
       ctx.strokeStyle = "#6366f1"; ctx.lineWidth = 2; ctx.strokeRect(px, py, pw, ph);
       ctx.fillStyle = "rgba(0,0,0,0.5)";
       ctx.fillRect(0, 0, w, py); ctx.fillRect(0, py + ph, w, h - py - ph);
@@ -784,48 +162,14 @@ function NeuronHeatmapTooltip({
     if (neuron.neuronIdx < valid.length) valueText = `confidence: ${(valid[neuron.neuronIdx].val * 100).toFixed(2)}%`;
   }
 
-  const tooltipRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
-
-  useEffect(() => {
-    if (!containerRect || !tooltipRef.current) return;
-    const el = tooltipRef.current;
-    const tw = el.offsetWidth, th = el.offsetHeight;
-    const gap = 12;
-
-    // Position relative to container
-    const neuronX = neuron.screenX - containerRect.left;
-    const neuronY = neuron.screenY - containerRect.top;
-
-    // Try right of neuron
-    let left = neuronX + gap;
-    let top = neuronY - th / 2;
-
-    // Flip left if overflows right edge
-    if (left + tw > containerRect.width) left = neuronX - tw - gap;
-    // Flip below if overflows top
-    if (top < 0) top = neuronY + gap;
-    // Flip above if overflows bottom
-    if (top + th > containerRect.height) top = neuronY - th - gap;
-    // Clamp
-    left = Math.max(4, Math.min(left, containerRect.width - tw - 4));
-    top = Math.max(4, Math.min(top, containerRect.height - th - 4));
-
-    setPos({ left, top });
-  });
-
   return (
-    <div ref={tooltipRef} style={{
-      position: "absolute", left: pos?.left ?? -9999, top: pos?.top ?? -9999,
-      background: "#15151f", border: `1px solid ${layer.color}50`, borderRadius: 10, padding: "10px 12px",
-      pointerEvents: "none", zIndex: 60, boxShadow: `0 8px 30px rgba(0,0,0,0.7), 0 0 1px ${layer.color}30`,
-      minWidth: 120, backdropFilter: "blur(8px)",
-    }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: layer.color, marginBottom: 6 }}>{layer.displayName} — {label}</div>
+    <div className="flex flex-col gap-1.5">
+      <div className="text-[11px] font-semibold" style={{ color: layer.color }}>{layer.displayName} — {label}</div>
       <canvas ref={canvasRef} width={canvasSize} height={isDense || isOutput ? 40 : canvasSize}
-        style={{ width: canvasSize, height: isDense || isOutput ? 40 : canvasSize, borderRadius: 6, imageRendering: (isInput || isConv3D) ? "pixelated" : "auto", display: "block" }}
+        className="rounded-md"
+        style={{ width: canvasSize, height: isDense || isOutput ? 40 : canvasSize, imageRendering: (isInput || isConv3D) ? "pixelated" : "auto", display: "block" }}
       />
-      {valueText && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 6, fontFamily: "monospace" }}>{valueText}</div>}
+      {valueText && <div className="font-mono text-[10px] text-foreground/50">{valueText}</div>}
     </div>
   );
 }
@@ -834,29 +178,22 @@ function NeuronHeatmapTooltip({
 // LayerTooltip
 // ---------------------------------------------------------------------------
 
-function LayerTooltip({ layer, activationMap }: { layer: NeuronLayerDef; activationMap: Map<string, number[]> }) {
+function LayerTooltipContent({ layer, activationMap }: { layer: NeuronLayerDef; activationMap: Map<string, number[]> }) {
   const acts = activationMap.get(layer.name);
   const meanAct = acts ? acts.reduce((s, v) => s + v, 0) / acts.length : 0;
   return (
-    <div style={{
-      position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)",
-      background: "#15151f", border: `1px solid ${layer.color}40`, borderRadius: 10,
-      padding: "10px 16px", display: "flex", alignItems: "center", gap: 12,
-      pointerEvents: "none", zIndex: 50, whiteSpace: "nowrap",
-      boxShadow: `0 8px 30px rgba(0,0,0,0.7), 0 0 1px ${layer.color}30`,
-      backdropFilter: "blur(8px)",
-    }}>
-      <div style={{ width: 10, height: 10, borderRadius: "50%", background: layer.color }} />
+    <div className="flex items-center gap-3 whitespace-nowrap">
+      <div className="h-2.5 w-2.5 rounded-full" style={{ background: layer.color }} />
       <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "#e8e8ed" }}>{layer.displayName}</div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>{layer.description}</div>
+        <div className="text-[13px] font-semibold text-foreground">{layer.displayName}</div>
+        <div className="text-[11px] text-foreground/40">{layer.description}</div>
       </div>
-      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "monospace" }}>
+      <div className="font-mono text-[11px] text-foreground/30">
         {layer.totalNeurons.toLocaleString()} {(layer.type === "conv" || (layer.type === "relu" && layer.name !== "relu4") || layer.type === "pool") ? "ch" : (layer.type === "input" ? "px" : "n")}
       </div>
       {acts && (
-        <div style={{ fontSize: 11, fontFamily: "monospace" }}>
-          <span style={{ color: "rgba(255,255,255,0.3)" }}>avg: </span>
+        <div className="font-mono text-[11px]">
+          <span className="text-foreground/30">avg: </span>
           <span style={{ color: layer.color }}>{(meanAct * 100).toFixed(1)}%</span>
         </div>
       )}
@@ -865,146 +202,236 @@ function LayerTooltip({ layer, activationMap }: { layer: NeuronLayerDef; activat
 }
 
 // ---------------------------------------------------------------------------
-// InspectorPanel
+// InspectorPanel (shadcn Dialog)
 // ---------------------------------------------------------------------------
 
 function InspectorPanel({
-  layer, activations, inputTensor, prediction, topPrediction, initialChannel, onClose,
+  layer, activations, inputTensor, prediction, topPrediction, initialChannel, open, onClose,
 }: {
-  layer: NeuronLayerDef; activations: number[][][] | number[] | null; inputTensor: number[][] | null;
+  layer: NeuronLayerDef | null; activations: number[][][] | number[] | null; inputTensor: number[][] | null;
   prediction: number[] | null; topPrediction: { classIndex: number; confidence: number } | null;
-  initialChannel: number; onClose: () => void;
+  initialChannel: number; open: boolean; onClose: () => void;
 }) {
   const [selectedChannel, setSelectedChannel] = useState(initialChannel);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Snapshot data so content persists during close animation
+  const snapRef = useRef<{
+    layer: NeuronLayerDef; activations: typeof activations; prediction: typeof prediction;
+    topPrediction: typeof topPrediction; channelCount: number;
+  } | null>(null);
+  if (layer) {
+    snapRef.current = {
+      layer, activations, prediction, topPrediction,
+      channelCount: activations && Array.isArray(activations[0]) ? (activations as number[][][]).length : 0,
+    };
+  }
+  const snap = snapRef.current;
+
+  useEffect(() => { if (open) setSelectedChannel(initialChannel); }, [open, initialChannel]);
+
   useEffect(() => {
-    const canvas = mainCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const w = canvas.width, h = canvas.height;
-    ctx.fillStyle = "#111118"; ctx.fillRect(0, 0, w, h);
+    if (!layer || !open) return;
+    // Delay one frame so Radix Dialog Portal has mounted the canvas element
+    const raf = requestAnimationFrame(() => {
+      const canvas = mainCanvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const w = canvas.width, h = canvas.height;
+      ctx.fillStyle = "#111118"; ctx.fillRect(0, 0, w, h);
 
-    if (layer.type === "input" && inputTensor) {
-      const cellW = w / 28, cellH = h / 28;
-      for (let r = 0; r < 28; r++) for (let c = 0; c < 28; c++) {
-        const gray = Math.round(inputTensor[r][c] * 255);
-        ctx.fillStyle = `rgb(${gray},${gray},${gray})`;
-        ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
-      }
-    } else if (layer.type === "output" && prediction) {
-      const sorted = prediction.map((v, i) => ({ v, i })).filter(d => !BYMERGE_MERGED_INDICES.has(d.i)).sort((a, b) => b.v - a.v);
-      const barH = h / Math.min(sorted.length, 20);
-      ctx.font = "11px system-ui,sans-serif";
-      for (let j = 0; j < Math.min(sorted.length, 20); j++) {
-        const d = sorted[j]; const barW = (d.v / Math.max(sorted[0].v, 0.001)) * (w - 60);
-        const [cr, cg, cb] = viridis(d.v / Math.max(sorted[0].v, 0.001));
-        ctx.fillStyle = `rgb(${cr},${cg},${cb})`; ctx.fillRect(40, j * barH + 2, barW, barH - 4);
-        ctx.fillStyle = "#e8e8ed"; ctx.textAlign = "right"; ctx.fillText(EMNIST_CLASSES[d.i], 35, j * barH + barH / 2 + 4);
-        ctx.textAlign = "left"; ctx.fillText(`${(d.v * 100).toFixed(1)}%`, 40 + barW + 4, j * barH + barH / 2 + 4);
-      }
-    } else if (activations && Array.isArray(activations[0])) {
-      const acts = activations as number[][][];
-      if (selectedChannel < acts.length) {
-        const ch = acts[selectedChannel]; const rows = ch.length, cols = ch[0].length;
-        let maxVal = 0;
-        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (Math.abs(ch[r][c]) > maxVal) maxVal = Math.abs(ch[r][c]);
-        maxVal = Math.max(maxVal, 0.001);
-        const cellW = w / cols, cellH = h / rows;
-        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-          const [cr, cg, cb] = viridis(Math.abs(ch[r][c]) / maxVal);
-          ctx.fillStyle = `rgb(${cr},${cg},${cb})`; ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
+      if (layer.type === "input" && inputTensor) {
+        const cellW = w / 28, cellH = h / 28;
+        for (let r = 0; r < 28; r++) for (let c = 0; c < 28; c++) {
+          const gray = Math.round(inputTensor[r][c] * 255);
+          ctx.fillStyle = `rgb(${gray},${gray},${gray})`;
+          ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
         }
+      } else if (layer.type === "output" && prediction) {
+        const sorted = prediction.map((v, i) => ({ v, i })).filter(d => !BYMERGE_MERGED_INDICES.has(d.i)).sort((a, b) => b.v - a.v);
+        const barH = h / Math.min(sorted.length, 20);
+        ctx.font = "11px system-ui,sans-serif";
+        for (let j = 0; j < Math.min(sorted.length, 20); j++) {
+          const d = sorted[j]; const barW = (d.v / Math.max(sorted[0].v, 0.001)) * (w - 60);
+          const [cr, cg, cb] = viridis(d.v / Math.max(sorted[0].v, 0.001));
+          ctx.fillStyle = `rgb(${cr},${cg},${cb})`; ctx.fillRect(40, j * barH + 2, barW, barH - 4);
+          ctx.fillStyle = "#e8e8ed"; ctx.textAlign = "right"; ctx.fillText(EMNIST_CLASSES[d.i], 35, j * barH + barH / 2 + 4);
+          ctx.textAlign = "left"; ctx.fillText(`${(d.v * 100).toFixed(1)}%`, 40 + barW + 4, j * barH + barH / 2 + 4);
+        }
+      } else if (activations && Array.isArray(activations[0])) {
+        const acts = activations as number[][][];
+        if (selectedChannel < acts.length) {
+          const ch = acts[selectedChannel]; const rows = ch.length, cols = ch[0].length;
+          let maxVal = 0;
+          for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (Math.abs(ch[r][c]) > maxVal) maxVal = Math.abs(ch[r][c]);
+          maxVal = Math.max(maxVal, 0.001);
+          const cellW = w / cols, cellH = h / rows;
+          for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+            const [cr, cg, cb] = viridis(Math.abs(ch[r][c]) / maxVal);
+            ctx.fillStyle = `rgb(${cr},${cg},${cb})`; ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
+          }
+        }
+      } else if (activations && !Array.isArray(activations[0])) {
+        const vals = activations as number[]; const n = vals.length;
+        const cols = Math.ceil(Math.sqrt(n)), rows = Math.ceil(n / cols);
+        const cellW = w / cols, cellH = h / rows;
+        let maxVal = 0; for (const v of vals) if (Math.abs(v) > maxVal) maxVal = Math.abs(v);
+        maxVal = Math.max(maxVal, 0.001);
+        for (let i = 0; i < n; i++) {
+          const [cr, cg, cb] = viridis(Math.abs(vals[i]) / maxVal);
+          ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
+          ctx.fillRect((i % cols) * cellW + 0.5, Math.floor(i / cols) * cellH + 0.5, cellW - 1, cellH - 1);
+        }
+      } else {
+        ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.font = "14px system-ui,sans-serif";
+        ctx.textAlign = "center"; ctx.fillText("Draw a character to see activations", w / 2, h / 2);
       }
-    } else if (activations && !Array.isArray(activations[0])) {
-      const vals = activations as number[]; const n = vals.length;
-      const cols = Math.ceil(Math.sqrt(n)), rows = Math.ceil(n / cols);
-      const cellW = w / cols, cellH = h / rows;
-      let maxVal = 0; for (const v of vals) if (Math.abs(v) > maxVal) maxVal = Math.abs(v);
-      maxVal = Math.max(maxVal, 0.001);
-      for (let i = 0; i < n; i++) {
-        const [cr, cg, cb] = viridis(Math.abs(vals[i]) / maxVal);
-        ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
-        ctx.fillRect((i % cols) * cellW + 0.5, Math.floor(i / cols) * cellH + 0.5, cellW - 1, cellH - 1);
-      }
-    } else {
-      ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.font = "14px system-ui,sans-serif";
-      ctx.textAlign = "center"; ctx.fillText("Draw a character to see activations", w / 2, h / 2);
-    }
-  }, [layer, activations, inputTensor, selectedChannel, prediction]);
-
-  const channelCount = activations && Array.isArray(activations[0]) ? (activations as number[][][]).length : 0;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [layer, activations, inputTensor, selectedChannel, prediction, open]);
 
   const stats = useMemo(() => {
-    if (!activations) return null;
-    if (Array.isArray(activations[0])) {
-      const acts = activations as number[][][];
+    if (!snap?.activations) return null;
+    if (Array.isArray(snap.activations[0])) {
+      const acts = snap.activations as number[][][];
       let min = Infinity, max = -Infinity, sum = 0, count = 0, activeCount = 0;
       for (const ch of acts) for (const row of ch) for (const v of row) {
         if (v < min) min = v; if (v > max) max = v; sum += v; count++; if (v > 0) activeCount++;
       }
       return { min, max, mean: sum / count, activePercent: (activeCount / count) * 100 };
     } else {
-      const vals = activations as number[];
+      const vals = snap.activations as number[];
       let min = Infinity, max = -Infinity, sum = 0, activeCount = 0;
       for (const v of vals) { if (v < min) min = v; if (v > max) max = v; sum += v; if (v > 0) activeCount++; }
       return { min, max, mean: sum / vals.length, activePercent: (activeCount / vals.length) * 100 };
     }
-  }, [activations]);
+  }, [snap?.activations]);
+
+  const outputChartData = useMemo(() => {
+    if (!snap?.prediction || snap.layer.type !== "output") return [];
+    return snap.prediction
+      .map((v, i) => ({ char: EMNIST_CLASSES[i], confidence: +(v * 100).toFixed(1), idx: i }))
+      .filter(d => !BYMERGE_MERGED_INDICES.has(d.idx))
+      .sort((a, b) => b.confidence - a.confidence)
+      .slice(0, 15);
+  }, [snap?.prediction, snap?.layer.type]);
+
+  if (!snap) return null;
+  const dl = snap.layer;
+  const unitLabel = (dl.type === "conv" || (dl.type === "relu" && dl.name !== "relu4") || dl.type === "pool") ? "channels" : (dl.type === "input" ? "pixels" : "neurons");
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)" }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: "#13131a", border: `1px solid ${layer.color}40`, borderRadius: 12, padding: 24, maxWidth: 900, width: "90vw", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-              <div style={{ width: 12, height: 12, borderRadius: "50%", background: layer.color }} />
-              <h2 style={{ fontSize: 20, fontWeight: 600, color: "#e8e8ed", margin: 0 }}>{layer.displayName}</h2>
-              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", fontFamily: "monospace" }}>
-                {layer.totalNeurons.toLocaleString()} {(layer.type === "conv" || (layer.type === "relu" && layer.name !== "relu4") || layer.type === "pool") ? "channels" : (layer.type === "input" ? "pixels" : "neurons")}
-              </span>
-            </div>
-            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", margin: 0 }}>{layer.description}</p>
-          </div>
-          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, color: "rgba(255,255,255,0.6)", padding: "4px 12px", cursor: "pointer", fontSize: 13 }}>Close</button>
-        </div>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent
+        className="max-h-[90vh] gap-3 overflow-y-auto p-0 sm:max-w-[900px]"
+        style={{ borderColor: `${dl.color}40` }}
+      >
+        <DialogHeader className="px-6 pt-6 pb-0">
+          <DialogTitle className="flex items-center gap-2.5 text-xl">
+            <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ background: dl.color }} />
+            {dl.displayName}
+            <span className="font-mono text-sm font-normal text-foreground/35">
+              {dl.totalNeurons.toLocaleString()} {unitLabel}
+            </span>
+          </DialogTitle>
+          <DialogDescription>{dl.description}</DialogDescription>
+        </DialogHeader>
+
         {stats && (
-          <div style={{ display: "flex", gap: 20, marginBottom: 16, padding: "8px 12px", background: "rgba(255,255,255,0.03)", borderRadius: 8, fontSize: 12, fontFamily: "monospace", color: "rgba(255,255,255,0.5)" }}>
-            <span>Min: <span style={{ color: "#e8e8ed" }}>{stats.min.toFixed(3)}</span></span>
-            <span>Max: <span style={{ color: "#e8e8ed" }}>{stats.max.toFixed(3)}</span></span>
-            <span>Mean: <span style={{ color: "#e8e8ed" }}>{stats.mean.toFixed(3)}</span></span>
-            <span>Active: <span style={{ color: "#22c55e" }}>{stats.activePercent.toFixed(1)}%</span></span>
+          <div className="mx-6 flex flex-wrap gap-x-5 gap-y-1 rounded-lg bg-foreground/[0.03] px-3 py-2 font-mono text-xs text-foreground/50">
+            <span>Min: <span className="text-foreground">{stats.min.toFixed(3)}</span></span>
+            <span>Max: <span className="text-foreground">{stats.max.toFixed(3)}</span></span>
+            <span>Mean: <span className="text-foreground">{stats.mean.toFixed(3)}</span></span>
+            <span>Active: <span className="text-green-500">{stats.activePercent.toFixed(1)}%</span></span>
           </div>
         )}
-        {layer.type === "output" && topPrediction && (
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16, padding: "12px 16px", background: `${layer.color}15`, borderRadius: 8, border: `1px solid ${layer.color}30` }}>
-            <span style={{ fontSize: 36, fontWeight: 700, color: layer.color }}>{EMNIST_CLASSES[topPrediction.classIndex]}</span>
+
+        {dl.type === "output" && snap.topPrediction && (
+          <div
+            className="mx-6 flex items-center gap-4 rounded-lg border px-4 py-3"
+            style={{ background: `${dl.color}15`, borderColor: `${dl.color}30` }}
+          >
+            <span className="text-4xl font-bold" style={{ color: dl.color }}>
+              {EMNIST_CLASSES[snap.topPrediction.classIndex]}
+            </span>
             <div>
-              <div style={{ fontSize: 14, color: "#e8e8ed" }}>Predicted: <strong>{EMNIST_CLASSES[topPrediction.classIndex]}</strong></div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Confidence: {(topPrediction.confidence * 100).toFixed(1)}%</div>
+              <div className="text-sm text-foreground">
+                Predicted: <strong>{EMNIST_CLASSES[snap.topPrediction.classIndex]}</strong>
+              </div>
+              <div className="text-[13px] text-foreground/50">
+                Confidence: {(snap.topPrediction.confidence * 100).toFixed(1)}%
+              </div>
             </div>
           </div>
         )}
-        <div style={{ display: "flex", gap: 16 }}>
-          <canvas ref={mainCanvasRef} width={channelCount > 0 ? 350 : 500} height={channelCount > 0 ? 350 : (layer.type === "output" ? 400 : 300)}
-            style={{ width: channelCount > 0 ? 350 : "100%", height: channelCount > 0 ? 350 : (layer.type === "output" ? 400 : 300), borderRadius: 8, imageRendering: layer.type === "input" ? "pixelated" : "auto" }}
-          />
-          {channelCount > 0 && (
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginBottom: 8 }}>{channelCount} channels — click to inspect</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 3, maxHeight: 340, overflowY: "auto" }}>
-                {Array.from({ length: channelCount }, (_, i) => (
-                  <ChannelThumb key={i} chIdx={i} activations={activations as number[][][]} selected={i === selectedChannel} color={layer.color} onClick={() => setSelectedChannel(i)} />
-                ))}
+
+        {dl.type === "output" && outputChartData.length > 0 ? (
+          <div className="px-6 pb-6">
+            <ChartContainer
+              config={{ confidence: { label: "Confidence", color: dl.color } }}
+              className="aspect-auto w-full [&_.recharts-cartesian-axis-tick_text]:fill-foreground [&_.recharts-label]:fill-muted-foreground"
+              style={{ height: outputChartData.length * 28 + 16 }}
+            >
+              <BarChart data={outputChartData} layout="vertical" margin={{ left: -10, right: 50, top: 0, bottom: 0 }}>
+                <YAxis
+                  type="category"
+                  dataKey="char"
+                  width={30}
+                  axisLine={false}
+                  tickLine={false}
+                  style={{ fontSize: 14, fontFamily: "var(--font-geist-mono)" }}
+                />
+                <XAxis type="number" hide domain={[0, 100]} />
+                <Bar dataKey="confidence" fill="var(--color-confidence)" radius={[0, 4, 4, 0]}>
+                  <LabelList
+                    dataKey="confidence"
+                    position="right"
+                    formatter={(v: number) => `${v}%`}
+                    style={{ fontSize: 12 }}
+                  />
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </div>
+        ) : (
+          <div className="flex gap-4 px-6 pb-6">
+            <canvas
+              ref={mainCanvasRef}
+              width={snap.channelCount > 0 ? 350 : 500}
+              height={snap.channelCount > 0 ? 350 : 300}
+              className="shrink-0 rounded-lg"
+              style={{
+                width: snap.channelCount > 0 ? 350 : "100%",
+                height: snap.channelCount > 0 ? 350 : 300,
+                imageRendering: dl.type === "input" ? "pixelated" : "auto",
+              }}
+            />
+            {snap.channelCount > 0 && (
+              <div className="min-w-0 flex-1">
+                <p className="mb-2 text-xs text-foreground/40">
+                  {snap.channelCount} channels — click to inspect
+                </p>
+                <div className="flex max-h-[340px] flex-wrap gap-1 overflow-y-auto">
+                  {Array.from({ length: snap.channelCount }, (_, i) => (
+                    <ChannelThumb
+                      key={i} chIdx={i}
+                      activations={snap.activations as number[][][]}
+                      selected={i === selectedChannel}
+                      color={dl.color}
+                      onClick={() => setSelectedChannel(i)}
+                    />
+                  ))}
+                </div>
+                <p className="mt-1.5 font-mono text-[11px] text-foreground/30">
+                  Channel {selectedChannel}
+                </p>
               </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 6, fontFamily: "monospace" }}>Channel {selectedChannel}</div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1028,8 +455,10 @@ function ChannelThumb({ chIdx, activations, selected, color, onClick }: {
     }
   }, [chIdx, activations]);
   return (
-    <canvas ref={canvasRef} width={40} height={40} onClick={onClick}
-      style={{ width: 40, height: 40, borderRadius: 3, cursor: "pointer", border: selected ? `2px solid ${color}` : "2px solid transparent", imageRendering: "pixelated" }}
+    <canvas
+      ref={canvasRef} width={40} height={40} onClick={onClick}
+      className="h-10 w-10 cursor-pointer rounded [image-rendering:pixelated]"
+      style={{ border: selected ? `2px solid ${color}` : "2px solid transparent" }}
     />
   );
 }
@@ -1335,20 +764,41 @@ export function NeuronNetworkSection() {
                 onClickLayer={onClickLayer}
               />
 
-              {hoveredNeuron && hasData && (
-                <NeuronHeatmapTooltip
-                  neuron={hoveredNeuron}
-                  layerActivations={layerActivations}
-                  inputTensor={inputTensor}
-                  outputLabels={outputLabels}
-                  prediction={prediction}
-                  containerRect={canvasContainerRef.current?.getBoundingClientRect() ?? null}
-                />
-              )}
+              {/* Neuron tooltip */}
+              <Tooltip open={!!hoveredNeuron && hasData}>
+                <TooltipTrigger asChild>
+                  <div
+                    className="pointer-events-none absolute h-px w-px"
+                    style={{
+                      left: (hoveredNeuron?.screenX ?? 0) - (canvasContainerRef.current?.getBoundingClientRect().left ?? 0),
+                      top: (hoveredNeuron?.screenY ?? 0) - (canvasContainerRef.current?.getBoundingClientRect().top ?? 0),
+                    }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={12} className="border-border/50 bg-surface p-2.5 shadow-xl backdrop-blur-xl [&>svg]:hidden">
+                  {hoveredNeuron && hasData && (
+                    <NeuronHeatmapTooltipContent
+                      neuron={hoveredNeuron}
+                      layerActivations={layerActivations}
+                      inputTensor={inputTensor}
+                      outputLabels={outputLabels}
+                      prediction={prediction}
+                    />
+                  )}
+                </TooltipContent>
+              </Tooltip>
 
-              {hoveredLayer !== null && !hoveredNeuron && (
-                <LayerTooltip layer={LAYERS[hoveredLayer]} activationMap={activationMap} />
-              )}
+              {/* Layer tooltip */}
+              <Tooltip open={hoveredLayer !== null && !hoveredNeuron}>
+                <TooltipTrigger asChild>
+                  <div className="pointer-events-none absolute bottom-4 left-1/2 h-px w-px" />
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8} className="border-border/50 bg-surface p-2.5 shadow-xl backdrop-blur-xl [&>svg]:hidden">
+                  {hoveredLayer !== null && !hoveredNeuron && (
+                    <LayerTooltipContent layer={LAYERS[hoveredLayer]} activationMap={activationMap} />
+                  )}
+                </TooltipContent>
+              </Tooltip>
             </>
           ) : (
             <div className="flex h-full items-center justify-center text-foreground/35">
@@ -1359,17 +809,16 @@ export function NeuronNetworkSection() {
           )}
         </div>
 
-        {isRevealedStage && inspectedLayer && (
-          <InspectorPanel
-            layer={inspectedLayer}
-            activations={getActivation(inspectedLayer.name)}
-            inputTensor={inputTensor}
-            prediction={prediction}
-            topPrediction={topPrediction}
-            initialChannel={inspectedNeuronIdx !== null ? displayToActualIndex(inspectedLayerIdx!, inspectedNeuronIdx) : 0}
-            onClose={() => { setInspectedLayerIdx(null); setInspectedNeuronIdx(null); }}
-          />
-        )}
+        <InspectorPanel
+          layer={inspectedLayer}
+          activations={inspectedLayer ? getActivation(inspectedLayer.name) : null}
+          inputTensor={inputTensor}
+          prediction={prediction}
+          topPrediction={topPrediction}
+          initialChannel={inspectedNeuronIdx !== null && inspectedLayerIdx !== null ? displayToActualIndex(inspectedLayerIdx, inspectedNeuronIdx) : 0}
+          open={isRevealedStage && inspectedLayerIdx !== null}
+          onClose={() => { setInspectedLayerIdx(null); setInspectedNeuronIdx(null); }}
+        />
       </motion.div>
 
       <motion.div

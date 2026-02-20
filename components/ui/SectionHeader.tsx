@@ -12,15 +12,7 @@ export function SectionHeader({ title, subtitle, step }: SectionHeaderProps) {
           Step {step}
         </span>
       )}
-      <h2
-        className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl"
-        style={{
-          backgroundImage:
-            "linear-gradient(135deg, var(--foreground), var(--foreground)/0.6)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-        }}
-      >
+      <h2 className="mb-4 bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl md:text-5xl">
         {title}
       </h2>
       <p className="mx-auto max-w-2xl text-base text-foreground/50 sm:text-lg">

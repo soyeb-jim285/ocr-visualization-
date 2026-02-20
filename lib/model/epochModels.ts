@@ -1,5 +1,12 @@
 import * as ort from "onnxruntime-web";
 import { BYMERGE_MERGED_INDICES } from "./classes";
+import {
+  INTERMEDIATE_OUTPUTS,
+  LAYER_SHAPES,
+  nchwToChannels,
+  softmax,
+} from "./modelUtils";
+import type { InferenceResult } from "./predict";
 
 /** Cache for loaded epoch checkpoint sessions */
 const sessionCache = new Map<number, ort.InferenceSession>();
@@ -26,7 +33,10 @@ export async function loadEpochModel(
   const hfBase = process.env.NEXT_PUBLIC_MODEL_BASE_URL
     || "https://huggingface.co/soyeb-jim285/ocr-visualization-models/resolve/main";
   const modelUrl = `${hfBase}/checkpoints/epoch-${paddedEpoch}/model.onnx`;
-  const loadPromise = ort.InferenceSession.create(modelUrl)
+  const dataUrl = `${hfBase}/checkpoints/epoch-${paddedEpoch}/model.onnx.data`;
+  const loadPromise = ort.InferenceSession.create(modelUrl, {
+    externalData: [{ path: "model.onnx.data", data: dataUrl }],
+  })
     .then((session) => {
       sessionCache.set(epoch, session);
       loadingEpochs.delete(epoch);
@@ -55,20 +65,43 @@ export async function predictAtEpoch(
   const results = await session.run({ input: inputTensor });
   const output = results["output"]?.data as Float32Array;
   if (!output) return [];
-  // Zero out untrained ByMerge indices and renormalize
-  const pred = Array.from(output);
-  let sum = 0;
-  for (let i = 0; i < pred.length; i++) {
-    if (BYMERGE_MERGED_INDICES.has(i)) {
-      pred[i] = 0;
+  // New multi-output models emit raw logits — apply softmax with ByMerge masking
+  return softmax(output);
+}
+
+/**
+ * Run full inference on a specific epoch's model, extracting all intermediate
+ * layer activations (same format as runInference in predict.ts).
+ * Input: Float32Array in NCHW format [1, 1, 28, 28]
+ */
+export async function runEpochInference(
+  inputData: Float32Array,
+  epoch: number
+): Promise<InferenceResult> {
+  const session = await loadEpochModel(epoch);
+  const inputTensor = new ort.Tensor("float32", inputData, [1, 1, 28, 28]);
+  const results = await session.run({ input: inputTensor });
+
+  const layerActivations: Record<string, number[][][] | number[]> = {};
+
+  for (const name of INTERMEDIATE_OUTPUTS) {
+    const tensor = results[name];
+    if (!tensor) continue;
+
+    const data = tensor.data as Float32Array;
+    const shape = LAYER_SHAPES[name];
+
+    if (shape.type === "conv") {
+      layerActivations[name] = nchwToChannels(data, shape.c, shape.h, shape.w);
     } else {
-      sum += pred[i];
+      layerActivations[name] = Array.from(data);
     }
   }
-  if (sum > 0) {
-    for (let i = 0; i < pred.length; i++) pred[i] /= sum;
-  }
-  return pred;
+
+  const outputData = results["output"]?.data as Float32Array;
+  const prediction = outputData ? softmax(outputData) : [];
+
+  return { prediction, layerActivations };
 }
 
 /**
@@ -131,4 +164,66 @@ export function prefetchAllEpochs(
 /** Get number of cached sessions */
 export function getCachedModelCount(): number {
   return sessionCache.size;
+}
+
+// ── Shared inference result cache ──────────────────────────────────────
+// Module-level so both EpochPrefetcher and EpochNetworkVisualization share it.
+
+const inferenceResultCache = new Map<number, InferenceResult>();
+let cachedInputId: number = 0; // changes when input changes, invalidating cache
+
+export function getInferenceCache() {
+  return inferenceResultCache;
+}
+
+export function getInferenceCacheInputId() {
+  return cachedInputId;
+}
+
+/** Clear inference cache (call when input changes) and bump the input id */
+export function clearInferenceCache(): number {
+  inferenceResultCache.clear();
+  return ++cachedInputId;
+}
+
+/**
+ * Pre-compute epoch inferences for all 50 epochs in the background, 2 at a time.
+ * Stores results in the shared module-level cache.
+ * Aborts if inputId changes (meaning user drew something new).
+ */
+export function prefetchAllEpochInferences(
+  inputData: Float32Array,
+  inputId: number,
+  onProgress?: (computed: number, total: number) => void
+): void {
+  const queue = Array.from({ length: TOTAL_EPOCHS }, (_, i) => i)
+    .filter((e) => !inferenceResultCache.has(e));
+
+  let computed = inferenceResultCache.size;
+
+  async function computeBatch() {
+    while (queue.length > 0) {
+      // Abort if input changed
+      if (cachedInputId !== inputId) return;
+
+      const batch = queue.splice(0, 2);
+      await Promise.allSettled(
+        batch.map((e) =>
+          runEpochInference(inputData, e)
+            .then((result) => {
+              if (cachedInputId !== inputId) return;
+              inferenceResultCache.set(e, result);
+              computed++;
+              onProgress?.(computed, TOTAL_EPOCHS);
+            })
+            .catch(() => {
+              computed++;
+              onProgress?.(computed, TOTAL_EPOCHS);
+            })
+        )
+      );
+    }
+  }
+
+  computeBatch();
 }

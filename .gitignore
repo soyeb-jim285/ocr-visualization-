@@ -43,3 +43,6 @@ next-env.d.ts
 # training data & checkpoints
 /data/
 /public/models/checkpoints/
+
+# archives
+*.zip

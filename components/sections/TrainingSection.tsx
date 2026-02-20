@@ -6,7 +6,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { LossCurve } from "@/components/visualizations/LossCurve";
 import { WeightEvolution } from "@/components/visualizations/WeightEvolution";
 import { GradientFlow } from "@/components/visualizations/GradientFlow";
-import { EpochPredictionTimeline } from "@/components/visualizations/EpochPredictionTimeline";
+import { EpochNetworkVisualization } from "@/components/visualizations/EpochNetworkVisualization";
 import {
   loadTrainingHistory,
   loadWeightSnapshots,
@@ -37,12 +37,12 @@ export function TrainingSection() {
       />
 
       <div className="flex flex-col gap-12 sm:gap-20">
-        {/* Epoch prediction timeline - the star feature */}
+        {/* Epoch network visualization - the star feature */}
         <div>
-          <h3 className="mb-6 text-center text-lg font-medium text-foreground/70">
+          <h3 className="mb-2 text-center text-lg font-medium text-foreground/70">
             Your drawing through training
           </h3>
-          <EpochPredictionTimeline />
+          <EpochNetworkVisualization />
         </div>
 
         {/* Loss curve */}

@@ -16,11 +16,14 @@ export async function loadModel(
   await initOrt();
   onProgress?.(0.1);
 
-  // Load by URL path so ONNX Runtime can resolve external data files (.data)
   const modelUrl = "/models/emnist-cnn/model.onnx";
 
   onProgress?.(0.5);
-  cachedSession = await ort.InferenceSession.create(modelUrl);
+  cachedSession = await ort.InferenceSession.create(modelUrl, {
+    externalData: [
+      { path: "model.onnx.data", data: "/models/emnist-cnn/model.onnx.data" },
+    ],
+  });
   onProgress?.(1);
 
   return cachedSession;

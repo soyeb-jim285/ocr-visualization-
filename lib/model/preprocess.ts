@@ -41,7 +41,7 @@ export function preprocessCanvas(imageData: ImageData): {
   return { tensor, pixelArray: resized };
 }
 
-/** Simple bilinear interpolation resize */
+/** Area-average (box filter) resize — properly averages all source pixels per target pixel */
 function resize2D(
   src: number[][],
   srcH: number,
@@ -52,25 +52,33 @@ function resize2D(
   const dst: number[][] = [];
   for (let y = 0; y < dstH; y++) {
     const row: number[] = [];
+    const srcY0 = (y / dstH) * srcH;
+    const srcY1 = ((y + 1) / dstH) * srcH;
+    const iy0 = Math.floor(srcY0);
+    const iy1 = Math.min(Math.ceil(srcY1), srcH);
+
     for (let x = 0; x < dstW; x++) {
-      const srcX = (x / dstW) * srcW;
-      const srcY = (y / dstH) * srcH;
+      const srcX0 = (x / dstW) * srcW;
+      const srcX1 = ((x + 1) / dstW) * srcW;
+      const ix0 = Math.floor(srcX0);
+      const ix1 = Math.min(Math.ceil(srcX1), srcW);
 
-      const x0 = Math.floor(srcX);
-      const y0 = Math.floor(srcY);
-      const x1 = Math.min(x0 + 1, srcW - 1);
-      const y1 = Math.min(y0 + 1, srcH - 1);
+      let sum = 0;
+      let area = 0;
 
-      const fx = srcX - x0;
-      const fy = srcY - y0;
+      for (let sy = iy0; sy < iy1; sy++) {
+        // vertical overlap of this source row with the target pixel
+        const wy = Math.min(sy + 1, srcY1) - Math.max(sy, srcY0);
+        for (let sx = ix0; sx < ix1; sx++) {
+          // horizontal overlap of this source column with the target pixel
+          const wx = Math.min(sx + 1, srcX1) - Math.max(sx, srcX0);
+          const w = wx * wy;
+          sum += src[sy][sx] * w;
+          area += w;
+        }
+      }
 
-      const val =
-        src[y0][x0] * (1 - fx) * (1 - fy) +
-        src[y0][x1] * fx * (1 - fy) +
-        src[y1][x0] * (1 - fx) * fy +
-        src[y1][x1] * fx * fy;
-
-      row.push(val);
+      row.push(area > 0 ? sum / area : 0);
     }
     dst.push(row);
   }

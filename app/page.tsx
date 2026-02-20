@@ -1,3 +1,4 @@
+import { EpochPrefetcher } from "@/components/EpochPrefetcher";
 import { PixelViewSection } from "@/components/sections/PixelViewSection";
 import { ConvolutionSection } from "@/components/sections/ConvolutionSection";
 import { ActivationSection } from "@/components/sections/ActivationSection";
@@ -17,6 +18,7 @@ import { LazySection } from "@/components/ui/LazySection";
 export default function Home() {
   return (
     <>
+      <EpochPrefetcher />
       <ScrollProgress />
       <ViewToggle />
       <ScrollTracker />
