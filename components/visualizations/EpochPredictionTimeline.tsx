@@ -25,11 +25,24 @@ export function EpochPredictionTimeline() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingEpochRef = useRef<number>(0);
 
-  // Prefetch all models in background on mount
+  // Prefetch all models in background on mount — throttle progress updates
   useEffect(() => {
+    let lastUpdate = 0;
+    let rafId = 0;
+    let latestLoaded = getCachedModelCount();
+
     prefetchAllEpochs((loaded, _total) => {
-      setLoadedCount(loaded);
+      latestLoaded = loaded;
+      const now = Date.now();
+      // Only update state at most every 500ms to avoid 50 re-renders
+      if (now - lastUpdate > 500 || loaded >= _total) {
+        lastUpdate = now;
+        cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => setLoadedCount(latestLoaded));
+      }
     });
+
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   // Preprocess input once and cache the Float32Array

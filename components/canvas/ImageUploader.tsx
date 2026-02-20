@@ -10,33 +10,29 @@ export function ImageUploader() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const modelLoaded = useUIStore((s) => s.modelLoaded);
-  const {
-    setInputTensor,
-    setLayerActivations,
-    setPrediction,
-    setIsInferring,
-  } = useInferenceStore();
 
   const handleFile = useCallback(
     async (file: File) => {
       if (!modelLoaded) return;
       if (!file.type.startsWith("image/")) return;
 
-      setIsInferring(true);
+      // Access actions via getState() to avoid subscribing to the entire store
+      const store = useInferenceStore.getState();
+      store.setIsInferring(true);
       try {
         const { tensor, pixelArray } = await preprocessImage(file);
-        setInputTensor(pixelArray);
+        store.setInputTensor(pixelArray);
 
         const { prediction, layerActivations } = await runInference(tensor);
-        setPrediction(prediction);
-        setLayerActivations(layerActivations);
+        store.setPrediction(prediction);
+        store.setLayerActivations(layerActivations);
       } catch (error) {
         console.error("Image processing failed:", error);
       } finally {
-        setIsInferring(false);
+        useInferenceStore.getState().setIsInferring(false);
       }
     },
-    [modelLoaded, setInputTensor, setLayerActivations, setPrediction, setIsInferring]
+    [modelLoaded]
   );
 
   const handleDrop = useCallback(

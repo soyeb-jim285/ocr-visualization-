@@ -43,9 +43,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-/* Smooth scrolling handled by lenis */
+/* Native smooth scrolling for programmatic scrolls (nav dots) */
 html {
-  scroll-behavior: auto;
+  scroll-behavior: smooth;
 }
 
 body {

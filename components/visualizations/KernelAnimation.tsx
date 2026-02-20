@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { motion } from "framer-motion";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useInferenceStore } from "@/stores/inferenceStore";
-import { activationColorScale, parseColor } from "@/lib/utils/colorScales";
+import { viridisRGB } from "@/lib/utils/colorScales";
 
 export function KernelAnimation() {
   const inputTensor = useInferenceStore((s) => s.inputTensor);
@@ -70,11 +69,12 @@ export function KernelAnimation() {
     if (!canvas || !outputMap) return;
     const ctx = canvas.getContext("2d")!;
 
-    const { max } = outputMap.flat().reduce(
-      (acc, v) => ({ min: Math.min(acc.min, v), max: Math.max(acc.max, v) }),
-      { min: Infinity, max: -Infinity }
-    );
-    const colorFn = activationColorScale(max);
+    let max = 0;
+    for (let r = 0; r < outputMap.length; r++) {
+      for (let c = 0; c < outputMap[r].length; c++) {
+        if (outputMap[r][c] > max) max = outputMap[r][c];
+      }
+    }
 
     ctx.clearRect(0, 0, canvasSize, canvasSize);
 
@@ -84,8 +84,7 @@ export function KernelAnimation() {
       for (let c = 0; c < gridSize; c++) {
         const linear = r * gridSize + c;
         if (linear <= currentLinear) {
-          const color = colorFn(outputMap[r][c]);
-          const [red, green, blue] = parseColor(color);
+          const [red, green, blue] = viridisRGB(outputMap[r][c], max);
           ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
         } else {
           ctx.fillStyle = "rgba(42, 42, 58, 0.3)";
@@ -242,7 +241,7 @@ export function KernelAnimation() {
             {" "}
             | Output:{" "}
             <span className="text-accent-primary">
-              {outputMap[kernelPos.row]?.[kernelPos.col]?.toFixed(3) ?? "—"}
+              {outputMap[kernelPos.row]?.[kernelPos.col]?.toFixed(3) ?? "\u2014"}
             </span>
           </>
         )}

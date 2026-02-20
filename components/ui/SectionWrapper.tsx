@@ -17,7 +17,7 @@ export function SectionWrapper({
   fullHeight = true,
 }: SectionWrapperProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { amount: 0.2, once: false });
+  const isInView = useInView(ref, { amount: 0.2, once: true });
 
   return (
     <section

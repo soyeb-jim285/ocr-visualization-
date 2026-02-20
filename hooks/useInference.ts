@@ -8,13 +8,6 @@ import { useUIStore } from "@/stores/uiStore";
 
 export function useInference() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const {
-    setInputImageData,
-    setInputTensor,
-    setLayerActivations,
-    setPrediction,
-    setIsInferring,
-  } = useInferenceStore();
   const modelLoaded = useUIStore((s) => s.modelLoaded);
 
   const infer = useCallback(
@@ -25,31 +18,26 @@ export function useInference() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
 
       debounceRef.current = setTimeout(async () => {
-        setIsInferring(true);
-        setInputImageData(imageData);
+        // Access actions via getState() to avoid subscribing to the entire store
+        const store = useInferenceStore.getState();
+        store.setIsInferring(true);
+        store.setInputImageData(imageData);
 
         try {
           const { tensor, pixelArray } = preprocessCanvas(imageData);
-          setInputTensor(pixelArray);
+          store.setInputTensor(pixelArray);
 
           const { prediction, layerActivations } = await runInference(tensor);
-          setPrediction(prediction);
-          setLayerActivations(layerActivations);
+          store.setPrediction(prediction);
+          store.setLayerActivations(layerActivations);
         } catch (error) {
           console.error("Inference failed:", error);
         } finally {
-          setIsInferring(false);
+          useInferenceStore.getState().setIsInferring(false);
         }
       }, 150);
     },
-    [
-      modelLoaded,
-      setInputImageData,
-      setInputTensor,
-      setLayerActivations,
-      setPrediction,
-      setIsInferring,
-    ]
+    [modelLoaded]
   );
 
   return { infer };

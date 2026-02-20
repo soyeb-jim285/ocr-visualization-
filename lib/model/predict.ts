@@ -68,18 +68,32 @@ function nchwToChannels(
 
 /**
  * Softmax over a Float32Array, masking out untrained ByMerge indices.
- * Merged class outputs are set to -Infinity before softmax so they get ~0 probability.
+ * Single-pass implementation — avoids Array.from, spread, and multiple map passes.
  */
 function softmax(arr: Float32Array): number[] {
-  // Mask untrained neurons
-  const masked = Array.from(arr);
-  for (const idx of BYMERGE_MERGED_INDICES) {
-    masked[idx] = -Infinity;
+  const n = arr.length;
+  // Find max (excluding merged indices)
+  let max = -Infinity;
+  for (let i = 0; i < n; i++) {
+    if (!BYMERGE_MERGED_INDICES.has(i) && arr[i] > max) max = arr[i];
   }
-  const max = Math.max(...masked);
-  const exps = masked.map((v) => Math.exp(v - max));
-  const sum = exps.reduce((a, b) => a + b, 0);
-  return exps.map((v) => v / sum);
+  // Compute exp and sum in one pass
+  const result = new Array<number>(n);
+  let sum = 0;
+  for (let i = 0; i < n; i++) {
+    if (BYMERGE_MERGED_INDICES.has(i)) {
+      result[i] = 0;
+    } else {
+      const e = Math.exp(arr[i] - max);
+      result[i] = e;
+      sum += e;
+    }
+  }
+  // Normalize
+  if (sum > 0) {
+    for (let i = 0; i < n; i++) result[i] /= sum;
+  }
+  return result;
 }
 
 /**

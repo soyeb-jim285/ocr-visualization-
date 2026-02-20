@@ -1,4 +1,4 @@
-import { parseColor } from "./colorScales";
+import { viridisRGB } from "./colorScales";
 
 /**
  * Render a 2D number array as a heatmap on a Canvas2D context.
@@ -7,7 +7,7 @@ import { parseColor } from "./colorScales";
 export function drawHeatmap(
   ctx: CanvasRenderingContext2D,
   data: number[][],
-  colorFn: (val: number) => string,
+  max: number,
   cellSize: number = 1
 ): void {
   const rows = data.length;
@@ -19,8 +19,7 @@ export function drawHeatmap(
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const color = colorFn(data[r][c]);
-      const [red, green, blue] = parseColor(color);
+      const [red, green, blue] = viridisRGB(data[r][c], max);
 
       // Fill the cellSize x cellSize block
       for (let dy = 0; dy < cellSize; dy++) {

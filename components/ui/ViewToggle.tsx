@@ -8,7 +8,7 @@ export function ViewToggle() {
   const setViewMode = useUIStore((s) => s.setViewMode);
 
   return (
-    <div className="fixed right-4 top-14 z-50 flex rounded-full border border-border bg-surface/80 p-1 backdrop-blur-md md:right-6">
+    <div className="fixed right-4 top-14 z-50 flex rounded-full border border-border bg-surface p-1 md:right-6">
       {(["2d", "3d"] as const).map((mode) => (
         <button
           key={mode}

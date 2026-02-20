@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useMemo } from "react";
-import { activationColorScale, parseColor } from "@/lib/utils/colorScales";
+import { viridisRGB } from "@/lib/utils/colorScales";
 import { getMinMax2D } from "@/lib/utils/tensorUtils";
 
 interface ActivationHeatmapProps {
@@ -24,7 +24,6 @@ export function ActivationHeatmap({
   const cols = data[0]?.length ?? 0;
 
   const { max } = useMemo(() => getMinMax2D(data), [data]);
-  const colorFn = useMemo(() => activationColorScale(max), [max]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -36,8 +35,7 @@ export function ActivationHeatmap({
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const color = colorFn(data[r][c]);
-        const [red, green, blue] = parseColor(color);
+        const [red, green, blue] = viridisRGB(data[r][c], max);
         const idx = (r * cols + c) * 4;
         pixels[idx] = red;
         pixels[idx + 1] = green;
@@ -47,7 +45,7 @@ export function ActivationHeatmap({
     }
 
     ctx.putImageData(imageData, 0, 0);
-  }, [data, rows, cols, colorFn]);
+  }, [data, rows, cols, max]);
 
   return (
     <div

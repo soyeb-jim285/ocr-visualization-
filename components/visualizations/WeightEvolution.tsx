@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import type { WeightSnapshots } from "@/lib/training/trainingData";
-import { activationColorScale, parseColor } from "@/lib/utils/colorScales";
+import { viridisRGB } from "@/lib/utils/colorScales";
 
 interface WeightEvolutionProps {
   snapshots: WeightSnapshots | null;

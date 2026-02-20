@@ -26,35 +26,67 @@ export function PixelGrid() {
     if (!canvas || !inputTensor) return;
     const ctx = canvas.getContext("2d")!;
 
-    ctx.clearRect(0, 0, canvasSize, canvasSize);
+    if (viewMode === "image") {
+      // Use ImageData for fast pixel-level rendering (no string allocation)
+      const imageData = ctx.createImageData(canvasSize, canvasSize);
+      const pixels = imageData.data;
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          const gray = Math.round(inputTensor[r][c] * 255);
+          const startX = c * cellSize;
+          const startY = r * cellSize;
+          for (let dy = 0; dy < cellSize; dy++) {
+            for (let dx = 0; dx < cellSize; dx++) {
+              const idx = ((startY + dy) * canvasSize + startX + dx) * 4;
+              pixels[idx] = gray;
+              pixels[idx + 1] = gray;
+              pixels[idx + 2] = gray;
+              pixels[idx + 3] = 255;
+            }
+          }
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+    } else {
+      // Data view: use viridis LUT for color (no HSL string allocation)
+      const imageData = ctx.createImageData(canvasSize, canvasSize);
+      const pixels = imageData.data;
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          const val = inputTensor[r][c];
+          // Viridis-like color: purple→yellow via inline LUT
+          const t = Math.max(0, Math.min(1, val));
+          const red = (t < 0.5 ? 68 + t * 200 : 68 + t * 370) | 0;
+          const green = (t * 230) | 0;
+          const blue = (84 * (1 - t * 0.6)) | 0;
+          const startX = c * cellSize;
+          const startY = r * cellSize;
+          for (let dy = 0; dy < cellSize; dy++) {
+            for (let dx = 0; dx < cellSize; dx++) {
+              const idx = ((startY + dy) * canvasSize + startX + dx) * 4;
+              pixels[idx] = red;
+              pixels[idx + 1] = green;
+              pixels[idx + 2] = blue;
+              pixels[idx + 3] = 255;
+            }
+          }
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
 
-    for (let r = 0; r < gridSize; r++) {
-      for (let c = 0; c < gridSize; c++) {
-        const val = inputTensor[r][c];
-
-        if (viewMode === "image") {
-          const gray = Math.round(val * 255);
-          ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
-          ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
-        } else {
-          // Data view: color-coded cells with values
-          const hue = 260 - val * 200; // Purple to yellow
-          const sat = 70 + val * 30;
-          const light = 15 + val * 50;
-          ctx.fillStyle = `hsl(${hue}, ${sat}%, ${light}%)`;
-          ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
-
-          // Draw grid lines
-          ctx.strokeStyle = "rgba(255,255,255,0.05)";
+      // Draw grid lines and text overlays on top of ImageData
+      ctx.strokeStyle = "rgba(255,255,255,0.05)";
+      const fontSize = Math.max(8, cellSize * 0.55);
+      ctx.font = `${fontSize}px var(--font-geist-mono)`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
           ctx.strokeRect(c * cellSize, r * cellSize, cellSize, cellSize);
-
-          // Show value text for non-zero cells (if cell is big enough)
+          const val = inputTensor[r][c];
           if (val > 0.01 && cellSize >= 12) {
             ctx.fillStyle =
               val > 0.5 ? "rgba(0,0,0,0.7)" : "rgba(255,255,255,0.5)";
-            ctx.font = `${Math.max(8, cellSize * 0.55)}px var(--font-geist-mono)`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
             ctx.fillText(
               val.toFixed(1),
               c * cellSize + cellSize / 2,

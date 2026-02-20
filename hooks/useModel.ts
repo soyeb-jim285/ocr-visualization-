@@ -6,11 +6,13 @@ import { useUIStore } from "@/stores/uiStore";
 
 export function useModel() {
   const [error, setError] = useState<string | null>(null);
-  const { modelLoaded, modelLoadingProgress, setModelLoaded, setModelLoadingProgress } =
-    useUIStore();
+  const modelLoaded = useUIStore((s) => s.modelLoaded);
+  const modelLoadingProgress = useUIStore((s) => s.modelLoadingProgress);
 
   useEffect(() => {
     if (modelLoaded) return;
+
+    const { setModelLoaded, setModelLoadingProgress } = useUIStore.getState();
 
     loadModel((progress) => {
       setModelLoadingProgress(progress);
@@ -23,7 +25,7 @@ export function useModel() {
         console.error("Failed to load model:", err);
         setError(err.message);
       });
-  }, [modelLoaded, setModelLoaded, setModelLoadingProgress]);
+  }, [modelLoaded]);
 
   return { modelLoaded, modelLoadingProgress, error };
 }
