@@ -36,7 +36,7 @@ export function TrainingSection() {
         subtitle="The model wasn't born smart — it started with random weights and learned by seeing millions of examples. Over 50 epochs of training, it gradually improved its ability to recognize characters. Scrub through epochs to see how your drawing would be predicted at each stage."
       />
 
-      <div className="flex flex-col gap-20">
+      <div className="flex flex-col gap-12 sm:gap-20">
         {/* Epoch prediction timeline - the star feature */}
         <div>
           <h3 className="mb-6 text-center text-lg font-medium text-foreground/70">

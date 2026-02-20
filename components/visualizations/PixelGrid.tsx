@@ -152,6 +152,7 @@ export function PixelGrid() {
           style={{
             width: Math.min(canvasSize, 392),
             height: Math.min(canvasSize, 392),
+            maxWidth: "100%",
             imageRendering: viewMode === "image" ? "pixelated" : "auto",
           }}
           onMouseMove={handleMouseMove}

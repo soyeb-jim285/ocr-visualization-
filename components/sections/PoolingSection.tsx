@@ -38,7 +38,7 @@ export function PoolingSection() {
               max={numFilters - 1}
               value={selectedFilter}
               onChange={(e) => setSelectedFilter(parseInt(e.target.value))}
-              className="w-48 accent-accent-primary"
+              className="w-32 sm:w-48 accent-accent-primary"
             />
             <span className="font-mono text-sm text-accent-primary">
               #{selectedFilter + 1}
@@ -54,13 +54,13 @@ export function PoolingSection() {
             </span>
             {beforePool ? (
               <div className="flex flex-col items-center gap-1">
-                <ActivationHeatmap data={beforePool} size={224} />
+                <ActivationHeatmap data={beforePool} size={160} />
                 <span className="font-mono text-xs text-foreground/30">
                   {beforePool.length}x{beforePool[0]?.length ?? 0}
                 </span>
               </div>
             ) : (
-              <div className="flex h-[224px] w-[224px] items-center justify-center rounded-md border border-border bg-surface">
+              <div className="flex h-[160px] w-[160px] items-center justify-center rounded-md border border-border bg-surface">
                 <span className="text-xs text-foreground/20">No data</span>
               </div>
             )}
@@ -93,13 +93,13 @@ export function PoolingSection() {
             </span>
             {afterPool ? (
               <div className="flex flex-col items-center gap-1">
-                <ActivationHeatmap data={afterPool} size={224} />
+                <ActivationHeatmap data={afterPool} size={160} />
                 <span className="font-mono text-xs text-foreground/30">
                   {afterPool.length}x{afterPool[0]?.length ?? 0}
                 </span>
               </div>
             ) : (
-              <div className="flex h-[224px] w-[224px] items-center justify-center rounded-md border border-border bg-surface">
+              <div className="flex h-[160px] w-[160px] items-center justify-center rounded-md border border-border bg-surface">
                 <span className="text-xs text-foreground/20">No data</span>
               </div>
             )}
@@ -108,7 +108,7 @@ export function PoolingSection() {
 
         {/* Size comparison */}
         {beforePool && afterPool && (
-          <div className="flex gap-6 rounded-xl border border-border bg-surface px-6 py-4">
+          <div className="flex flex-wrap justify-center gap-4 rounded-xl border border-border bg-surface px-4 py-3 sm:gap-6 sm:px-6 sm:py-4">
             <div className="flex flex-col items-center">
               <span className="font-mono text-2xl font-bold text-foreground/60">
                 {beforePool.length * (beforePool[0]?.length ?? 0)}

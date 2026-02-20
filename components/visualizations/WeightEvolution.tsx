@@ -235,7 +235,7 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
             <button
               key={epoch}
               onClick={() => setSelectedEpoch(epoch)}
-              className={`flex-1 rounded py-3 text-xs font-mono transition-all ${
+              className={`flex-1 rounded py-2 text-[10px] font-mono transition-all sm:py-3 sm:text-xs ${
                 selectedEpoch === epoch
                   ? "bg-accent-secondary text-background font-bold"
                   : "bg-surface text-foreground/40 hover:bg-surface-elevated"

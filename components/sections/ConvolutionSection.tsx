@@ -18,7 +18,7 @@ export function ConvolutionSection() {
         subtitle="A small 3x3 filter slides across the entire image, computing a dot product at each position. Different filters detect different features — edges, curves, corners. The first layer uses 32 filters, producing 32 feature maps."
       />
 
-      <div className="flex flex-col gap-16">
+      <div className="flex flex-col gap-10 sm:gap-16">
         {/* Kernel animation */}
         <div>
           <h3 className="mb-6 text-center text-lg font-medium text-foreground/70">
@@ -37,7 +37,8 @@ export function ConvolutionSection() {
               featureMaps={conv1Maps}
               layerName="conv1"
               columns={8}
-              cellSize={64}
+              columnsSm={4}
+              cellSize={56}
             />
           ) : (
             <div className="flex h-40 items-center justify-center rounded-xl border border-border bg-surface">

@@ -179,7 +179,7 @@ export function EpochPredictionTimeline() {
       </div>
 
       {/* Prediction display */}
-      <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-12">
+      <div className="flex w-full flex-col items-center gap-6 md:flex-row md:items-start md:justify-center md:gap-12">
         {/* Big prediction */}
         <div className="flex flex-col items-center gap-2">
           <span className="text-sm text-foreground/40">Model predicts</span>
@@ -207,7 +207,7 @@ export function EpochPredictionTimeline() {
         </div>
 
         {/* Probability bars for this epoch */}
-        <div className="w-72">
+        <div className="w-full max-w-72 sm:w-72">
           <ProbabilityBars
             prediction={epochPrediction}
             compact

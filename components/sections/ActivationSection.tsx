@@ -49,7 +49,7 @@ export function ActivationSection() {
               max={numFilters - 1}
               value={selectedFilter}
               onChange={(e) => setSelectedFilter(parseInt(e.target.value))}
-              className="w-48 accent-accent-primary"
+              className="w-32 sm:w-48 accent-accent-primary"
             />
             <span className="font-mono text-sm text-accent-primary">
               #{selectedFilter + 1}
@@ -64,9 +64,9 @@ export function ActivationSection() {
               Before ReLU
             </span>
             {beforeRelu ? (
-              <ActivationHeatmap data={beforeRelu} size={200} />
+              <ActivationHeatmap data={beforeRelu} size={160} />
             ) : (
-              <div className="flex h-[200px] w-[200px] items-center justify-center rounded-md border border-border bg-surface">
+              <div className="flex h-[160px] w-[160px] items-center justify-center rounded-md border border-border bg-surface">
                 <span className="text-xs text-foreground/20">No data</span>
               </div>
             )}
@@ -101,9 +101,9 @@ export function ActivationSection() {
               After ReLU
             </span>
             {afterRelu ? (
-              <ActivationHeatmap data={afterRelu} size={200} />
+              <ActivationHeatmap data={afterRelu} size={160} />
             ) : (
-              <div className="flex h-[200px] w-[200px] items-center justify-center rounded-md border border-border bg-surface">
+              <div className="flex h-[160px] w-[160px] items-center justify-center rounded-md border border-border bg-surface">
                 <span className="text-xs text-foreground/20">No data</span>
               </div>
             )}
@@ -115,7 +115,7 @@ export function ActivationSection() {
 
         {/* Stats */}
         {beforeRelu && (
-          <div className="flex gap-6 rounded-xl border border-border bg-surface px-6 py-4">
+          <div className="flex gap-4 rounded-xl border border-border bg-surface px-4 py-3 sm:gap-6 sm:px-6 sm:py-4">
             <div className="flex flex-col items-center">
               <span className="font-mono text-2xl font-bold text-accent-negative">
                 {negativeCount}

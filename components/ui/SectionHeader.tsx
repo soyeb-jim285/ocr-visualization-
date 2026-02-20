@@ -6,7 +6,7 @@ interface SectionHeaderProps {
 
 export function SectionHeader({ title, subtitle, step }: SectionHeaderProps) {
   return (
-    <div className="mb-12 text-center">
+    <div className="mb-8 text-center sm:mb-12">
       {step !== undefined && (
         <span className="mb-3 inline-block rounded-full border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 font-mono text-xs text-accent-primary">
           Step {step}

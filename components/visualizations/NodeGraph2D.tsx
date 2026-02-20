@@ -229,8 +229,8 @@ export function NodeGraph2D() {
     <div className="flex flex-col items-center gap-4">
       <canvas
         ref={canvasRef}
-        style={{ width: CANVAS_W, height: CANVAS_H }}
-        className="w-full max-w-4xl rounded-xl border border-border bg-surface"
+        style={{ width: CANVAS_W, height: CANVAS_H, maxWidth: "100%" }}
+        className="rounded-xl border border-border bg-surface"
       />
     </div>
   );

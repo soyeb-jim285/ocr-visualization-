@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useId } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ActivationHeatmap } from "./ActivationHeatmap";
 
@@ -9,6 +9,7 @@ interface FeatureMapGridProps {
   featureMaps: number[][][];
   layerName: string;
   columns?: number;
+  columnsSm?: number;
   cellSize?: number;
 }
 
@@ -16,9 +17,12 @@ export function FeatureMapGrid({
   featureMaps,
   layerName,
   columns = 8,
+  columnsSm,
   cellSize = 72,
 }: FeatureMapGridProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const gridId = useId();
+  const smCols = columnsSm ?? columns;
 
   if (!featureMaps || featureMaps.length === 0) {
     return (
@@ -33,14 +37,20 @@ export function FeatureMapGrid({
   const expandedMap =
     expandedIdx !== null ? featureMaps[expandedIdx] : null;
 
+  const cssId = `fmg${gridId.replace(/:/g, "")}`;
+
   return (
     <div className="flex flex-col gap-4">
+      {smCols !== columns && (
+        <style>{`
+          .${cssId} { grid-template-columns: repeat(${smCols}, minmax(0, 1fr)); }
+          @media (min-width: 640px) { .${cssId} { grid-template-columns: repeat(${columns}, minmax(0, 1fr)); } }
+        `}</style>
+      )}
       {/* Compact grid */}
       <div
-        className="grid gap-2"
-        style={{
-          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-        }}
+        className={`grid gap-2 ${smCols !== columns ? cssId : ""}`}
+        style={smCols === columns ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}
       >
         {featureMaps.map((fm, i) => (
           <ActivationHeatmap

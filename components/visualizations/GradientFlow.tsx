@@ -113,11 +113,11 @@ export function GradientFlow() {
       {/* Gradient bars */}
       <div className="flex w-full max-w-lg flex-col gap-3">
         {(gradients ?? []).map((layer, i) => (
-          <div key={layer.name} className="flex items-center gap-4">
-            <span className="w-20 text-right font-mono text-sm text-foreground/50">
+          <div key={layer.name} className="flex items-center gap-2 sm:gap-4">
+            <span className="w-14 text-right font-mono text-xs text-foreground/50 sm:w-20 sm:text-sm">
               {layer.name}
             </span>
-            <div className="relative flex-1 overflow-hidden rounded-full" style={{ height: 32, backgroundColor: "rgba(255,255,255,0.05)" }}>
+            <div className="relative flex-1 overflow-hidden rounded-full" style={{ height: 28, backgroundColor: "rgba(255,255,255,0.05)" }}>
               <div
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
@@ -126,7 +126,7 @@ export function GradientFlow() {
                 }}
               />
             </div>
-            <span className="w-20 font-mono text-xs text-foreground/40">
+            <span className="hidden font-mono text-xs text-foreground/40 sm:block sm:w-20">
               {layer.magnitude.toExponential(2)}
             </span>
           </div>

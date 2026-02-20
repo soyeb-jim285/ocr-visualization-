@@ -23,7 +23,7 @@ export function SectionWrapper({
     <section
       id={id}
       ref={ref}
-      className={`relative flex flex-col items-center justify-center px-4 py-20 sm:px-6 md:px-8 ${
+      className={`relative flex flex-col items-center justify-center px-3 py-10 sm:px-6 sm:py-20 md:px-8 ${
         fullHeight ? "min-h-screen" : ""
       } ${className ?? ""}`}
     >

@@ -115,7 +115,7 @@ export function NeuronInspectorSection() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-2xl rounded-2xl border border-accent-primary/20 bg-surface p-8"
+            className="w-full max-w-2xl rounded-2xl border border-accent-primary/20 bg-surface p-4 sm:p-8"
           >
             <div className="mb-6 flex items-start justify-between">
               <div>

@@ -19,14 +19,14 @@ export function DeeperLayersSection() {
         subtitle="Each layer builds on the previous one. Layer 2 combines basic edges into curves and intersections. Layer 3 detects high-level character parts. Notice how the feature maps become smaller but more abstract — the network is compressing spatial information into meaningful features."
       />
 
-      <div className="flex flex-col gap-16">
+      <div className="flex flex-col gap-10 sm:gap-16">
         {/* Layer 2: 64 filters, 28x28 → pooled to 14x14 */}
         <div>
-          <div className="mb-4 flex items-center gap-3">
+          <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-accent-secondary/10 px-3 py-1 text-sm font-medium text-accent-secondary">
               Conv Layer 2
             </span>
-            <span className="text-sm text-foreground/40">
+            <span className="text-xs text-foreground/40 sm:text-sm">
               64 filters · 28x28 → 14x14 after pooling
             </span>
           </div>
@@ -35,6 +35,7 @@ export function DeeperLayersSection() {
               featureMaps={conv2Maps.slice(0, 32)}
               layerName="conv2"
               columns={8}
+              columnsSm={4}
               cellSize={56}
             />
           ) : (
@@ -51,11 +52,11 @@ export function DeeperLayersSection() {
 
         {/* Layer 3: 128 filters, 14x14 → pooled to 7x7 */}
         <div>
-          <div className="mb-4 flex items-center gap-3">
+          <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-accent-tertiary/10 px-3 py-1 text-sm font-medium text-accent-tertiary">
               Conv Layer 3
             </span>
-            <span className="text-sm text-foreground/40">
+            <span className="text-xs text-foreground/40 sm:text-sm">
               128 filters · 14x14 → 7x7 after pooling
             </span>
           </div>
@@ -64,6 +65,7 @@ export function DeeperLayersSection() {
               featureMaps={conv3Maps.slice(0, 32)}
               layerName="conv3"
               columns={8}
+              columnsSm={4}
               cellSize={56}
             />
           ) : (
@@ -81,11 +83,11 @@ export function DeeperLayersSection() {
         {/* Final pooled output: 7x7x128 */}
         {pool2Maps && (
           <div>
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="rounded-full bg-accent-warning/10 px-3 py-1 text-sm font-medium text-accent-warning">
                 After Pooling
               </span>
-              <span className="text-sm text-foreground/40">
+              <span className="text-xs text-foreground/40 sm:text-sm">
                 128 feature maps · 7x7 each
               </span>
             </div>
@@ -93,6 +95,7 @@ export function DeeperLayersSection() {
               featureMaps={pool2Maps.slice(0, 16)}
               layerName="pool2"
               columns={8}
+              columnsSm={4}
               cellSize={56}
             />
             <p className="mt-3 text-center text-sm text-foreground/40">
