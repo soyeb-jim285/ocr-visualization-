@@ -7,7 +7,11 @@ import {
   useMemo,
   useEffect,
 } from "react";
+import { motion, useDragControls, type PanInfo } from "framer-motion";
+import { DrawingCanvas } from "@/components/canvas/DrawingCanvas";
+import { ImageUploader } from "@/components/canvas/ImageUploader";
 import { useInferenceStore } from "@/stores/inferenceStore";
+import { useUIStore } from "@/stores/uiStore";
 import { EMNIST_CLASSES, BYMERGE_MERGED_INDICES } from "@/lib/model/classes";
 
 // ---------------------------------------------------------------------------
@@ -27,6 +31,10 @@ interface NeuronLayerDef {
 
 function parseHex(hex: string): [number, number, number] {
   return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }
 
 const LAYERS: NeuronLayerDef[] = [
@@ -1030,14 +1038,35 @@ function ChannelThumb({ chIdx, activations, selected, color, onClick }: {
 // NeuronNetworkSection — main exported component
 // ---------------------------------------------------------------------------
 
-export function NeuronNetworkSection({ children }: { children?: React.ReactNode }) {
+export function NeuronNetworkSection() {
+  const dragControls = useDragControls();
   const inputTensor = useInferenceStore(s => s.inputTensor);
   const layerActivations = useInferenceStore(s => s.layerActivations);
   const prediction = useInferenceStore(s => s.prediction);
   const topPrediction = useInferenceStore(s => s.topPrediction);
+  const heroStage = useUIStore(s => s.heroStage);
+  const setHeroStage = useUIStore(s => s.setHeroStage);
 
   const [inspectedLayerIdx, setInspectedLayerIdx] = useState<number | null>(null);
   const [inspectedNeuronIdx, setInspectedNeuronIdx] = useState<number | null>(null);
+  const [viewport, setViewport] = useState({ w: 0, h: 0 });
+  const [customFloatingPos, setCustomFloatingPos] = useState<{ x: number; y: number } | null>(null);
+
+  const isDrawingStage = heroStage === "drawing";
+  const isShrinkingStage = heroStage === "shrinking";
+  const isRevealedStage = heroStage === "revealed";
+  const shouldUseFloatingLayout = !isDrawingStage;
+
+  useEffect(() => {
+    const updateViewport = () => {
+      setViewport({ w: window.innerWidth, h: window.innerHeight });
+    };
+
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
+
   // Hover state as refs — avoids re-render on every mouse move
   const [, forceRender] = useState(0);
   const hoveredLayerRef = useRef<number | null>(null);
@@ -1051,20 +1080,96 @@ export function NeuronNetworkSection({ children }: { children?: React.ReactNode 
   const waveTargetRef = useRef(0);
   const hasData = Object.keys(layerActivations).length > 0;
 
-  // Reset wave on clear (hasData→false) or new inference (layerActivations changes)
+  useEffect(() => {
+    if (hasData && isDrawingStage) {
+      setHeroStage("shrinking");
+    }
+  }, [hasData, isDrawingStage, setHeroStage]);
+
+  const expandedCanvasSize = useMemo(() => {
+    if (!viewport.w) return 320;
+    return clamp(Math.round(viewport.w * 0.45), 250, 360);
+  }, [viewport.w]);
+
+  const floatingCanvasSize = useMemo(() => {
+    if (!viewport.w) return 108;
+    return clamp(Math.round(viewport.w * 0.23), 92, 126);
+  }, [viewport.w]);
+
+  const expandedCardWidth = expandedCanvasSize + 56;
+  const floatingCardWidth = floatingCanvasSize + 10;
+  const floatingCardHeight = floatingCanvasSize + 40;
+
+  const expandedX = viewport.w ? (viewport.w - expandedCardWidth) / 2 : 16;
+  const expandedY = viewport.h ? Math.max(100, viewport.h * 0.22) : 120;
+
+  const maxFloatingX = Math.max(12, viewport.w - floatingCardWidth - 12);
+  const maxFloatingY = Math.max(12, viewport.h - floatingCardHeight - 12);
+
+  const defaultFloatingPos = useMemo(
+    () => ({
+      x: 16,
+      y: 16,
+    }),
+    [viewport.w, viewport.h, floatingCardWidth, maxFloatingX, maxFloatingY]
+  );
+
+  const floatingPos = customFloatingPos
+    ? {
+        x: clamp(customFloatingPos.x, 12, maxFloatingX),
+        y: clamp(customFloatingPos.y, 12, maxFloatingY),
+      }
+    : defaultFloatingPos;
+
+  const handleFirstDraw = useCallback(() => {
+    if (isDrawingStage) {
+      setHeroStage("shrinking");
+    }
+  }, [isDrawingStage, setHeroStage]);
+
+  const handleDragEnd = useCallback(
+    (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      setCustomFloatingPos({
+        x: clamp(floatingPos.x + info.offset.x, 12, maxFloatingX),
+        y: clamp(floatingPos.y + info.offset.y, 12, maxFloatingY),
+      });
+    },
+    [floatingPos.x, floatingPos.y, maxFloatingX, maxFloatingY]
+  );
+
+  const handleCanvasTransitionComplete = useCallback(() => {
+    if (isShrinkingStage) {
+      setHeroStage("revealed");
+    }
+  }, [isShrinkingStage, setHeroStage]);
+
+  // Reset wave on clear (hasData→false) or new inference — only animate after revealed
   const prevHasDataRef = useRef(false);
+  const pendingWaveRef = useRef(false);
   useEffect(() => {
     if (!hasData) {
-      // Canvas was cleared
       waveRef.current = 0;
       waveTargetRef.current = 0;
+      pendingWaveRef.current = false;
+    } else if (isRevealedStage) {
+      // Already revealed — start wave immediately
+      waveRef.current = 0;
+      waveTargetRef.current = LAYERS.length + 1;
     } else {
-      // New inference result — restart the layer-by-layer wave
+      // Not revealed yet — defer until section appears
+      pendingWaveRef.current = true;
+    }
+    prevHasDataRef.current = hasData;
+  }, [hasData, layerActivations, isRevealedStage]);
+
+  // Start pending wave once revealed stage begins
+  useEffect(() => {
+    if (isRevealedStage && pendingWaveRef.current) {
+      pendingWaveRef.current = false;
       waveRef.current = 0;
       waveTargetRef.current = LAYERS.length + 1;
     }
-    prevHasDataRef.current = hasData;
-  }, [hasData, layerActivations]);
+  }, [isRevealedStage]);
 
   // Wave animation via RAF — no React state updates
   useEffect(() => {
@@ -1140,54 +1245,212 @@ export function NeuronNetworkSection({ children }: { children?: React.ReactNode 
   const inspectedLayer = inspectedLayerIdx !== null ? LAYERS[inspectedLayerIdx] : null;
   const hoveredLayer = hoveredLayerRef.current;
   const hoveredNeuron = hoveredNeuronRef.current;
+  const stageHeight = viewport.h ? Math.max(viewport.h, 760) : 760;
 
   return (
-    <div id="neuron-network" className="relative flex w-full items-stretch" ref={containerRef}>
-      {/* Drawing panel — left side */}
-      {children}
-
-      {/* Neuron canvas — fills remaining width */}
-      <div className="relative min-w-0 flex-1" ref={canvasContainerRef}>
-        <NeuronNetworkCanvas
-          width={containerSize.w}
-          height={containerSize.h}
-          activationMapRef={activationMapRef}
-          outputLabelsRef={outputLabelsRef}
-          hoveredLayerRef={hoveredLayerRef}
-          hoveredNeuronRef={hoveredNeuronRef}
-          waveRef={waveRef}
-          onHoverLayer={onHoverLayer}
-          onHoverNeuron={onHoverNeuron}
-          onClickLayer={onClickLayer}
+    <motion.section
+      id="neuron-network"
+      className="relative overflow-hidden px-3 sm:px-5"
+      initial={false}
+      animate={{
+        minHeight: isDrawingStage ? stageHeight : 560,
+        paddingTop: isDrawingStage ? 56 : 48,
+        paddingBottom: isDrawingStage ? 36 : 20,
+      }}
+      transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {/* Background gradient mesh */}
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-0"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isDrawingStage ? 1 : 0 }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_25%_20%,rgba(99,102,241,0.12),transparent),radial-gradient(ellipse_50%_40%_at_75%_25%,rgba(139,92,246,0.09),transparent),radial-gradient(ellipse_40%_50%_at_50%_80%,rgba(6,182,212,0.07),transparent)]" />
+        <div className="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-accent-primary/[0.08] to-transparent" />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+            backgroundSize: "128px 128px",
+          }}
         />
+      </motion.div>
 
-        {hoveredNeuron && hasData && (
-          <NeuronHeatmapTooltip
-            neuron={hoveredNeuron}
-            layerActivations={layerActivations}
+      {/* Hero text */}
+      <motion.div
+        className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col items-center px-4"
+        style={{ paddingTop: Math.max(24, expandedY * 0.22) }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isDrawingStage ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
+        <motion.span
+          className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-accent-primary/20 bg-accent-primary/[0.06] px-3 py-1 font-mono text-[11px] tracking-wide text-accent-primary/80"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -8 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-primary/60" />
+          Interactive CNN Visualization
+        </motion.span>
+
+        <motion.h1
+          className="mb-3 text-center text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -12 }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          style={{
+            backgroundImage:
+              "linear-gradient(135deg, var(--foreground) 0%, color-mix(in srgb, var(--foreground) 70%, var(--accent-tertiary)) 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}
+        >
+          Neural Network X-Ray
+        </motion.h1>
+
+        <motion.p
+          className="max-w-md text-center text-sm leading-relaxed text-foreground/45 sm:text-base"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -8 }}
+          transition={{ duration: 0.7, delay: 0.35 }}
+        >
+          Draw a character below and watch every layer of a CNN process it in real time.
+        </motion.p>
+      </motion.div>
+
+      {/* Supported characters hint */}
+      <motion.p
+        className="pointer-events-none absolute inset-x-0 z-10 text-center font-mono text-[11px] tracking-wider text-foreground/20"
+        style={{ top: expandedY + expandedCanvasSize + 170 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isDrawingStage ? 1 : 0 }}
+        transition={{ duration: 0.5, delay: 0.7 }}
+      >
+        Supports A–Z, a–z, 0–9
+      </motion.p>
+
+      <motion.div
+        initial={false}
+        animate={
+          isRevealedStage
+            ? { opacity: 1, y: 0, scale: 1 }
+            : { opacity: 0, y: 30, scale: 0.98 }
+        }
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        className={`relative flex w-full items-stretch overflow-hidden ${
+          isRevealedStage ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+        ref={containerRef}
+      >
+        <div className="relative min-w-0 flex-1" ref={canvasContainerRef}>
+          {isRevealedStage ? (
+            <>
+              <NeuronNetworkCanvas
+                width={containerSize.w}
+                height={containerSize.h}
+                activationMapRef={activationMapRef}
+                outputLabelsRef={outputLabelsRef}
+                hoveredLayerRef={hoveredLayerRef}
+                hoveredNeuronRef={hoveredNeuronRef}
+                waveRef={waveRef}
+                onHoverLayer={onHoverLayer}
+                onHoverNeuron={onHoverNeuron}
+                onClickLayer={onClickLayer}
+              />
+
+              {hoveredNeuron && hasData && (
+                <NeuronHeatmapTooltip
+                  neuron={hoveredNeuron}
+                  layerActivations={layerActivations}
+                  inputTensor={inputTensor}
+                  outputLabels={outputLabels}
+                  prediction={prediction}
+                  containerRect={canvasContainerRef.current?.getBoundingClientRect() ?? null}
+                />
+              )}
+
+              {hoveredLayer !== null && !hoveredNeuron && (
+                <LayerTooltip layer={LAYERS[hoveredLayer]} activationMap={activationMap} />
+              )}
+            </>
+          ) : (
+            <div className="flex h-full items-center justify-center text-foreground/35">
+              <p className="text-xs uppercase tracking-[0.24em]">
+                Neural map appears after canvas shrinks
+              </p>
+            </div>
+          )}
+        </div>
+
+        {isRevealedStage && inspectedLayer && (
+          <InspectorPanel
+            layer={inspectedLayer}
+            activations={getActivation(inspectedLayer.name)}
             inputTensor={inputTensor}
-            outputLabels={outputLabels}
             prediction={prediction}
-            containerRect={canvasContainerRef.current?.getBoundingClientRect() ?? null}
+            topPrediction={topPrediction}
+            initialChannel={inspectedNeuronIdx !== null ? displayToActualIndex(inspectedLayerIdx!, inspectedNeuronIdx) : 0}
+            onClose={() => { setInspectedLayerIdx(null); setInspectedNeuronIdx(null); }}
           />
         )}
+      </motion.div>
 
-        {hoveredLayer !== null && !hoveredNeuron && (
-          <LayerTooltip layer={LAYERS[hoveredLayer]} activationMap={activationMap} />
-        )}
-      </div>
+      <motion.div
+        drag={isRevealedStage}
+        dragControls={dragControls}
+        dragListener={false}
+        dragElastic={0.08}
+        dragMomentum={false}
+        dragConstraints={{ left: 12, top: 12, right: maxFloatingX, bottom: maxFloatingY }}
+        onDragEnd={handleDragEnd}
+        onAnimationComplete={handleCanvasTransitionComplete}
+        initial={false}
+        animate={
+          shouldUseFloatingLayout
+            ? { x: floatingPos.x, y: floatingPos.y, width: floatingCardWidth }
+            : { x: expandedX, y: expandedY, width: expandedCardWidth }
+        }
+        transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.6 }}
+        className="fixed left-0 top-0 z-50"
+      >
+        <div
+          className={`border ${
+            shouldUseFloatingLayout
+              ? "rounded-md border-border/50 bg-surface/92 p-1 shadow-lg shadow-black/30 backdrop-blur-xl"
+              : "rounded-2xl border-border/70 bg-surface p-4 shadow-2xl shadow-black/40 sm:p-5"
+          }`}
+        >
+          {shouldUseFloatingLayout && (
+            <button
+              type="button"
+              onPointerDown={(event) => dragControls.start(event)}
+              className="mb-0.5 flex w-full cursor-grab justify-center py-0.5 active:cursor-grabbing"
+              aria-label="Move floating canvas"
+            >
+              <span className="h-0.5 w-5 rounded-full bg-foreground/25" />
+            </button>
+          )}
 
-      {inspectedLayer && (
-        <InspectorPanel
-          layer={inspectedLayer}
-          activations={getActivation(inspectedLayer.name)}
-          inputTensor={inputTensor}
-          prediction={prediction}
-          topPrediction={topPrediction}
-          initialChannel={inspectedNeuronIdx !== null ? displayToActualIndex(inspectedLayerIdx!, inspectedNeuronIdx) : 0}
-          onClose={() => { setInspectedLayerIdx(null); setInspectedNeuronIdx(null); }}
-        />
-      )}
-    </div>
+          <DrawingCanvas
+            variant={shouldUseFloatingLayout ? "floating" : "hero"}
+            displaySize={shouldUseFloatingLayout ? floatingCanvasSize : expandedCanvasSize}
+            onFirstDraw={handleFirstDraw}
+          />
+
+          {isDrawingStage && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.5 }}
+              className="mt-3"
+            >
+              <ImageUploader />
+            </motion.div>
+          )}
+        </div>
+      </motion.div>
+    </motion.section>
   );
 }

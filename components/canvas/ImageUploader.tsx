@@ -6,7 +6,11 @@ import { runInference } from "@/lib/model/predict";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { useUIStore } from "@/stores/uiStore";
 
-export function ImageUploader() {
+interface ImageUploaderProps {
+  compact?: boolean;
+}
+
+export function ImageUploader({ compact = false }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const modelLoaded = useUIStore((s) => s.modelLoaded);
@@ -44,6 +48,46 @@ export function ImageUploader() {
     },
     [handleFile]
   );
+
+  if (compact) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="inline-flex h-6 w-6 items-center justify-center rounded-sm border border-border/60 bg-transparent text-foreground/60 transition-colors hover:bg-foreground/10 hover:text-foreground"
+          aria-label="Upload image"
+          title="Upload image"
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 16 16"
+            fill="none"
+            className="opacity-80"
+          >
+            <path
+              d="M14 10v3a1 1 0 01-1 1H3a1 1 0 01-1-1v-3M11 5L8 2 5 5M8 2v9"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFile(file);
+          }}
+        />
+      </>
+    );
+  }
 
   return (
     <div

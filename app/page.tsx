@@ -1,4 +1,3 @@
-import { HeroSection, HeroDrawingPanel } from "@/components/sections/HeroSection";
 import { PixelViewSection } from "@/components/sections/PixelViewSection";
 import { ConvolutionSection } from "@/components/sections/ConvolutionSection";
 import { ActivationSection } from "@/components/sections/ActivationSection";
@@ -23,10 +22,7 @@ export default function Home() {
       <ScrollTracker />
       <NetworkView3D />
       <main>
-        <HeroSection />
-        <NeuronNetworkSection>
-          <HeroDrawingPanel />
-        </NeuronNetworkSection>
+        <NeuronNetworkSection />
         <LazySection>
           <PixelViewSection />
         </LazySection>

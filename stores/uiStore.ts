@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 export type ViewMode = "2d" | "3d";
+export type HeroStage = "drawing" | "shrinking" | "revealed";
 
 interface UIState {
   viewMode: ViewMode;
@@ -8,12 +9,14 @@ interface UIState {
   scrollProgress: number; // 0-1 overall page scroll
   modelLoaded: boolean;
   modelLoadingProgress: number; // 0-1
+  heroStage: HeroStage;
 
   setViewMode: (mode: ViewMode) => void;
   setActiveSection: (idx: number) => void;
   setScrollProgress: (val: number) => void;
   setModelLoaded: (val: boolean) => void;
   setModelLoadingProgress: (val: number) => void;
+  setHeroStage: (stage: HeroStage) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -22,10 +25,12 @@ export const useUIStore = create<UIState>((set) => ({
   scrollProgress: 0,
   modelLoaded: false,
   modelLoadingProgress: 0,
+  heroStage: "drawing",
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setActiveSection: (idx) => set({ activeSection: idx }),
   setScrollProgress: (val) => set({ scrollProgress: val }),
   setModelLoaded: (val) => set({ modelLoaded: val }),
   setModelLoadingProgress: (val) => set({ modelLoadingProgress: val }),
+  setHeroStage: (stage) => set({ heroStage: stage }),
 }));
