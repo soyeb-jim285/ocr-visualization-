@@ -1259,24 +1259,6 @@ export function NeuronNetworkSection() {
       }}
       transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* Background gradient mesh */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-0"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isDrawingStage ? 1 : 0 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_25%_20%,rgba(99,102,241,0.12),transparent),radial-gradient(ellipse_50%_40%_at_75%_25%,rgba(139,92,246,0.09),transparent),radial-gradient(ellipse_40%_50%_at_50%_80%,rgba(6,182,212,0.07),transparent)]" />
-        <div className="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-accent-primary/[0.08] to-transparent" />
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-            backgroundSize: "128px 128px",
-          }}
-        />
-      </motion.div>
-
       {/* Hero text */}
       <motion.div
         className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col items-center px-4"
@@ -1285,50 +1267,43 @@ export function NeuronNetworkSection() {
         animate={{ opacity: isDrawingStage ? 1 : 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <motion.span
-          className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-accent-primary/20 bg-accent-primary/[0.06] px-3 py-1 font-mono text-[11px] tracking-wide text-accent-primary/80"
-          initial={{ opacity: 0, y: 12 }}
+        <motion.p
+          className="mb-3 font-mono text-[11px] uppercase tracking-[0.25em] text-foreground/30"
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -8 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent-primary/60" />
           Interactive CNN Visualization
-        </motion.span>
+        </motion.p>
 
         <motion.h1
-          className="mb-3 text-center text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -12 }}
+          className="mb-3 text-center text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-5xl"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -10 }}
           transition={{ duration: 0.7, delay: 0.2 }}
-          style={{
-            backgroundImage:
-              "linear-gradient(135deg, var(--foreground) 0%, color-mix(in srgb, var(--foreground) 70%, var(--accent-tertiary)) 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
         >
           Neural Network X-Ray
         </motion.h1>
 
         <motion.p
-          className="max-w-md text-center text-sm leading-relaxed text-foreground/45 sm:text-base"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -8 }}
+          className="max-w-sm text-center text-sm leading-relaxed text-foreground/40 sm:text-base"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -6 }}
           transition={{ duration: 0.7, delay: 0.35 }}
         >
-          Draw a character below and watch every layer of a CNN process it in real time.
+          Draw a character below to see every layer process it in real time
         </motion.p>
       </motion.div>
 
       {/* Supported characters hint */}
       <motion.p
-        className="pointer-events-none absolute inset-x-0 z-10 text-center font-mono text-[11px] tracking-wider text-foreground/20"
+        className="pointer-events-none absolute inset-x-0 z-10 text-center font-mono text-[11px] tracking-wider text-foreground/15"
         style={{ top: expandedY + expandedCanvasSize + 170 }}
         initial={{ opacity: 0 }}
         animate={{ opacity: isDrawingStage ? 1 : 0 }}
         transition={{ duration: 0.5, delay: 0.7 }}
       >
-        Supports A–Z, a–z, 0–9
+        A–Z &middot; a–z &middot; 0–9
       </motion.p>
 
       <motion.div
@@ -1419,7 +1394,7 @@ export function NeuronNetworkSection() {
           className={`border ${
             shouldUseFloatingLayout
               ? "rounded-md border-border/50 bg-surface/92 p-1 shadow-lg shadow-black/30 backdrop-blur-xl"
-              : "rounded-2xl border-border/70 bg-surface p-4 shadow-2xl shadow-black/40 sm:p-5"
+              : "rounded-xl border-border/60 bg-surface p-4 sm:p-5"
           }`}
         >
           {shouldUseFloatingLayout && (

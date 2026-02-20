@@ -4,6 +4,8 @@ import { useRef, useState, useEffect, type ReactNode } from "react";
 
 interface LazySectionProps {
   children: ReactNode;
+  /** Section ID for scroll tracking — kept on placeholder so observers can find it */
+  id?: string;
   /** Minimum height for the placeholder before the section renders */
   fallbackHeight?: string;
   /** How far before the viewport to start rendering (IntersectionObserver rootMargin) */
@@ -17,6 +19,7 @@ interface LazySectionProps {
  */
 export function LazySection({
   children,
+  id,
   fallbackHeight = "50vh",
   rootMargin = "300px",
 }: LazySectionProps) {
@@ -41,7 +44,7 @@ export function LazySection({
   }, [rootMargin]);
 
   if (!visible) {
-    return <div ref={ref} style={{ minHeight: fallbackHeight }} />;
+    return <div ref={ref} id={id} style={{ minHeight: fallbackHeight }} />;
   }
 
   return <>{children}</>;

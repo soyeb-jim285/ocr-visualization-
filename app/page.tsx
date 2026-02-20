@@ -23,31 +23,31 @@ export default function Home() {
       <NetworkView3D />
       <main>
         <NeuronNetworkSection />
-        <LazySection>
+        <LazySection id="pixel-view">
           <PixelViewSection />
         </LazySection>
-        <LazySection>
+        <LazySection id="convolution">
           <ConvolutionSection />
         </LazySection>
-        <LazySection>
+        <LazySection id="activation">
           <ActivationSection />
         </LazySection>
-        <LazySection>
+        <LazySection id="pooling">
           <PoolingSection />
         </LazySection>
-        <LazySection>
+        <LazySection id="deeper-layers">
           <DeeperLayersSection />
         </LazySection>
-        <LazySection>
+        <LazySection id="fully-connected">
           <FullyConnectedSection />
         </LazySection>
-        <LazySection>
+        <LazySection id="softmax">
           <SoftmaxSection />
         </LazySection>
-        <LazySection>
+        <LazySection id="training">
           <TrainingSection />
         </LazySection>
-        <LazySection>
+        <LazySection id="neuron-inspector">
           <NeuronInspectorSection />
         </LazySection>
       </main>

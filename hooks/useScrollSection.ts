@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useUIStore } from "@/stores/uiStore";
 
 export const SECTION_IDS = [
-  "hero",
+  "neuron-network",
   "pixel-view",
   "convolution",
   "activation",
@@ -18,28 +18,39 @@ export const SECTION_IDS = [
 
 export function useScrollSection() {
   const setActiveSection = useUIStore((s) => s.setActiveSection);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const rafRef = useRef(0);
+  const lastActiveRef = useRef(-1);
 
   useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const index = SECTION_IDS.indexOf(
-              entry.target.id as (typeof SECTION_IDS)[number]
-            );
-            if (index !== -1) setActiveSection(index);
-          }
+    const update = () => {
+      const threshold = window.innerHeight * 0.4;
+      let active = 0;
+
+      for (let i = SECTION_IDS.length - 1; i >= 0; i--) {
+        const el = document.getElementById(SECTION_IDS[i]);
+        if (el && el.getBoundingClientRect().top <= threshold) {
+          active = i;
+          break;
         }
-      },
-      { threshold: 0.3 }
-    );
+      }
 
-    SECTION_IDS.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observerRef.current!.observe(el);
-    });
+      if (active !== lastActiveRef.current) {
+        lastActiveRef.current = active;
+        setActiveSection(active);
+      }
+    };
 
-    return () => observerRef.current?.disconnect();
+    const onScroll = () => {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    update(); // initial check
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(rafRef.current);
+    };
   }, [setActiveSection]);
 }
