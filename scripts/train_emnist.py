@@ -28,7 +28,7 @@ from tqdm.auto import tqdm
 
 # %% [code]
 # Configuration
-OUTPUT_DIR = "/kaggle/working/emnist-export"
+OUTPUT_DIR = "./emnist-export"
 FINAL_MODEL_DIR = os.path.join(OUTPUT_DIR, "models", "emnist-cnn")
 CHECKPOINTS_DIR = os.path.join(OUTPUT_DIR, "models", "checkpoints")
 TRAINING_DIR = os.path.join(OUTPUT_DIR, "training")
@@ -51,32 +51,32 @@ if DEVICE.type == "cuda":
 # %% [markdown]
 # ## Model Architecture
 #
+# No BatchNorm — so early epochs show genuinely chaotic activations,
+# creating a dramatic visual improvement arc across training.
+#
 # ```
 # Input (1, 28, 28)
-#   → Conv2D(32, 3x3) → BatchNorm → ReLU          → (32, 28, 28)
-#   → Conv2D(64, 3x3) → BatchNorm → ReLU → MaxPool → (64, 14, 14)
-#   → Conv2D(128, 3x3) → BatchNorm → ReLU → MaxPool → (128, 7, 7)
+#   → Conv2D(32, 3x3) → ReLU                      → (32, 28, 28)
+#   → Conv2D(64, 3x3) → ReLU → MaxPool            → (64, 14, 14)
+#   → Conv2D(128, 3x3) → ReLU → MaxPool           → (128, 7, 7)
 #   → Flatten → Dense(256) → ReLU → Dropout(0.5)
-#   → Dense(62) → Softmax
+#   → Dense(62)
 # ```
 
 # %% [code]
 class EMNISTNet(nn.Module):
-    """CNN matching the visualization layer config."""
+    """CNN matching the visualization layer config (no BatchNorm)."""
 
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(1, 32, 3, padding=1)
-        self.bn1 = nn.BatchNorm2d(32)
         self.relu1 = nn.ReLU()
 
         self.conv2 = nn.Conv2d(32, 64, 3, padding=1)
-        self.bn2 = nn.BatchNorm2d(64)
         self.relu2 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(2)
 
         self.conv3 = nn.Conv2d(64, 128, 3, padding=1)
-        self.bn3 = nn.BatchNorm2d(128)
         self.relu3 = nn.ReLU()
         self.pool2 = nn.MaxPool2d(2)
 
@@ -88,16 +88,13 @@ class EMNISTNet(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.bn1(x)
         x = self.relu1(x)
 
         x = self.conv2(x)
-        x = self.bn2(x)
         x = self.relu2(x)
         x = self.pool1(x)
 
         x = self.conv3(x)
-        x = self.bn3(x)
         x = self.relu3(x)
         x = self.pool2(x)
 
@@ -119,14 +116,11 @@ class EMNISTNetMultiOutput(nn.Module):
     def forward(self, x):
         x1 = self.base.conv1(x)
         conv1_out = x1
-
-        x1 = self.base.bn1(x1)
         x1 = self.base.relu1(x1)
         relu1_out = x1
 
         x1 = self.base.conv2(x1)
         conv2_out = x1
-        x1 = self.base.bn2(x1)
         x1 = self.base.relu2(x1)
         relu2_out = x1
         x1 = self.base.pool1(x1)
@@ -134,7 +128,6 @@ class EMNISTNetMultiOutput(nn.Module):
 
         x1 = self.base.conv3(x1)
         conv3_out = x1
-        x1 = self.base.bn3(x1)
         x1 = self.base.relu3(x1)
         relu3_out = x1
         x1 = self.base.pool2(x1)
@@ -161,20 +154,27 @@ class EMNISTNetMultiOutput(nn.Module):
 # ## Load EMNIST Dataset
 
 # %% [code]
-transform = transforms.Compose([
+train_transform = transforms.Compose([
+    transforms.RandomAffine(degrees=15, translate=(0.1, 0.1), scale=(0.85, 1.15), shear=10),
+    transforms.ToTensor(),
+    transforms.RandomErasing(p=0.2, scale=(0.02, 0.1)),
+])
+test_transform = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-data_dir = "/kaggle/working/data"
-train_ds = datasets.EMNIST(data_dir, split="byclass", train=True, download=True, transform=transform)
-test_ds = datasets.EMNIST(data_dir, split="byclass", train=False, download=True, transform=transform)
+data_dir = "./data"
+train_ds = datasets.EMNIST(data_dir, split="byclass", train=True, download=True, transform=train_transform)
+test_ds = datasets.EMNIST(data_dir, split="byclass", train=False, download=True, transform=test_transform)
 
 print(f"Training: {len(train_ds)} samples")
 print(f"Test: {len(test_ds)} samples")
 print(f"Classes: {NUM_CLASSES}")
 
-train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=2, pin_memory=True)
-test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=True)
+train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,
+                          num_workers=4, pin_memory=True, persistent_workers=True)
+test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False,
+                         num_workers=4, pin_memory=True, persistent_workers=True)
 
 # %% [markdown]
 # ## Helper Functions
@@ -186,9 +186,9 @@ def evaluate(model, loader):
     total = 0
     total_loss = 0.0
     criterion = nn.CrossEntropyLoss()
-    with torch.no_grad():
+    with torch.no_grad(), torch.amp.autocast(DEVICE.type, enabled=DEVICE.type == "cuda"):
         for X, y in loader:
-            X, y = X.to(DEVICE), y.to(DEVICE)
+            X, y = X.to(DEVICE, non_blocking=True), y.to(DEVICE, non_blocking=True)
             out = model(X)
             total_loss += criterion(out, y).item() * X.size(0)
             correct += (out.argmax(1) == y).sum().item()
@@ -196,57 +196,40 @@ def evaluate(model, loader):
     return total_loss / total, correct / total
 
 
-def export_onnx_final(model, path):
-    """Export the multi-output model for visualization."""
+ONNX_OUTPUT_NAMES = [
+    "conv1", "relu1",
+    "conv2", "relu2", "pool1",
+    "conv3", "relu3", "pool2",
+    "dense1", "relu4",
+    "output",
+]
+
+# Reuse across exports to avoid re-allocation
+_onnx_dummy = None
+_onnx_multi = None
+
+def export_onnx(model, path, verbose=False):
+    """Export multi-output ONNX model. Reuses wrapper + dummy tensor."""
+    global _onnx_dummy, _onnx_multi
     base = unwrap_model(model)
     base.eval()
-    multi = EMNISTNetMultiOutput(base)
-    multi.eval()
-    multi.to(DEVICE)
 
-    dummy = torch.randn(1, 1, 28, 28).to(DEVICE)
-    output_names = [
-        "conv1", "relu1",
-        "conv2", "relu2", "pool1",
-        "conv3", "relu3", "pool2",
-        "dense1", "relu4",
-        "output",
-    ]
+    if _onnx_multi is None:
+        _onnx_multi = EMNISTNetMultiOutput(base).to(DEVICE)
+        _onnx_dummy = torch.randn(1, 1, 28, 28, device=DEVICE)
+    else:
+        _onnx_multi.base = base
 
+    _onnx_multi.eval()
     torch.onnx.export(
-        multi, dummy, path,
+        _onnx_multi, _onnx_dummy, path,
         input_names=["input"],
-        output_names=output_names,
+        output_names=ONNX_OUTPUT_NAMES,
         dynamic_axes={"input": {0: "batch"}},
         opset_version=17,
     )
-    print(f"  Exported multi-output ONNX: {path}")
-
-
-def export_onnx_checkpoint(model, path):
-    """Export multi-output model for epoch network visualization."""
-    base = unwrap_model(model)
-    base.eval()
-    multi = EMNISTNetMultiOutput(base)
-    multi.eval()
-    multi.to(DEVICE)
-
-    dummy = torch.randn(1, 1, 28, 28).to(DEVICE)
-    output_names = [
-        "conv1", "relu1",
-        "conv2", "relu2", "pool1",
-        "conv3", "relu3", "pool2",
-        "dense1", "relu4",
-        "output",
-    ]
-
-    torch.onnx.export(
-        multi, dummy, path,
-        input_names=["input"],
-        output_names=output_names,
-        dynamic_axes={"input": {0: "batch"}},
-        opset_version=17,
-    )
+    if verbose:
+        print(f"  Exported multi-output ONNX: {path}")
 
 
 def unwrap_model(model):
@@ -296,11 +279,18 @@ if NUM_GPUS > 1:
 if DEVICE.type == "cuda":
     torch.set_float32_matmul_precision("high")
 
-optimizer = optim.Adam(model.parameters(), lr=1e-3)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, mode="min", factor=0.5, patience=5, min_lr=1e-6
-)
+optimizer = optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-4, fused=DEVICE.type == "cuda")
 criterion = nn.CrossEntropyLoss()
+
+# Mixed precision for ~2x speedup on GPU (same model quality)
+scaler = torch.amp.GradScaler(enabled=DEVICE.type == "cuda")
+
+scheduler = optim.lr_scheduler.OneCycleLR(
+    optimizer, max_lr=0.01, epochs=EPOCHS,
+    steps_per_epoch=len(train_loader),
+    pct_start=0.2, anneal_strategy='cos',
+    div_factor=25, final_div_factor=1000,
+)
 
 history = {"loss": [], "accuracy": [], "val_loss": [], "val_accuracy": []}
 weight_snapshots = {}
@@ -316,12 +306,15 @@ for epoch in epoch_bar:
     total = 0
     batch_bar = tqdm(train_loader, desc=f"  Epoch {epoch:2d}", leave=False, unit="batch")
     for X, y in batch_bar:
-        X, y = X.to(DEVICE), y.to(DEVICE)
-        optimizer.zero_grad()
-        out = model(X)
-        loss = criterion(out, y)
-        loss.backward()
-        optimizer.step()
+        X, y = X.to(DEVICE, non_blocking=True), y.to(DEVICE, non_blocking=True)
+        optimizer.zero_grad(set_to_none=True)
+        with torch.amp.autocast(DEVICE.type, enabled=DEVICE.type == "cuda"):
+            out = model(X)
+            loss = criterion(out, y)
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+        scheduler.step()
         running_loss += loss.item() * X.size(0)
         correct += (out.argmax(1) == y).sum().item()
         total += X.size(0)
@@ -332,7 +325,6 @@ for epoch in epoch_bar:
 
     # Validate
     val_loss, val_acc = evaluate(model, test_loader)
-    scheduler.step(val_loss)
 
     history["loss"].append(train_loss)
     history["accuracy"].append(train_acc)
@@ -349,7 +341,7 @@ for epoch in epoch_bar:
     # Save checkpoint ONNX
     ckpt_dir = os.path.join(CHECKPOINTS_DIR, f"epoch-{epoch:02d}")
     os.makedirs(ckpt_dir, exist_ok=True)
-    export_onnx_checkpoint(model, os.path.join(ckpt_dir, "model.onnx"))
+    export_onnx(model, os.path.join(ckpt_dir, "model.onnx"))
 
     # Weight snapshot for select epochs
     if epoch in snapshot_epochs:
@@ -363,7 +355,7 @@ print(f"\nTraining complete!")
 # %% [code]
 # Export final multi-output model (all intermediate activations)
 print("Exporting final multi-output ONNX model...")
-export_onnx_final(model, os.path.join(FINAL_MODEL_DIR, "model.onnx"))
+export_onnx(model, os.path.join(FINAL_MODEL_DIR, "model.onnx"), verbose=True)
 
 # Save training history
 history_path = os.path.join(TRAINING_DIR, "history.json")
@@ -405,8 +397,8 @@ print(f"\nFinal validation accuracy: {final_val_acc:.4f}")
 
 # %% [code]
 # Create zip for easy download
-zip_path = "/kaggle/working/emnist-export"
-shutil.make_archive(zip_path, "zip", "/kaggle/working", "emnist-export")
+zip_path = "./emnist-export"
+shutil.make_archive(zip_path, "zip", ".", "emnist-export")
 zip_size = os.path.getsize(f"{zip_path}.zip") / (1024 * 1024)
 print(f"\nDownload ready: emnist-export.zip ({zip_size:.1f} MB)")
 print("Extract into your project's public/ folder:")

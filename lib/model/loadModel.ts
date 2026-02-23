@@ -19,11 +19,7 @@ export async function loadModel(
   const modelUrl = "/models/emnist-cnn/model.onnx";
 
   onProgress?.(0.5);
-  cachedSession = await ort.InferenceSession.create(modelUrl, {
-    externalData: [
-      { path: "model.onnx.data", data: "/models/emnist-cnn/model.onnx.data" },
-    ],
-  });
+  cachedSession = await ort.InferenceSession.create(modelUrl);
   onProgress?.(1);
 
   return cachedSession;

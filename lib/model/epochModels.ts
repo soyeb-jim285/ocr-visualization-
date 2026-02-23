@@ -33,10 +33,7 @@ export async function loadEpochModel(
   const hfBase = process.env.NEXT_PUBLIC_MODEL_BASE_URL
     || "https://huggingface.co/soyeb-jim285/ocr-visualization-models/resolve/main";
   const modelUrl = `${hfBase}/checkpoints/epoch-${paddedEpoch}/model.onnx`;
-  const dataUrl = `${hfBase}/checkpoints/epoch-${paddedEpoch}/model.onnx.data`;
-  const loadPromise = ort.InferenceSession.create(modelUrl, {
-    externalData: [{ path: "model.onnx.data", data: dataUrl }],
-  })
+  const loadPromise = ort.InferenceSession.create(modelUrl)
     .then((session) => {
       sessionCache.set(epoch, session);
       loadingEpochs.delete(epoch);

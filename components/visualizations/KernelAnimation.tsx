@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { viridisRGB } from "@/lib/utils/colorScales";
+import { Slider } from "@/components/ui/slider";
 
 export function KernelAnimation() {
   const inputTensor = useInferenceStore((s) => s.inputTensor);
@@ -220,15 +221,14 @@ export function KernelAnimation() {
         >
           Reset
         </button>
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-foreground/40">Speed</label>
-          <input
-            type="range"
+        <div className="flex w-24 items-center gap-2">
+          <label className="shrink-0 text-xs text-foreground/40">Speed</label>
+          <Slider
             min={10}
-            max={200}
-            value={200 - speed}
-            onChange={(e) => setSpeed(200 - parseInt(e.target.value))}
-            className="w-20 accent-accent-tertiary"
+            max={190}
+            step={10}
+            value={[200 - speed]}
+            onValueChange={([v]) => setSpeed(200 - v)}
           />
         </div>
       </div>

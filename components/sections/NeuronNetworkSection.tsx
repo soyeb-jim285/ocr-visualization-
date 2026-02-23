@@ -85,12 +85,12 @@ function NeuronHeatmapTooltipContent({
         if (actualIdx < acts3d.length) {
           const ch = acts3d[actualIdx];
           const rows = ch.length, cols = ch[0].length;
-          let maxVal = 0;
-          for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (Math.abs(ch[r][c]) > maxVal) maxVal = Math.abs(ch[r][c]);
-          maxVal = Math.max(maxVal, 0.001);
+          let minVal = Infinity, maxVal = -Infinity;
+          for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { if (ch[r][c] < minVal) minVal = ch[r][c]; if (ch[r][c] > maxVal) maxVal = ch[r][c]; }
+          const range = Math.max(maxVal - minVal, 0.001);
           const cellW = w / cols, cellH = h / rows;
           for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-            const [cr, cg, cb] = viridis(Math.abs(ch[r][c]) / maxVal);
+            const [cr, cg, cb] = viridis((ch[r][c] - minVal) / range);
             ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
             ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
           }
@@ -101,10 +101,10 @@ function NeuronHeatmapTooltipContent({
       if (acts && !Array.isArray(acts[0])) {
         const vals = acts as number[];
         if (actualIdx < vals.length) {
-          let maxVal = 0;
-          for (const val of vals) if (Math.abs(val) > maxVal) maxVal = Math.abs(val);
-          maxVal = Math.max(maxVal, 0.001);
-          const norm = Math.abs(vals[actualIdx]) / maxVal;
+          let minVal = Infinity, maxVal = -Infinity;
+          for (const val of vals) { if (val < minVal) minVal = val; if (val > maxVal) maxVal = val; }
+          const range = Math.max(maxVal - minVal, 0.001);
+          const norm = (vals[actualIdx] - minVal) / range;
           const [cr, cg, cb] = viridis(norm);
           ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
           ctx.fillRect(4, h / 2 - 10, norm * (w - 8), 20);
@@ -263,12 +263,12 @@ function InspectorPanel({
         const acts = activations as number[][][];
         if (selectedChannel < acts.length) {
           const ch = acts[selectedChannel]; const rows = ch.length, cols = ch[0].length;
-          let maxVal = 0;
-          for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (Math.abs(ch[r][c]) > maxVal) maxVal = Math.abs(ch[r][c]);
-          maxVal = Math.max(maxVal, 0.001);
+          let minVal = Infinity, maxVal = -Infinity;
+          for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { if (ch[r][c] < minVal) minVal = ch[r][c]; if (ch[r][c] > maxVal) maxVal = ch[r][c]; }
+          const range = Math.max(maxVal - minVal, 0.001);
           const cellW = w / cols, cellH = h / rows;
           for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-            const [cr, cg, cb] = viridis(Math.abs(ch[r][c]) / maxVal);
+            const [cr, cg, cb] = viridis((ch[r][c] - minVal) / range);
             ctx.fillStyle = `rgb(${cr},${cg},${cb})`; ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
           }
         }
@@ -276,10 +276,10 @@ function InspectorPanel({
         const vals = activations as number[]; const n = vals.length;
         const cols = Math.ceil(Math.sqrt(n)), rows = Math.ceil(n / cols);
         const cellW = w / cols, cellH = h / rows;
-        let maxVal = 0; for (const v of vals) if (Math.abs(v) > maxVal) maxVal = Math.abs(v);
-        maxVal = Math.max(maxVal, 0.001);
+        let minVal = Infinity, maxVal = -Infinity; for (const v of vals) { if (v < minVal) minVal = v; if (v > maxVal) maxVal = v; }
+        const range = Math.max(maxVal - minVal, 0.001);
         for (let i = 0; i < n; i++) {
-          const [cr, cg, cb] = viridis(Math.abs(vals[i]) / maxVal);
+          const [cr, cg, cb] = viridis((vals[i] - minVal) / range);
           ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
           ctx.fillRect((i % cols) * cellW + 0.5, Math.floor(i / cols) * cellH + 0.5, cellW - 1, cellH - 1);
         }
@@ -445,12 +445,12 @@ function ChannelThumb({ chIdx, activations, selected, color, onClick }: {
     const ctx = el.getContext("2d");
     if (!ctx) return;
     const ch = activations[chIdx]; const rows = ch.length, cols = ch[0].length;
-    let maxVal = 0;
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (Math.abs(ch[r][c]) > maxVal) maxVal = Math.abs(ch[r][c]);
-    maxVal = Math.max(maxVal, 0.001);
+    let minVal = Infinity, maxVal = -Infinity;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { if (ch[r][c] < minVal) minVal = ch[r][c]; if (ch[r][c] > maxVal) maxVal = ch[r][c]; }
+    const range = Math.max(maxVal - minVal, 0.001);
     const cellW = 40 / cols, cellH = 40 / rows;
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      const [cr, cg, cb] = viridis(Math.abs(ch[r][c]) / maxVal);
+      const [cr, cg, cb] = viridis((ch[r][c] - minVal) / range);
       ctx.fillStyle = `rgb(${cr},${cg},${cb})`; ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
     }
   }, [chIdx, activations]);

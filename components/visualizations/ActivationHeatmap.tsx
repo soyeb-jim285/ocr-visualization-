@@ -1,9 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useMemo } from "react";
-import { viridisRGB } from "@/lib/utils/colorScales";
-import { getMinMax2D } from "@/lib/utils/tensorUtils";
-
+import { viridis } from "@/lib/network/networkConstants";
 interface ActivationHeatmapProps {
   data: number[][];
   size?: number;
@@ -23,7 +21,11 @@ export function ActivationHeatmap({
   const rows = data.length;
   const cols = data[0]?.length ?? 0;
 
-  const { max } = useMemo(() => getMinMax2D(data), [data]);
+  const { min, max } = useMemo(() => {
+    let mn = Infinity, mx = -Infinity;
+    for (const row of data) for (const v of row) { if (v < mn) mn = v; if (v > mx) mx = v; }
+    return { min: mn, max: mx };
+  }, [data]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -32,10 +34,12 @@ export function ActivationHeatmap({
 
     const imageData = ctx.createImageData(cols, rows);
     const pixels = imageData.data;
+    const range = max - min;
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const [red, green, blue] = viridisRGB(data[r][c], max);
+        const t = range > 0 ? (data[r][c] - min) / range : 0;
+        const [red, green, blue] = viridis(t);
         const idx = (r * cols + c) * 4;
         pixels[idx] = red;
         pixels[idx + 1] = green;
@@ -45,7 +49,7 @@ export function ActivationHeatmap({
     }
 
     ctx.putImageData(imageData, 0, 0);
-  }, [data, rows, cols, max]);
+  }, [data, rows, cols, min, max]);
 
   return (
     <div
