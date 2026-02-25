@@ -15,7 +15,6 @@ const SECTION_LABELS = [
   "Dense",
   "Softmax",
   "Training",
-  "Inspector",
 ];
 
 export function ScrollProgress() {

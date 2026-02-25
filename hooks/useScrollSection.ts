@@ -14,7 +14,6 @@ export const SECTION_IDS = [
   "fully-connected",
   "softmax",
   "training",
-  "neuron-inspector",
 ] as const;
 
 export function useScrollSection() {

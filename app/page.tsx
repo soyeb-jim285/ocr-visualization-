@@ -8,7 +8,6 @@ import { DeeperLayersSection } from "@/components/sections/DeeperLayersSection";
 import { FullyConnectedSection } from "@/components/sections/FullyConnectedSection";
 import { SoftmaxSection } from "@/components/sections/SoftmaxSection";
 import { TrainingSection } from "@/components/sections/TrainingSection";
-import { NeuronInspectorSection } from "@/components/sections/NeuronInspectorSection";
 import { NeuronNetworkSection } from "@/components/sections/NeuronNetworkSection";
 import { ScrollProgress } from "@/components/ui/ScrollProgress";
 import { ViewToggle } from "@/components/ui/ViewToggle";
@@ -52,9 +51,6 @@ export default function Home() {
         </LazySection>
         <LazySection id="training">
           <TrainingSection />
-        </LazySection>
-        <LazySection id="neuron-inspector">
-          <NeuronInspectorSection />
         </LazySection>
       </main>
     </>
