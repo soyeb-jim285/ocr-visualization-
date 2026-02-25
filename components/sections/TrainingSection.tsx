@@ -89,7 +89,7 @@ export function TrainingSection() {
             Training progress
           </h3>
           {loadError ? (
-            <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-surface">
+            <div className="viz-empty-state h-48">
               <p className="text-foreground/30">
                 Training history not available — run the training script first
               </p>

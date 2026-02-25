@@ -40,13 +40,7 @@ export function NetworkView3D() {
         >
           <div className="flex h-full flex-col items-center justify-center p-8">
             <h2
-              className="mb-4 text-2xl font-bold"
-              style={{
-                backgroundImage:
-                  "linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary))",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
+              className="mb-4 text-2xl font-semibold text-foreground"
             >
               3D Network Architecture
             </h2>

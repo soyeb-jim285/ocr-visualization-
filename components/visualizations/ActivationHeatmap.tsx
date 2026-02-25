@@ -58,24 +58,21 @@ export function ActivationHeatmap({
       }`}
       onClick={onClick}
     >
-      <div
-        className={`overflow-hidden rounded-md border transition-all ${
+      <canvas
+        ref={canvasRef}
+        width={cols}
+        height={rows}
+        className={`block rounded-md transition-all ${
           selected
-            ? "border-accent-primary shadow-lg shadow-accent-primary/20"
-            : "border-border/50 group-hover:border-accent-primary/50"
+            ? "ring-2 ring-accent-primary/80 shadow-[0_0_0_1px_rgba(99,102,241,0.32)]"
+            : "ring-1 ring-white/16 group-hover:ring-accent-primary/45"
         }`}
-      >
-        <canvas
-          ref={canvasRef}
-          width={cols}
-          height={rows}
-          style={{
-            width: size,
-            height: size,
-            imageRendering: "pixelated",
-          }}
-        />
-      </div>
+        style={{
+          width: size,
+          height: size,
+          imageRendering: "pixelated",
+        }}
+      />
       {label && (
         <span className="text-xs text-foreground/40 group-hover:text-foreground/60">
           {label}

@@ -77,7 +77,7 @@ export function DeeperLayersSection() {
               cellSize={56}
             />
           ) : (
-            <div className="flex h-32 items-center justify-center rounded-xl border border-border bg-surface">
+            <div className="viz-empty-state h-32">
               <p className="text-foreground/30">
                 Draw a character to see deeper features
               </p>

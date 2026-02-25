@@ -8,6 +8,7 @@
   /* Core palette - dark neural network theme */
   --surface: #13131a;
   --surface-elevated: #1a1a24;
+  --surface-soft: #171726;
   --border: oklch(0.922 0 0);
   --border-subtle: #1e1e2e;
 
@@ -119,6 +120,23 @@ html {
 body {
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   overflow-x: hidden;
+  min-height: 100vh;
+  background-color: #0c0d13;
+}
+
+@layer components {
+  .viz-empty-state {
+    display: flex;
+    min-height: 10rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.9rem;
+    border: 1px dashed rgba(255, 255, 255, 0.14);
+    background: rgba(8, 10, 16, 0.44);
+    color: rgba(232, 232, 237, 0.46);
+    text-align: center;
+    padding: 1rem;
+  }
 }
 
 /* Custom scrollbar */
@@ -180,6 +198,6 @@ canvas {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
   }
 }

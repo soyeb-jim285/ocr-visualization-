@@ -23,7 +23,7 @@ export default function Home() {
       <ViewToggle />
       <ScrollTracker />
       <NetworkView3D />
-      <main>
+      <main className="relative pb-16 sm:pb-20">
         <NeuronNetworkSection />
         <LazySection id="pixel-view">
           <PixelViewSection />

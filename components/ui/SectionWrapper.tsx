@@ -23,7 +23,7 @@ export function SectionWrapper({
     <section
       id={id}
       ref={ref}
-      className={`relative flex flex-col items-center justify-center px-3 py-10 sm:px-6 sm:py-20 md:px-8 ${
+      className={`relative flex flex-col items-center justify-center px-3 py-10 sm:px-6 sm:py-16 md:px-8 ${
         fullHeight ? "min-h-screen" : ""
       } ${className ?? ""}`}
     >
@@ -31,7 +31,7 @@ export function SectionWrapper({
         initial={{ opacity: 0, y: 50 }}
         animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full"
+        className="w-full border-t border-border/55 pt-8 sm:pt-10"
         style={{ maxWidth: "var(--content-max-width)" }}
       >
         {children}

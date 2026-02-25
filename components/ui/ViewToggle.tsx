@@ -1,19 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useUIStore, type ViewMode } from "@/stores/uiStore";
+import { useUIStore } from "@/stores/uiStore";
 
 export function ViewToggle() {
   const viewMode = useUIStore((s) => s.viewMode);
   const setViewMode = useUIStore((s) => s.setViewMode);
 
   return (
-    <div className="fixed right-4 top-14 z-50 flex rounded-full border border-border bg-surface p-1 md:right-6">
+    <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 rounded-full border border-border/60 bg-background/80 p-1 shadow-lg shadow-black/30 backdrop-blur-xl md:bottom-auto md:left-auto md:right-6 md:top-14 md:translate-x-0">
       {(["2d", "3d"] as const).map((mode) => (
         <button
           key={mode}
           onClick={() => setViewMode(mode)}
-          className={`relative rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors ${
+          className={`relative rounded-full px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] transition-colors ${
             viewMode === mode ? "text-background" : "text-foreground/50"
           }`}
         >

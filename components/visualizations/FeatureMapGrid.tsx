@@ -26,7 +26,7 @@ export function FeatureMapGrid({
 
   if (!featureMaps || featureMaps.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center rounded-xl border border-border bg-surface">
+      <div className="viz-empty-state h-40">
         <p className="text-foreground/30">
           Draw a character to see feature maps
         </p>
@@ -73,7 +73,7 @@ export function FeatureMapGrid({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="flex flex-col items-center gap-3 rounded-xl border border-accent-primary/30 bg-surface p-6">
+            <div className="mx-auto flex max-w-sm flex-col items-center gap-3 border-t border-border/60 pt-4 sm:pt-5">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-accent-primary">
                   Filter #{expandedIdx + 1}
@@ -82,13 +82,10 @@ export function FeatureMapGrid({
                   {expandedMap.length}x{expandedMap[0]?.length ?? 0}
                 </span>
               </div>
-              <ActivationHeatmap
-                data={expandedMap}
-                size={240}
-              />
+              <ActivationHeatmap data={expandedMap} size={220} />
               <button
                 onClick={() => setExpandedIdx(null)}
-                className="text-xs text-foreground/40 hover:text-foreground/60"
+                className="text-xs text-foreground/45 underline decoration-border/40 underline-offset-4 hover:text-foreground/70"
               >
                 Close
               </button>

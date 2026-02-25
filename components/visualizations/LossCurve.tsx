@@ -52,46 +52,46 @@ export function LossCurve({ history }: LossCurveProps) {
 
   if (!history) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-border bg-surface">
+      <div className="viz-empty-state h-64 w-full">
         <p className="text-foreground/30">Training data not loaded</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex w-full flex-col items-center gap-4">
       {/* Toggle buttons */}
-      <div className="flex gap-3">
+      <div className="inline-flex gap-2 rounded-full border border-border/60 bg-black/25 p-1">
         <button
           onClick={() => setShowLoss(!showLoss)}
-          className={`rounded-lg border px-3 py-1 text-xs font-medium transition ${
+          className={`rounded-full px-3 py-1 text-xs font-medium transition ${
             showLoss
-              ? "border-accent-negative/50 bg-accent-negative/10 text-accent-negative"
-              : "border-border bg-surface text-foreground/30"
+              ? "bg-accent-negative/18 text-accent-negative"
+              : "text-foreground/40 hover:text-foreground/65"
           }`}
         >
           Loss
         </button>
         <button
           onClick={() => setShowAcc(!showAcc)}
-          className={`rounded-lg border px-3 py-1 text-xs font-medium transition ${
+          className={`rounded-full px-3 py-1 text-xs font-medium transition ${
             showAcc
-              ? "border-accent-positive/50 bg-accent-positive/10 text-accent-positive"
-              : "border-border bg-surface text-foreground/30"
+              ? "bg-accent-positive/18 text-accent-positive"
+              : "text-foreground/40 hover:text-foreground/65"
           }`}
         >
           Accuracy
         </button>
       </div>
 
-      <div className="flex w-full max-w-4xl flex-col gap-6 sm:flex-row sm:gap-4">
+      <div className="flex w-full max-w-4xl flex-col gap-6 rounded-2xl border border-border/60 bg-black/20 p-4 sm:flex-row sm:gap-5 sm:p-5">
         {/* Loss chart */}
         {showLoss && (
-          <div className="flex flex-1 flex-col items-center gap-1">
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
             <span className="text-xs font-semibold text-[#ef4444]">Loss</span>
             <ChartContainer
               config={lossConfig}
-              className="h-[240px] w-full rounded-xl border border-border bg-surface sm:h-[280px]"
+              className="h-[230px] w-full min-w-0 overflow-hidden sm:h-[280px]"
             >
               <LineChart
                 data={data}
@@ -124,7 +124,7 @@ export function LossCurve({ history }: LossCurveProps) {
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
                     return (
-                      <div className="rounded-lg border border-border bg-surface px-3 py-2 shadow-lg">
+                      <div className="rounded-lg border border-border/70 bg-surface-elevated/95 px-3 py-2 shadow-lg backdrop-blur-sm">
                         <p className="mb-1 font-mono text-xs text-foreground/50">
                           Epoch {label}
                         </p>
@@ -180,13 +180,13 @@ export function LossCurve({ history }: LossCurveProps) {
 
         {/* Accuracy chart */}
         {showAcc && (
-          <div className="flex flex-1 flex-col items-center gap-1">
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
             <span className="text-xs font-semibold text-[#22c55e]">
               Accuracy
             </span>
             <ChartContainer
               config={accConfig}
-              className="h-[240px] w-full rounded-xl border border-border bg-surface sm:h-[280px]"
+              className="h-[230px] w-full min-w-0 overflow-hidden sm:h-[280px]"
             >
               <LineChart
                 data={data}
@@ -224,7 +224,7 @@ export function LossCurve({ history }: LossCurveProps) {
                   content={({ active, payload, label }) => {
                     if (!active || !payload?.length) return null;
                     return (
-                      <div className="rounded-lg border border-border bg-surface px-3 py-2 shadow-lg">
+                      <div className="rounded-lg border border-border/70 bg-surface-elevated/95 px-3 py-2 shadow-lg backdrop-blur-sm">
                         <p className="mb-1 font-mono text-xs text-foreground/50">
                           Epoch {label}
                         </p>

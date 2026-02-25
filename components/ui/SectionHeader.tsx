@@ -6,16 +6,16 @@ interface SectionHeaderProps {
 
 export function SectionHeader({ title, subtitle, step }: SectionHeaderProps) {
   return (
-    <div className="mb-8 text-center sm:mb-12">
+    <div className="mb-8 text-center sm:mb-10">
       {step !== undefined && (
-        <span className="mb-3 inline-block rounded-full border border-accent-primary/30 bg-accent-primary/10 px-3 py-1 font-mono text-xs text-accent-primary">
-          Step {step}
-        </span>
+        <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-foreground/45">
+          Step {String(step).padStart(2, "0")}
+        </p>
       )}
-      <h2 className="mb-4 bg-gradient-to-br from-foreground to-foreground/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl md:text-5xl">
+      <h2 className="mb-3 text-2xl font-semibold tracking-tight text-foreground sm:text-4xl md:text-[2.7rem]">
         {title}
       </h2>
-      <p className="mx-auto max-w-2xl text-base text-foreground/50 sm:text-lg">
+      <p className="mx-auto max-w-3xl text-sm leading-relaxed text-foreground/58 sm:text-base md:text-[1.05rem]">
         {subtitle}
       </p>
     </div>

@@ -74,7 +74,7 @@ export function ProbabilityBars({
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 className={`rounded-full ${compact ? "h-4" : "h-6"} ${
                   i === 0
-                    ? "bg-gradient-to-r from-accent-primary to-accent-secondary"
+                    ? "bg-accent-primary"
                     : "bg-foreground/10"
                 }`}
               />

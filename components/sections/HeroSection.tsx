@@ -112,23 +112,14 @@ export function HeroSection() {
       }}
       transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
     >
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.24),transparent_38%),radial-gradient(circle_at_78%_28%,rgba(6,182,212,0.2),transparent_34%),radial-gradient(circle_at_56%_74%,rgba(14,116,144,0.16),transparent_40%)]" />
-        <div className="absolute inset-x-0 top-0 h-52 bg-gradient-to-b from-accent-primary/18 to-transparent" />
-      </div>
+      <div className="pointer-events-none absolute inset-0 bg-black/10" />
 
       <div className="relative z-10 mx-auto flex min-h-[62vh] max-w-4xl flex-col items-center justify-end pb-8 text-center">
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -16 }}
           transition={{ duration: 0.7 }}
-          className="mb-2 text-3xl font-semibold tracking-tight sm:text-5xl"
-          style={{
-            backgroundImage:
-              "linear-gradient(125deg, color-mix(in srgb, var(--foreground) 88%, white 12%), var(--accent-tertiary))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
+          className="mb-2 text-3xl font-semibold tracking-tight text-foreground sm:text-5xl"
         >
           Neural Network X-Ray
         </motion.h1>

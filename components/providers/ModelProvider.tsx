@@ -30,7 +30,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
             {/* Progress bar */}
             <div className="h-1.5 w-64 overflow-hidden rounded-full bg-border">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-accent-primary to-accent-tertiary transition-all duration-300"
+                className="h-full rounded-full bg-accent-primary transition-all duration-300"
                 style={{ width: `${modelLoadingProgress * 100}%` }}
               />
             </div>
