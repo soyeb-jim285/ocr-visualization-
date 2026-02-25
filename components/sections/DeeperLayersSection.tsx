@@ -4,60 +4,68 @@ import { SectionWrapper } from "@/components/ui/SectionWrapper";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { FeatureMapGrid } from "@/components/visualizations/FeatureMapGrid";
 import { useInferenceStore } from "@/stores/inferenceStore";
+import { Latex } from "@/components/ui/Latex";
 
 export function DeeperLayersSection() {
   const layerActivations = useInferenceStore((s) => s.layerActivations);
-  const conv2Maps = layerActivations["conv2"] as number[][][] | undefined;
   const conv3Maps = layerActivations["conv3"] as number[][][] | undefined;
+  const relu3Maps = layerActivations["relu3"] as number[][][] | undefined;
   const pool2Maps = layerActivations["pool2"] as number[][][] | undefined;
 
   return (
     <SectionWrapper id="deeper-layers">
       <SectionHeader
-        step={5}
-        title="Going Deeper"
-        subtitle="Each layer builds on the previous one. Layer 2 combines basic edges into curves and intersections. Layer 3 detects high-level character parts. Notice how the feature maps become smaller but more abstract — the network is compressing spatial information into meaningful features."
+        step={6}
+        title="Going Deeper: Third Convolution"
+        subtitle="After pooling compressed the spatial dimensions to 14×14, a third convolution layer reads all 64 pooled feature maps. It learns to detect high-level character parts — loops, crossbars, serifs — that require combining many simpler patterns."
       />
 
+      {/* Theory introduction */}
+      <div className="mb-10 space-y-4 text-center lg:text-left">
+        <p className="text-base leading-relaxed text-foreground/65 sm:text-lg">
+          Each successive layer has a larger <em>receptive field</em> — by layer
+          3, each neuron integrates information from a wide region of the
+          original input. The third convolution reads all 64 channels from pool1
+          and produces 128 new feature maps, followed by ReLU and a second
+          pooling step that further compresses spatial dimensions to 7&times;7.
+        </p>
+
+        <div className="py-3">
+          <Latex
+            display
+            math="\underbrace{(64,14,14)}_{\text{pool1}} \xrightarrow{\text{conv3}} \underbrace{(128,14,14)}_{\text{conv3}} \xrightarrow{\text{ReLU}} \underbrace{(128,14,14)}_{\text{relu3}} \xrightarrow{\text{pool}} \underbrace{(128,7,7)}_{\text{pool2}}"
+          />
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+          <span>
+            Conv3: <Latex math="128 \times (3 \times 3 \times 64 + 1) = 73{,}856" /> params
+          </span>
+          <span>
+            Output: <Latex math="128 \times 7 \times 7 = 6{,}272" /> values
+          </span>
+        </div>
+
+        <p className="text-sm leading-relaxed text-foreground/45">
+          The filter count doubles again — 32, 64, 128 — while pooling halves
+          the spatial dimensions. The total information capacity stays roughly
+          constant, but shifts from <em>spatial detail</em> to{" "}
+          <em>semantic richness</em>. By the final pooling output, the network
+          has distilled your 28&times;28 drawing into 128 compact 7&times;7
+          feature maps — a dense, abstract representation ready for
+          classification.
+        </p>
+      </div>
+
       <div className="flex flex-col gap-10 sm:gap-16">
-        {/* Layer 2: 64 filters, 28x28 → pooled to 14x14 */}
+        {/* Conv3: 128 filters, 14x14 */}
         <div>
           <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-accent-secondary/10 px-3 py-1 text-sm font-medium text-accent-secondary">
-              Conv Layer 2
+              Conv3 Output
             </span>
             <span className="text-xs text-foreground/40 sm:text-sm">
-              64 filters · 28x28 → 14x14 after pooling
-            </span>
-          </div>
-          {conv2Maps ? (
-            <FeatureMapGrid
-              featureMaps={conv2Maps.slice(0, 32)}
-              layerName="conv2"
-              columns={8}
-              columnsSm={4}
-              cellSize={56}
-            />
-          ) : (
-            <div className="flex h-32 items-center justify-center rounded-xl border border-border bg-surface">
-              <p className="text-foreground/30">Draw a character to see deeper features</p>
-            </div>
-          )}
-          {conv2Maps && conv2Maps.length > 32 && (
-            <p className="mt-2 text-center text-xs text-foreground/30">
-              Showing 32 of {conv2Maps.length} feature maps
-            </p>
-          )}
-        </div>
-
-        {/* Layer 3: 128 filters, 14x14 → pooled to 7x7 */}
-        <div>
-          <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
-            <span className="rounded-full bg-accent-tertiary/10 px-3 py-1 text-sm font-medium text-accent-tertiary">
-              Conv Layer 3
-            </span>
-            <span className="text-xs text-foreground/40 sm:text-sm">
-              128 filters · 14x14 → 7x7 after pooling
+              128 filters &middot; 14&times;14
             </span>
           </div>
           {conv3Maps ? (
@@ -70,7 +78,9 @@ export function DeeperLayersSection() {
             />
           ) : (
             <div className="flex h-32 items-center justify-center rounded-xl border border-border bg-surface">
-              <p className="text-foreground/30">Draw a character to see deeper features</p>
+              <p className="text-foreground/30">
+                Draw a character to see deeper features
+              </p>
             </div>
           )}
           {conv3Maps && conv3Maps.length > 32 && (
@@ -80,7 +90,33 @@ export function DeeperLayersSection() {
           )}
         </div>
 
-        {/* Final pooled output: 7x7x128 */}
+        {/* ReLU3: 128 filters, 14x14 */}
+        {relu3Maps && (
+          <div>
+            <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
+              <span className="rounded-full bg-accent-tertiary/10 px-3 py-1 text-sm font-medium text-accent-tertiary">
+                After ReLU
+              </span>
+              <span className="text-xs text-foreground/40 sm:text-sm">
+                128 feature maps &middot; 14&times;14 &middot; negatives zeroed
+              </span>
+            </div>
+            <FeatureMapGrid
+              featureMaps={relu3Maps.slice(0, 32)}
+              layerName="relu3"
+              columns={8}
+              columnsSm={4}
+              cellSize={56}
+            />
+            {relu3Maps.length > 32 && (
+              <p className="mt-2 text-center text-xs text-foreground/30">
+                Showing 32 of {relu3Maps.length} feature maps
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Pool2: 128 filters, 7x7 */}
         {pool2Maps && (
           <div>
             <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
@@ -88,7 +124,7 @@ export function DeeperLayersSection() {
                 After Pooling
               </span>
               <span className="text-xs text-foreground/40 sm:text-sm">
-                128 feature maps · 7x7 each
+                128 feature maps &middot; 7&times;7 each
               </span>
             </div>
             <FeatureMapGrid
@@ -99,8 +135,10 @@ export function DeeperLayersSection() {
               cellSize={56}
             />
             <p className="mt-3 text-center text-sm text-foreground/40">
-              These compact 7x7 feature maps will be flattened into a single
-              vector of {7 * 7 * 128} = 6,272 values for the dense layers.
+              These compact 7&times;7 feature maps will be flattened into a
+              single vector of{" "}
+              <Latex math="7 \times 7 \times 128 = 6{,}272" /> values for the
+              dense layers.
             </p>
           </div>
         )}

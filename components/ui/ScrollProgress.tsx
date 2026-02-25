@@ -9,6 +9,7 @@ const SECTION_LABELS = [
   "Pixels",
   "Conv",
   "ReLU",
+  "Conv2",
   "Pool",
   "Deep",
   "Dense",

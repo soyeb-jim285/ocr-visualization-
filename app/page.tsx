@@ -2,6 +2,7 @@ import { EpochPrefetcher } from "@/components/EpochPrefetcher";
 import { PixelViewSection } from "@/components/sections/PixelViewSection";
 import { ConvolutionSection } from "@/components/sections/ConvolutionSection";
 import { ActivationSection } from "@/components/sections/ActivationSection";
+import { SecondConvSection } from "@/components/sections/SecondConvSection";
 import { PoolingSection } from "@/components/sections/PoolingSection";
 import { DeeperLayersSection } from "@/components/sections/DeeperLayersSection";
 import { FullyConnectedSection } from "@/components/sections/FullyConnectedSection";
@@ -33,6 +34,9 @@ export default function Home() {
         </LazySection>
         <LazySection id="activation">
           <ActivationSection />
+        </LazySection>
+        <LazySection id="second-conv">
+          <SecondConvSection />
         </LazySection>
         <LazySection id="pooling">
           <PoolingSection />

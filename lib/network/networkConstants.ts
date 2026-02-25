@@ -170,7 +170,7 @@ export function computeLayout(w: number, h: number) {
   const posNeuronIdx = new Uint8Array(totalNeurons);
 
   const marginL = Math.max(12, Math.min(40, w * 0.03));
-  const marginR = Math.max(40, Math.min(80, w * 0.06)); // extra for output labels
+  const marginR = marginL;
   const marginY = Math.max(30, Math.min(60, h * 0.08));
   const marginX = marginL; // used by layerX[0]
   const availW = w - marginL - marginR;

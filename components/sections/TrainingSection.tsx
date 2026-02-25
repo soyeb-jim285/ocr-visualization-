@@ -7,6 +7,7 @@ import { LossCurve } from "@/components/visualizations/LossCurve";
 import { WeightEvolution } from "@/components/visualizations/WeightEvolution";
 import { GradientFlow } from "@/components/visualizations/GradientFlow";
 import { EpochNetworkVisualization } from "@/components/visualizations/EpochNetworkVisualization";
+import { Latex } from "@/components/ui/Latex";
 import {
   loadTrainingHistory,
   loadWeightSnapshots,
@@ -31,10 +32,47 @@ export function TrainingSection() {
   return (
     <SectionWrapper id="training" fullHeight={false}>
       <SectionHeader
-        step={8}
+        step={9}
         title="How It Learned: Training"
         subtitle="The model wasn't born smart — it started with random weights and learned by seeing millions of examples. Over 50 epochs of training, it gradually improved its ability to recognize characters. Scrub through epochs to see how your drawing would be predicted at each stage."
       />
+
+      {/* Theory introduction */}
+      <div className="mb-10 space-y-4 text-center lg:text-left">
+        <p className="text-base leading-relaxed text-foreground/65 sm:text-lg">
+          Training is an iterative optimization: the model sees a batch of
+          labeled examples, computes how wrong its predictions are (the{" "}
+          <em>loss</em>), then adjusts every weight slightly to reduce that
+          error. This cycle repeats millions of times. The loss function used
+          here is <em>cross-entropy</em>, which heavily penalizes confident
+          wrong answers.
+        </p>
+
+        <div className="py-3">
+          <Latex
+            display
+            math="\mathcal{L} = -\sum_{i=1}^{K} y_i \log\!\left(\hat{y}_i\right) \qquad\qquad \theta \leftarrow \theta - \eta\,\nabla_\theta \mathcal{L}"
+          />
+        </div>
+
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+          <span><Latex math="y_i" /> — true label (one-hot)</span>
+          <span><Latex math="\hat{y}_i" /> — predicted probability</span>
+          <span><Latex math="\theta" /> — all model weights</span>
+          <span><Latex math="\eta" /> — learning rate</span>
+          <span><Latex math="\nabla_\theta \mathcal{L}" /> — gradient</span>
+        </div>
+
+        <p className="text-sm leading-relaxed text-foreground/45">
+          The gradient <Latex math="\nabla_\theta \mathcal{L}" /> tells each
+          weight how to change to reduce the loss. Backpropagation computes this
+          efficiently using the chain rule, flowing error signals backward
+          through every layer. With Adam optimizer (
+          <Latex math="\eta = 10^{-3}" />
+          ), the model converges over 50 epochs on the EMNIST ByMerge dataset —
+          roughly 700k training images of handwritten digits and letters.
+        </p>
+      </div>
 
       <div className="flex flex-col gap-12 sm:gap-20">
         {/* Epoch network visualization - the star feature */}

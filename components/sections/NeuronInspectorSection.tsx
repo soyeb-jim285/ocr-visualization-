@@ -76,7 +76,7 @@ export function NeuronInspectorSection() {
   return (
     <SectionWrapper id="neuron-inspector">
       <SectionHeader
-        step={9}
+        step={10}
         title="Inspect Any Neuron"
         subtitle="Click on any neuron from the dense or output layers above, or use the quick-select buttons below. Each neuron has a specific role in the network's decision-making process."
       />

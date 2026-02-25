@@ -8,6 +8,7 @@ export const SECTION_IDS = [
   "pixel-view",
   "convolution",
   "activation",
+  "second-conv",
   "pooling",
   "deeper-layers",
   "fully-connected",
