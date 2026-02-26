@@ -33,25 +33,25 @@ export function DeeperLayersSection() {
         <div className="py-3">
           <Latex
             display
-            math="\underbrace{(64,14,14)}_{\text{pool1}} \xrightarrow{\text{conv3}} \underbrace{(128,14,14)}_{\text{conv3}} \xrightarrow{\text{ReLU}} \underbrace{(128,14,14)}_{\text{relu3}} \xrightarrow{\text{pool}} \underbrace{(128,7,7)}_{\text{pool2}}"
+            math="\underbrace{(128,14,14)}_{\text{pool1}} \xrightarrow{\text{conv3}} \underbrace{(256,14,14)}_{\text{conv3}} \xrightarrow{\text{ReLU}} \underbrace{(256,14,14)}_{\text{relu3}} \xrightarrow{\text{pool}} \underbrace{(256,7,7)}_{\text{pool2}}"
           />
         </div>
 
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
           <span>
-            Conv3: <Latex math="128 \times (3 \times 3 \times 64 + 1) = 73{,}856" /> params
+            Conv3: <Latex math="256 \times (3 \times 3 \times 128 + 1) = 295{,}168" /> params
           </span>
           <span>
-            Output: <Latex math="128 \times 7 \times 7 = 6{,}272" /> values
+            Output: <Latex math="256 \times 7 \times 7 = 12{,}544" /> values
           </span>
         </div>
 
         <p className="text-sm leading-relaxed text-foreground/45">
-          The filter count doubles again — 32, 64, 128 — while pooling halves
+          The filter count doubles again — 64, 128, 256 — while pooling halves
           the spatial dimensions. The total information capacity stays roughly
           constant, but shifts from <em>spatial detail</em> to{" "}
           <em>semantic richness</em>. By the final pooling output, the network
-          has distilled your 28&times;28 drawing into 128 compact 7&times;7
+          has distilled your 28&times;28 drawing into 256 compact 7&times;7
           feature maps — a dense, abstract representation ready for
           classification.
         </p>

@@ -126,7 +126,7 @@ export function ActivationSection() {
             blocks them entirely for negative ones. This avoids the vanishing
             gradient problem that plagues sigmoid and tanh in deep networks.
             Applied element-wise, the shape is preserved:{" "}
-            <Latex math="(32, 28, 28) \xrightarrow{\text{ReLU}} (32, 28, 28)" />.
+            <Latex math="(64, 28, 28) \xrightarrow{\text{ReLU}} (64, 28, 28)" />.
             Typically 40–70% of values are zeroed, creating{" "}
             <em>sparse activations</em> that help the network focus on the
             strongest detected features.

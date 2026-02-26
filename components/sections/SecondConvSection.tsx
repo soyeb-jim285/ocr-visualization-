@@ -36,7 +36,7 @@ export function SecondConvSection() {
       <SectionHeader
         step={4}
         title="Second Pass: Deeper Patterns"
-        subtitle="The first convolution detected simple edges. Now a second convolution layer reads all 32 of those edge maps simultaneously, learning to combine them into more complex features — curves, corners, intersections."
+        subtitle="The first convolution detected simple edges. Now a second convolution layer reads all 64 of those edge maps simultaneously, learning to combine them into more complex features — curves, corners, intersections."
       />
 
       <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:gap-12">
@@ -44,8 +44,8 @@ export function SecondConvSection() {
         <div className="flex-1 space-y-4 text-center lg:text-left">
           <p className="text-base leading-relaxed text-foreground/65 sm:text-lg">
             Unlike conv1 which read a single grayscale channel, conv2 reads{" "}
-            <em>all 32 feature maps</em> from relu1 at once. Each of its 64
-            filters has a 3&times;3&times;32 kernel — it computes a weighted
+            <em>all 64 feature maps</em> from relu1 at once. Each of its 128
+            filters has a 3&times;3&times;64 kernel — it computes a weighted
             sum across all input channels at every spatial position. This allows
             it to detect features that require <em>combinations</em> of edges,
             like a curve (horizontal edge meeting a vertical edge).
@@ -55,7 +55,7 @@ export function SecondConvSection() {
           <div className="py-3">
             <Latex
               display
-              math="O_k(i,j) = \text{ReLU}\!\left(\sum_{c=1}^{32}\sum_{m,n} I_c(i{+}m,\,j{+}n) \cdot K_{k,c}(m,n) + b_k\right)"
+              math="O_k(i,j) = \text{ReLU}\!\left(\sum_{c=1}^{64}\sum_{m,n} I_c(i{+}m,\,j{+}n) \cdot K_{k,c}(m,n) + b_k\right)"
             />
           </div>
 
@@ -68,9 +68,9 @@ export function SecondConvSection() {
 
           <p className="text-sm leading-relaxed text-foreground/45">
             The shape transforms:{" "}
-            <Latex math="(32, 28, 28) \xrightarrow{\text{conv2 + ReLU}} (64, 28, 28)" />.
+            <Latex math="(64, 28, 28) \xrightarrow{\text{conv2 + ReLU}} (128, 28, 28)" />.
             Parameters:{" "}
-            <Latex math="64 \times (3 \times 3 \times 32 + 1) = 18{,}496" />.
+            <Latex math="128 \times (3 \times 3 \times 64 + 1) = 73{,}856" />.
             After convolution, ReLU is applied again — zeroing negatives to
             maintain non-linearity. The output is now ready for max pooling,
             which will compress the spatial dimensions in the next step.

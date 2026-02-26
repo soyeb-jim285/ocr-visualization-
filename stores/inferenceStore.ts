@@ -17,7 +17,7 @@ interface InferenceState {
   layerActivations: LayerActivations;
 
   // Prediction
-  prediction: number[] | null; // 62-element probability array
+  prediction: number[] | null; // 146-element probability array
   topPrediction: { classIndex: number; confidence: number } | null;
 
   // Neuron inspection
@@ -25,6 +25,9 @@ interface InferenceState {
 
   // Loading state
   isInferring: boolean;
+
+  /** Monotonic counter bumped on reset — lets async work detect stale results */
+  generation: number;
 
   // Actions
   setInputImageData: (data: ImageData | null) => void;
@@ -44,6 +47,7 @@ export const useInferenceStore = create<InferenceState>((set) => ({
   topPrediction: null,
   selectedNeuron: null,
   isInferring: false,
+  generation: 0,
 
   setInputImageData: (data) => set({ inputImageData: data }),
 
@@ -68,7 +72,7 @@ export const useInferenceStore = create<InferenceState>((set) => ({
   setIsInferring: (val) => set({ isInferring: val }),
 
   reset: () =>
-    set({
+    set((s) => ({
       inputImageData: null,
       inputTensor: null,
       layerActivations: {},
@@ -76,5 +80,6 @@ export const useInferenceStore = create<InferenceState>((set) => ({
       topPrediction: null,
       selectedNeuron: null,
       isInferring: false,
-    }),
+      generation: s.generation + 1,
+    })),
 }));

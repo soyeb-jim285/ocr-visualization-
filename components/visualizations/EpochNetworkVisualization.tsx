@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import {
   runEpochInference,
   TOTAL_EPOCHS,
+  PREFETCH_EPOCHS,
   getCachedModelCount,
   getInferenceCache,
 } from "@/lib/model/epochModels";
@@ -78,7 +79,7 @@ export function EpochNetworkVisualization() {
     const interval = setInterval(() => {
       const count = getCachedModelCount();
       setLoadedCount(count);
-      if (count >= TOTAL_EPOCHS) clearInterval(interval);
+      if (count >= PREFETCH_EPOCHS.length) clearInterval(interval);
     }, 500);
     return () => clearInterval(interval);
   }, []);
@@ -243,7 +244,7 @@ export function EpochNetworkVisualization() {
     let cancelled = false;
     const advance = async () => {
       if (cancelled) return;
-      const next = ((pendingEpochRef.current >= 49 ? -1 : pendingEpochRef.current) + 1);
+      const next = ((pendingEpochRef.current >= TOTAL_EPOCHS - 1 ? -1 : pendingEpochRef.current) + 1);
       setCurrentEpoch(next);
       pendingEpochRef.current = next;
       await runAtEpoch(next);
@@ -279,7 +280,7 @@ export function EpochNetworkVisualization() {
     : null;
 
   const hasInput = inputImageData !== null;
-  const allLoaded = loadedCount >= TOTAL_EPOCHS;
+  const allLoaded = loadedCount >= PREFETCH_EPOCHS.length;
   const hasActivations = Object.keys(epochActivations).length > 0;
 
   return (
@@ -288,12 +289,12 @@ export function EpochNetworkVisualization() {
         <div className="flex w-full max-w-xl flex-col items-center gap-1">
           <div className="flex w-full items-center justify-between text-xs text-foreground/30">
             <span>Loading epoch models...</span>
-            <span>{loadedCount}/{TOTAL_EPOCHS}</span>
+            <span>{loadedCount}/{PREFETCH_EPOCHS.length}</span>
           </div>
           <div className="h-1 w-full overflow-hidden rounded-full bg-surface-elevated">
             <div
               className="h-full rounded-full bg-accent-primary/50 transition-all duration-300"
-              style={{ width: `${(loadedCount / TOTAL_EPOCHS) * 100}%` }}
+              style={{ width: `${(loadedCount / PREFETCH_EPOCHS.length) * 100}%` }}
             />
           </div>
         </div>
@@ -380,14 +381,14 @@ export function EpochNetworkVisualization() {
           <input
             type="range"
             min={0}
-            max={49}
+            max={TOTAL_EPOCHS - 1}
             value={currentEpoch}
             onChange={(e) => handleEpochChange(parseInt(e.target.value))}
             className="w-full accent-accent-primary"
             disabled={!hasInput}
           />
           <div className="flex w-full justify-between px-0.5">
-            {[0, 10, 20, 30, 40, 49].map((e) => (
+            {[0, 10, 20, 30, 50, 74].map((e) => (
               <button
                 key={e}
                 onClick={() => { handleEpochChange(e); setIsPlaying(false); }}

@@ -20,6 +20,15 @@ function neutralColor(): [number, number, number] {
   return [26, 26, 36]; // matches surface-elevated #1a1a24
 }
 
+/** Smart number format: scientific notation for tiny values, fixed otherwise */
+function smartFormat(v: number): string {
+  if (v === 0) return "0";
+  const abs = Math.abs(v);
+  if (abs >= 0.01) return v.toFixed(2);
+  if (abs < 1e-6) return "≈0";
+  return v.toExponential(0); // "5e-3" not "5.0e-3"
+}
+
 /** Extract a 3x3 patch from the input tensor with padding=1 */
 function extractPatch(
   input: number[][],
@@ -298,7 +307,7 @@ export function ConvolutionTheory() {
             A convolution slides a small learned filter (called a <em>kernel</em>) across every
             position of the input image. At each position, it computes the dot product between the
             kernel weights and the overlapping image patch, producing a single output value. Our
-            network uses 32 different 3&times;3 kernels — each one learns to detect a different
+            network uses 64 different 3&times;3 kernels — each one learns to detect a different
             pattern like edges, corners, or curves.
           </p>
 
@@ -322,8 +331,8 @@ export function ConvolutionTheory() {
             With <Latex math="\text{padding}=1" />, the 3&times;3 kernel can be centered on every
             pixel — including edges, where zero-padded values fill in. This preserves the spatial
             dimensions:{" "}
-            <Latex math="(1, 28, 28) \xrightarrow{32\text{ filters}} (32, 28, 28)" />.
-            Total parameters: <Latex math="32 \times (3 \times 3 + 1) = 320" />.
+            <Latex math="(1, 28, 28) \xrightarrow{64\text{ filters}} (64, 28, 28)" />.
+            Total parameters: <Latex math="64 \times (3 \times 3 + 1) = 640" />.
             A later activation step (ReLU) will clip negatives to zero, but here we show
             the raw convolution output.
           </p>
@@ -418,6 +427,7 @@ export function ConvolutionTheory() {
                     colorFn={neutralColor}
                     cellSize={40}
                     showValues
+                    valueFormat={smartFormat}
                     label={`Kernel #${selectedFilter + 1}`}
                   />
 
@@ -428,6 +438,7 @@ export function ConvolutionTheory() {
                     colorFn={neutralColor}
                     cellSize={40}
                     showValues
+                    valueFormat={smartFormat}
                     label="Products"
                   />
 
@@ -441,7 +452,7 @@ export function ConvolutionTheory() {
                     colorFn={outputCellColorFn}
                     cellSize={40}
                     showValues
-                    valueFormat={(v) => v.toFixed(3)}
+                    valueFormat={smartFormat}
                     label="Output"
                   />
                 </div>
@@ -452,15 +463,15 @@ export function ConvolutionTheory() {
                     <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
                       <span>
                         <span className="text-foreground/25">Σ(products)</span>{" "}
-                        = {productsSum.toFixed(4)}
+                        = {smartFormat(productsSum)}
                       </span>
                       <span className="text-foreground/25">+</span>
                       <span>
                         <span className="text-foreground/25">bias</span>{" "}
-                        {bias.toFixed(4)}
+                        {smartFormat(bias)}
                       </span>
                       <span className="text-foreground/25">=</span>
-                      <span className="text-accent-primary">{rawConvValue.toFixed(4)}</span>
+                      <span className="text-accent-primary">{smartFormat(rawConvValue)}</span>
                     </div>
                   </div>
                 )}
@@ -532,7 +543,7 @@ export function ConvolutionTheory() {
                     selected={i === selectedFilter}
                   />
                 ))
-              : Array.from({ length: 32 }, (_, i) => (
+              : Array.from({ length: 64 }, (_, i) => (
                   <div
                     key={i}
                     className={`flex flex-col items-center gap-1 ${

@@ -49,7 +49,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
               Failed to load model
             </p>
             <p className="text-sm text-foreground/50">
-              {error}. Make sure the model files exist in public/models/emnist-cnn/.
+              {error}. Make sure the model files exist in public/models/combined-cnn/.
             </p>
           </div>
         </div>

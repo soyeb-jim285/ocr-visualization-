@@ -80,18 +80,21 @@ export function PatchGrid({
                     justifyContent: "center",
                   }}
                 >
-                  {showValues && (
-                    <span
-                      className="font-mono leading-none"
-                      style={{
-                        fontSize: Math.max(8, cellSize * 0.28),
-                        color: fg,
-                        opacity: 0.9,
-                      }}
-                    >
-                      {valueFormat(val)}
-                    </span>
-                  )}
+                  {showValues && (() => {
+                    const text = valueFormat(val);
+                    const baseSize = Math.max(8, cellSize * 0.28);
+                    const fontSize = text.length > 5
+                      ? Math.max(7, cellSize / (text.length * 0.65))
+                      : baseSize;
+                    return (
+                      <span
+                        className="font-mono leading-none"
+                        style={{ fontSize, color: fg, opacity: 0.9 }}
+                      >
+                        {text}
+                      </span>
+                    );
+                  })()}
                 </div>
               );
             })

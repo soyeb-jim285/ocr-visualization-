@@ -16,7 +16,7 @@ export async function loadModel(
   await initOrt();
   onProgress?.(0.1);
 
-  const modelUrl = "/models/emnist-cnn/model.onnx";
+  const modelUrl = "/models/combined-cnn/model.onnx";
 
   onProgress?.(0.5);
   cachedSession = await ort.InferenceSession.create(modelUrl);

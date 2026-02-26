@@ -20,17 +20,17 @@ export const LAYER_SHAPES: Record<
   string,
   { type: "conv"; c: number; h: number; w: number } | { type: "dense"; units: number }
 > = {
-  conv1: { type: "conv", c: 32, h: 28, w: 28 },
-  relu1: { type: "conv", c: 32, h: 28, w: 28 },
-  conv2: { type: "conv", c: 64, h: 28, w: 28 },
-  relu2: { type: "conv", c: 64, h: 28, w: 28 },
-  pool1: { type: "conv", c: 64, h: 14, w: 14 },
-  conv3: { type: "conv", c: 128, h: 14, w: 14 },
-  relu3: { type: "conv", c: 128, h: 14, w: 14 },
-  pool2: { type: "conv", c: 128, h: 7, w: 7 },
-  dense1: { type: "dense", units: 256 },
-  relu4: { type: "dense", units: 256 },
-  output: { type: "dense", units: 62 },
+  conv1: { type: "conv", c: 64, h: 28, w: 28 },
+  relu1: { type: "conv", c: 64, h: 28, w: 28 },
+  conv2: { type: "conv", c: 128, h: 28, w: 28 },
+  relu2: { type: "conv", c: 128, h: 28, w: 28 },
+  pool1: { type: "conv", c: 128, h: 14, w: 14 },
+  conv3: { type: "conv", c: 256, h: 14, w: 14 },
+  relu3: { type: "conv", c: 256, h: 14, w: 14 },
+  pool2: { type: "conv", c: 256, h: 7, w: 7 },
+  dense1: { type: "dense", units: 512 },
+  relu4: { type: "dense", units: 512 },
+  output: { type: "dense", units: 146 },
 };
 
 /**

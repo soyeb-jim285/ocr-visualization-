@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { fetchConv1Weights } from "@/lib/model/conv1Weights";
 
 interface Conv1WeightsState {
-  kernels: number[][][] | null; // [32][3][3]
-  biases: number[] | null;      // [32]
+  kernels: number[][][] | null;
+  biases: number[] | null;
   loading: boolean;
 }
 

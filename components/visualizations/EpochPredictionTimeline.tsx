@@ -7,6 +7,7 @@ import {
   prefetchAdjacentEpochs,
   prefetchAllEpochs,
   TOTAL_EPOCHS,
+  PREFETCH_EPOCHS,
   getCachedModelCount,
 } from "@/lib/model/epochModels";
 import { preprocessCanvas } from "@/lib/model/preprocess";
@@ -120,7 +121,7 @@ export function EpochPredictionTimeline() {
     : null;
 
   const hasInput = inputImageData !== null;
-  const allLoaded = loadedCount >= TOTAL_EPOCHS;
+  const allLoaded = loadedCount >= PREFETCH_EPOCHS.length;
 
   return (
     <div className="flex flex-col items-center gap-8">
@@ -129,12 +130,12 @@ export function EpochPredictionTimeline() {
         <div className="flex w-full max-w-xl flex-col items-center gap-1">
           <div className="flex w-full items-center justify-between text-xs text-foreground/30">
             <span>Loading epoch models...</span>
-            <span>{loadedCount}/{TOTAL_EPOCHS}</span>
+            <span>{loadedCount}/{PREFETCH_EPOCHS.length}</span>
           </div>
           <div className="h-1 w-full overflow-hidden rounded-full bg-surface-elevated">
             <div
               className="h-full rounded-full bg-accent-primary/50 transition-all duration-300"
-              style={{ width: `${(loadedCount / TOTAL_EPOCHS) * 100}%` }}
+              style={{ width: `${(loadedCount / PREFETCH_EPOCHS.length) * 100}%` }}
             />
           </div>
         </div>
@@ -147,13 +148,13 @@ export function EpochPredictionTimeline() {
           <span className="font-mono text-lg font-bold text-accent-primary">
             Epoch {currentEpoch}
           </span>
-          <span className="text-sm text-foreground/40">Epoch 49</span>
+          <span className="text-sm text-foreground/40">Epoch {TOTAL_EPOCHS - 1}</span>
         </div>
 
         <input
           type="range"
           min={0}
-          max={49}
+          max={TOTAL_EPOCHS - 1}
           value={currentEpoch}
           onChange={(e) => handleEpochChange(parseInt(e.target.value))}
           className="w-full accent-accent-primary"
@@ -162,7 +163,7 @@ export function EpochPredictionTimeline() {
 
         {/* Epoch markers */}
         <div className="flex w-full justify-between px-1">
-          {[0, 10, 20, 30, 40, 49].map((e) => (
+          {[0, 10, 20, 30, 50, 74].map((e) => (
             <button
               key={e}
               onClick={() => handleEpochChange(e)}

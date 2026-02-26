@@ -21,7 +21,7 @@ export function DrawingCanvas({
   displaySize,
   onFirstDraw,
 }: DrawingCanvasProps) {
-  const { infer } = useInference();
+  const { infer, cancel: cancelInference } = useInference();
   const hasFiredFirstDrawRef = useRef(false);
 
   const canvasSize = displaySize ?? (variant === "hero" ? 320 : 108);
@@ -49,9 +49,11 @@ export function DrawingCanvas({
     });
 
   const clear = useCallback(() => {
+    cancelInference();
     rawClear();
     useInferenceStore.getState().reset();
-  }, [rawClear]);
+    hasFiredFirstDrawRef.current = false;
+  }, [rawClear, cancelInference]);
 
   return (
     <div className={`flex flex-col items-center ${variant === "hero" ? "gap-3" : "gap-1"}`}>
@@ -99,12 +101,17 @@ export function DrawingCanvas({
       </div>
 
       {variant === "hero" ? (
-        <button
-          onClick={clear}
-          className="rounded-lg border border-border/80 px-4 py-2 text-sm text-foreground/65 transition-colors hover:border-accent-primary hover:text-foreground"
-        >
-          Clear
-        </button>
+        <>
+          <button
+            onClick={clear}
+            className="rounded-lg border border-border/80 px-4 py-2 text-sm text-foreground/65 transition-colors hover:border-accent-primary hover:text-foreground"
+          >
+            Clear
+          </button>
+          <p className="text-center font-mono text-[10px] tracking-wider text-foreground/20">
+            A–Z &middot; a–z &middot; 0–9 &middot; ক–হ &middot; compound characters
+          </p>
+        </>
       ) : (
         <div className="flex w-full items-center justify-between gap-1">
           <button

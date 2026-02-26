@@ -116,7 +116,7 @@ export function FilterExplorer() {
         </div>
       </div>
 
-      {/* All 32 feature maps as clickable selector */}
+      {/* All 64 feature maps as clickable selector */}
       <div className="space-y-3">
         <p className="text-center text-xs text-foreground/40">
           Click a feature map to inspect its kernel

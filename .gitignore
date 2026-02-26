@@ -42,6 +42,8 @@ next-env.d.ts
 
 # training data & checkpoints
 /data/
+/BanglaLekha-Isolated/
+/combined-export/
 /public/models/checkpoints/
 
 # archives

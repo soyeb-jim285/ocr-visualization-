@@ -18,7 +18,7 @@ import type { WeightSnapshots } from "@/lib/training/trainingData";
 import { loadWeightSnapshots } from "@/lib/training/trainingData";
 
 const LAYERS = ["conv1", "conv2", "conv3", "dense1"];
-const SNAPSHOT_EPOCHS = [0, 1, 2, 5, 10, 15, 20, 25, 30, 40, 49];
+const SNAPSHOT_EPOCHS = [0, 1, 2, 5, 10, 15, 20, 25, 30, 40, 50, 60, 74];
 
 const LAYER_COLORS: Record<string, string> = {
   conv1: "#06b6d4",

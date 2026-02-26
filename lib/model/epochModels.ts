@@ -1,5 +1,4 @@
 import * as ort from "onnxruntime-web";
-import { BYMERGE_MERGED_INDICES } from "./classes";
 import {
   INTERMEDIATE_OUTPUTS,
   LAYER_SHAPES,
@@ -32,7 +31,7 @@ export async function loadEpochModel(
   const paddedEpoch = String(epoch).padStart(2, "0");
   const hfBase = process.env.NEXT_PUBLIC_MODEL_BASE_URL
     || "https://huggingface.co/soyeb-jim285/ocr-visualization-models/resolve/main";
-  const modelUrl = `${hfBase}/checkpoints/epoch-${paddedEpoch}/model.onnx`;
+  const modelUrl = `${hfBase}/bn_emnist_cnn/checkpoints/epoch-${paddedEpoch}/model.onnx`;
   const loadPromise = ort.InferenceSession.create(modelUrl)
     .then((session) => {
       sessionCache.set(epoch, session);
@@ -50,7 +49,7 @@ export async function loadEpochModel(
 
 /**
  * Run inference on a specific epoch's model.
- * Returns the softmax prediction (62-element array).
+ * Returns the softmax prediction (146-element array).
  * Input: Float32Array in NCHW format [1, 1, 28, 28]
  */
 export async function predictAtEpoch(
@@ -108,21 +107,24 @@ export function prefetchAdjacentEpochs(currentEpoch: number): void {
   // Prefetch ±3 epochs around current position
   for (let offset = -3; offset <= 3; offset++) {
     const e = currentEpoch + offset;
-    if (e >= 0 && e < 50 && !sessionCache.has(e)) {
+    if (e >= 0 && e < TOTAL_EPOCHS && !sessionCache.has(e)) {
       loadEpochModel(e).catch(() => {});
     }
   }
 }
 
 /** Number of total epochs available */
-export const TOTAL_EPOCHS = 50;
+export const TOTAL_EPOCHS = 75;
+
+/** Key epochs to prefetch upfront (rest load on-demand when user scrubs) */
+export const PREFETCH_EPOCHS = [0, 1, 2, 5, 10, 15, 20, 25, 30, 40, 50, 60, 74];
 
 let prefetchAllStarted = false;
 
 /**
- * Prefetch ALL epoch models in the background, 3 at a time.
+ * Prefetch key epoch models in the background, 3 at a time.
  * Call once when the epoch timeline component mounts.
- * Loads sequentially in small batches to avoid saturating bandwidth.
+ * Only downloads ~13 key checkpoints; others load on-demand.
  */
 export function prefetchAllEpochs(
   onProgress?: (loaded: number, total: number) => void
@@ -130,11 +132,9 @@ export function prefetchAllEpochs(
   if (prefetchAllStarted) return;
   prefetchAllStarted = true;
 
-  const queue = Array.from({ length: TOTAL_EPOCHS }, (_, i) => i)
-    .filter((e) => !sessionCache.has(e));
-
-  let loaded = sessionCache.size;
-  const total = TOTAL_EPOCHS;
+  const queue = PREFETCH_EPOCHS.filter((e) => !sessionCache.has(e));
+  const total = PREFETCH_EPOCHS.length;
+  let loaded = PREFETCH_EPOCHS.filter((e) => sessionCache.has(e)).length;
 
   async function loadBatch() {
     while (queue.length > 0) {
@@ -184,7 +184,7 @@ export function clearInferenceCache(): number {
 }
 
 /**
- * Pre-compute epoch inferences for all 50 epochs in the background, 2 at a time.
+ * Pre-compute epoch inferences for key epochs in the background, 2 at a time.
  * Stores results in the shared module-level cache.
  * Aborts if inputId changes (meaning user drew something new).
  */
@@ -193,10 +193,9 @@ export function prefetchAllEpochInferences(
   inputId: number,
   onProgress?: (computed: number, total: number) => void
 ): void {
-  const queue = Array.from({ length: TOTAL_EPOCHS }, (_, i) => i)
-    .filter((e) => !inferenceResultCache.has(e));
-
-  let computed = inferenceResultCache.size;
+  const total = PREFETCH_EPOCHS.length;
+  const queue = PREFETCH_EPOCHS.filter((e) => !inferenceResultCache.has(e));
+  let computed = PREFETCH_EPOCHS.filter((e) => inferenceResultCache.has(e)).length;
 
   async function computeBatch() {
     while (queue.length > 0) {
@@ -211,11 +210,11 @@ export function prefetchAllEpochInferences(
               if (cachedInputId !== inputId) return;
               inferenceResultCache.set(e, result);
               computed++;
-              onProgress?.(computed, TOTAL_EPOCHS);
+              onProgress?.(computed, total);
             })
             .catch(() => {
               computed++;
-              onProgress?.(computed, TOTAL_EPOCHS);
+              onProgress?.(computed, total);
             })
         )
       );

@@ -1,0 +1,900 @@
+{
+  "0": {
+    "label": "0",
+    "script": "latin",
+    "unicode": "U+0030"
+  },
+  "1": {
+    "label": "1",
+    "script": "latin",
+    "unicode": "U+0031"
+  },
+  "2": {
+    "label": "2",
+    "script": "latin",
+    "unicode": "U+0032"
+  },
+  "3": {
+    "label": "3",
+    "script": "latin",
+    "unicode": "U+0033"
+  },
+  "4": {
+    "label": "4",
+    "script": "latin",
+    "unicode": "U+0034"
+  },
+  "5": {
+    "label": "5",
+    "script": "latin",
+    "unicode": "U+0035"
+  },
+  "6": {
+    "label": "6",
+    "script": "latin",
+    "unicode": "U+0036"
+  },
+  "7": {
+    "label": "7",
+    "script": "latin",
+    "unicode": "U+0037"
+  },
+  "8": {
+    "label": "8",
+    "script": "latin",
+    "unicode": "U+0038"
+  },
+  "9": {
+    "label": "9",
+    "script": "latin",
+    "unicode": "U+0039"
+  },
+  "10": {
+    "label": "A",
+    "script": "latin",
+    "unicode": "U+0041"
+  },
+  "11": {
+    "label": "B",
+    "script": "latin",
+    "unicode": "U+0042"
+  },
+  "12": {
+    "label": "C",
+    "script": "latin",
+    "unicode": "U+0043"
+  },
+  "13": {
+    "label": "D",
+    "script": "latin",
+    "unicode": "U+0044"
+  },
+  "14": {
+    "label": "E",
+    "script": "latin",
+    "unicode": "U+0045"
+  },
+  "15": {
+    "label": "F",
+    "script": "latin",
+    "unicode": "U+0046"
+  },
+  "16": {
+    "label": "G",
+    "script": "latin",
+    "unicode": "U+0047"
+  },
+  "17": {
+    "label": "H",
+    "script": "latin",
+    "unicode": "U+0048"
+  },
+  "18": {
+    "label": "I",
+    "script": "latin",
+    "unicode": "U+0049"
+  },
+  "19": {
+    "label": "J",
+    "script": "latin",
+    "unicode": "U+004A"
+  },
+  "20": {
+    "label": "K",
+    "script": "latin",
+    "unicode": "U+004B"
+  },
+  "21": {
+    "label": "L",
+    "script": "latin",
+    "unicode": "U+004C"
+  },
+  "22": {
+    "label": "M",
+    "script": "latin",
+    "unicode": "U+004D"
+  },
+  "23": {
+    "label": "N",
+    "script": "latin",
+    "unicode": "U+004E"
+  },
+  "24": {
+    "label": "O",
+    "script": "latin",
+    "unicode": "U+004F"
+  },
+  "25": {
+    "label": "P",
+    "script": "latin",
+    "unicode": "U+0050"
+  },
+  "26": {
+    "label": "Q",
+    "script": "latin",
+    "unicode": "U+0051"
+  },
+  "27": {
+    "label": "R",
+    "script": "latin",
+    "unicode": "U+0052"
+  },
+  "28": {
+    "label": "S",
+    "script": "latin",
+    "unicode": "U+0053"
+  },
+  "29": {
+    "label": "T",
+    "script": "latin",
+    "unicode": "U+0054"
+  },
+  "30": {
+    "label": "U",
+    "script": "latin",
+    "unicode": "U+0055"
+  },
+  "31": {
+    "label": "V",
+    "script": "latin",
+    "unicode": "U+0056"
+  },
+  "32": {
+    "label": "W",
+    "script": "latin",
+    "unicode": "U+0057"
+  },
+  "33": {
+    "label": "X",
+    "script": "latin",
+    "unicode": "U+0058"
+  },
+  "34": {
+    "label": "Y",
+    "script": "latin",
+    "unicode": "U+0059"
+  },
+  "35": {
+    "label": "Z",
+    "script": "latin",
+    "unicode": "U+005A"
+  },
+  "36": {
+    "label": "a",
+    "script": "latin",
+    "unicode": "U+0061"
+  },
+  "37": {
+    "label": "b",
+    "script": "latin",
+    "unicode": "U+0062"
+  },
+  "38": {
+    "label": "c",
+    "script": "latin",
+    "unicode": "U+0063"
+  },
+  "39": {
+    "label": "d",
+    "script": "latin",
+    "unicode": "U+0064"
+  },
+  "40": {
+    "label": "e",
+    "script": "latin",
+    "unicode": "U+0065"
+  },
+  "41": {
+    "label": "f",
+    "script": "latin",
+    "unicode": "U+0066"
+  },
+  "42": {
+    "label": "g",
+    "script": "latin",
+    "unicode": "U+0067"
+  },
+  "43": {
+    "label": "h",
+    "script": "latin",
+    "unicode": "U+0068"
+  },
+  "44": {
+    "label": "i",
+    "script": "latin",
+    "unicode": "U+0069"
+  },
+  "45": {
+    "label": "j",
+    "script": "latin",
+    "unicode": "U+006A"
+  },
+  "46": {
+    "label": "k",
+    "script": "latin",
+    "unicode": "U+006B"
+  },
+  "47": {
+    "label": "l",
+    "script": "latin",
+    "unicode": "U+006C"
+  },
+  "48": {
+    "label": "m",
+    "script": "latin",
+    "unicode": "U+006D"
+  },
+  "49": {
+    "label": "n",
+    "script": "latin",
+    "unicode": "U+006E"
+  },
+  "50": {
+    "label": "o",
+    "script": "latin",
+    "unicode": "U+006F"
+  },
+  "51": {
+    "label": "p",
+    "script": "latin",
+    "unicode": "U+0070"
+  },
+  "52": {
+    "label": "q",
+    "script": "latin",
+    "unicode": "U+0071"
+  },
+  "53": {
+    "label": "r",
+    "script": "latin",
+    "unicode": "U+0072"
+  },
+  "54": {
+    "label": "s",
+    "script": "latin",
+    "unicode": "U+0073"
+  },
+  "55": {
+    "label": "t",
+    "script": "latin",
+    "unicode": "U+0074"
+  },
+  "56": {
+    "label": "u",
+    "script": "latin",
+    "unicode": "U+0075"
+  },
+  "57": {
+    "label": "v",
+    "script": "latin",
+    "unicode": "U+0076"
+  },
+  "58": {
+    "label": "w",
+    "script": "latin",
+    "unicode": "U+0077"
+  },
+  "59": {
+    "label": "x",
+    "script": "latin",
+    "unicode": "U+0078"
+  },
+  "60": {
+    "label": "y",
+    "script": "latin",
+    "unicode": "U+0079"
+  },
+  "61": {
+    "label": "z",
+    "script": "latin",
+    "unicode": "U+007A"
+  },
+  "62": {
+    "label": "০",
+    "script": "bengali",
+    "unicode": "U+09E6",
+    "type": "digit",
+    "bangla_folder": 1
+  },
+  "63": {
+    "label": "১",
+    "script": "bengali",
+    "unicode": "U+09E7",
+    "type": "digit",
+    "bangla_folder": 2
+  },
+  "64": {
+    "label": "২",
+    "script": "bengali",
+    "unicode": "U+09E8",
+    "type": "digit",
+    "bangla_folder": 3
+  },
+  "65": {
+    "label": "৩",
+    "script": "bengali",
+    "unicode": "U+09E9",
+    "type": "digit",
+    "bangla_folder": 4
+  },
+  "66": {
+    "label": "৪",
+    "script": "bengali",
+    "unicode": "U+09EA",
+    "type": "digit",
+    "bangla_folder": 5
+  },
+  "67": {
+    "label": "৫",
+    "script": "bengali",
+    "unicode": "U+09EB",
+    "type": "digit",
+    "bangla_folder": 6
+  },
+  "68": {
+    "label": "৬",
+    "script": "bengali",
+    "unicode": "U+09EC",
+    "type": "digit",
+    "bangla_folder": 7
+  },
+  "69": {
+    "label": "৭",
+    "script": "bengali",
+    "unicode": "U+09ED",
+    "type": "digit",
+    "bangla_folder": 8
+  },
+  "70": {
+    "label": "৮",
+    "script": "bengali",
+    "unicode": "U+09EE",
+    "type": "digit",
+    "bangla_folder": 9
+  },
+  "71": {
+    "label": "৯",
+    "script": "bengali",
+    "unicode": "U+09EF",
+    "type": "digit",
+    "bangla_folder": 10
+  },
+  "72": {
+    "label": "অ",
+    "script": "bengali",
+    "unicode": "U+0985",
+    "type": "vowel",
+    "bangla_folder": 11
+  },
+  "73": {
+    "label": "আ",
+    "script": "bengali",
+    "unicode": "U+0986",
+    "type": "vowel",
+    "bangla_folder": 12
+  },
+  "74": {
+    "label": "ই",
+    "script": "bengali",
+    "unicode": "U+0987",
+    "type": "vowel",
+    "bangla_folder": 13
+  },
+  "75": {
+    "label": "ঈ",
+    "script": "bengali",
+    "unicode": "U+0988",
+    "type": "vowel",
+    "bangla_folder": 14
+  },
+  "76": {
+    "label": "উ",
+    "script": "bengali",
+    "unicode": "U+0989",
+    "type": "vowel",
+    "bangla_folder": 15
+  },
+  "77": {
+    "label": "ঊ",
+    "script": "bengali",
+    "unicode": "U+098A",
+    "type": "vowel",
+    "bangla_folder": 16
+  },
+  "78": {
+    "label": "ঋ",
+    "script": "bengali",
+    "unicode": "U+098B",
+    "type": "vowel",
+    "bangla_folder": 17
+  },
+  "79": {
+    "label": "এ",
+    "script": "bengali",
+    "unicode": "U+098F",
+    "type": "vowel",
+    "bangla_folder": 18
+  },
+  "80": {
+    "label": "ঐ",
+    "script": "bengali",
+    "unicode": "U+0990",
+    "type": "vowel",
+    "bangla_folder": 19
+  },
+  "81": {
+    "label": "ও",
+    "script": "bengali",
+    "unicode": "U+0993",
+    "type": "vowel",
+    "bangla_folder": 20
+  },
+  "82": {
+    "label": "ঔ",
+    "script": "bengali",
+    "unicode": "U+0994",
+    "type": "vowel",
+    "bangla_folder": 21
+  },
+  "83": {
+    "label": "ক",
+    "script": "bengali",
+    "unicode": "U+0995",
+    "type": "consonant",
+    "bangla_folder": 22
+  },
+  "84": {
+    "label": "খ",
+    "script": "bengali",
+    "unicode": "U+0996",
+    "type": "consonant",
+    "bangla_folder": 23
+  },
+  "85": {
+    "label": "গ",
+    "script": "bengali",
+    "unicode": "U+0997",
+    "type": "consonant",
+    "bangla_folder": 24
+  },
+  "86": {
+    "label": "ঘ",
+    "script": "bengali",
+    "unicode": "U+0998",
+    "type": "consonant",
+    "bangla_folder": 25
+  },
+  "87": {
+    "label": "ঙ",
+    "script": "bengali",
+    "unicode": "U+0999",
+    "type": "consonant",
+    "bangla_folder": 26
+  },
+  "88": {
+    "label": "চ",
+    "script": "bengali",
+    "unicode": "U+099A",
+    "type": "consonant",
+    "bangla_folder": 27
+  },
+  "89": {
+    "label": "ছ",
+    "script": "bengali",
+    "unicode": "U+099B",
+    "type": "consonant",
+    "bangla_folder": 28
+  },
+  "90": {
+    "label": "জ",
+    "script": "bengali",
+    "unicode": "U+099C",
+    "type": "consonant",
+    "bangla_folder": 29
+  },
+  "91": {
+    "label": "ঝ",
+    "script": "bengali",
+    "unicode": "U+099D",
+    "type": "consonant",
+    "bangla_folder": 30
+  },
+  "92": {
+    "label": "ঞ",
+    "script": "bengali",
+    "unicode": "U+099E",
+    "type": "consonant",
+    "bangla_folder": 31
+  },
+  "93": {
+    "label": "ট",
+    "script": "bengali",
+    "unicode": "U+099F",
+    "type": "consonant",
+    "bangla_folder": 32
+  },
+  "94": {
+    "label": "ঠ",
+    "script": "bengali",
+    "unicode": "U+09A0",
+    "type": "consonant",
+    "bangla_folder": 33
+  },
+  "95": {
+    "label": "ড",
+    "script": "bengali",
+    "unicode": "U+09A1",
+    "type": "consonant",
+    "bangla_folder": 34
+  },
+  "96": {
+    "label": "ঢ",
+    "script": "bengali",
+    "unicode": "U+09A2",
+    "type": "consonant",
+    "bangla_folder": 35
+  },
+  "97": {
+    "label": "ণ",
+    "script": "bengali",
+    "unicode": "U+09A3",
+    "type": "consonant",
+    "bangla_folder": 36
+  },
+  "98": {
+    "label": "ত",
+    "script": "bengali",
+    "unicode": "U+09A4",
+    "type": "consonant",
+    "bangla_folder": 37
+  },
+  "99": {
+    "label": "থ",
+    "script": "bengali",
+    "unicode": "U+09A5",
+    "type": "consonant",
+    "bangla_folder": 38
+  },
+  "100": {
+    "label": "দ",
+    "script": "bengali",
+    "unicode": "U+09A6",
+    "type": "consonant",
+    "bangla_folder": 39
+  },
+  "101": {
+    "label": "ধ",
+    "script": "bengali",
+    "unicode": "U+09A7",
+    "type": "consonant",
+    "bangla_folder": 40
+  },
+  "102": {
+    "label": "ন",
+    "script": "bengali",
+    "unicode": "U+09A8",
+    "type": "consonant",
+    "bangla_folder": 41
+  },
+  "103": {
+    "label": "প",
+    "script": "bengali",
+    "unicode": "U+09AA",
+    "type": "consonant",
+    "bangla_folder": 42
+  },
+  "104": {
+    "label": "ফ",
+    "script": "bengali",
+    "unicode": "U+09AB",
+    "type": "consonant",
+    "bangla_folder": 43
+  },
+  "105": {
+    "label": "ব",
+    "script": "bengali",
+    "unicode": "U+09AC",
+    "type": "consonant",
+    "bangla_folder": 44
+  },
+  "106": {
+    "label": "ভ",
+    "script": "bengali",
+    "unicode": "U+09AD",
+    "type": "consonant",
+    "bangla_folder": 45
+  },
+  "107": {
+    "label": "ম",
+    "script": "bengali",
+    "unicode": "U+09AE",
+    "type": "consonant",
+    "bangla_folder": 46
+  },
+  "108": {
+    "label": "য",
+    "script": "bengali",
+    "unicode": "U+09AF",
+    "type": "consonant",
+    "bangla_folder": 47
+  },
+  "109": {
+    "label": "র",
+    "script": "bengali",
+    "unicode": "U+09B0",
+    "type": "consonant",
+    "bangla_folder": 48
+  },
+  "110": {
+    "label": "ল",
+    "script": "bengali",
+    "unicode": "U+09B2",
+    "type": "consonant",
+    "bangla_folder": 49
+  },
+  "111": {
+    "label": "শ",
+    "script": "bengali",
+    "unicode": "U+09B6",
+    "type": "consonant",
+    "bangla_folder": 50
+  },
+  "112": {
+    "label": "ষ",
+    "script": "bengali",
+    "unicode": "U+09B7",
+    "type": "consonant",
+    "bangla_folder": 51
+  },
+  "113": {
+    "label": "স",
+    "script": "bengali",
+    "unicode": "U+09B8",
+    "type": "consonant",
+    "bangla_folder": 52
+  },
+  "114": {
+    "label": "হ",
+    "script": "bengali",
+    "unicode": "U+09B9",
+    "type": "consonant",
+    "bangla_folder": 53
+  },
+  "115": {
+    "label": "ড়",
+    "script": "bengali",
+    "unicode": "U+09DC",
+    "type": "consonant",
+    "bangla_folder": 54
+  },
+  "116": {
+    "label": "ঢ়",
+    "script": "bengali",
+    "unicode": "U+09DD",
+    "type": "consonant",
+    "bangla_folder": 55
+  },
+  "117": {
+    "label": "য়",
+    "script": "bengali",
+    "unicode": "U+09DF",
+    "type": "consonant",
+    "bangla_folder": 56
+  },
+  "118": {
+    "label": "ৎ",
+    "script": "bengali",
+    "unicode": "U+09CE",
+    "type": "sign",
+    "bangla_folder": 57
+  },
+  "119": {
+    "label": "ং",
+    "script": "bengali",
+    "unicode": "U+0982",
+    "type": "sign",
+    "bangla_folder": 58
+  },
+  "120": {
+    "label": "ঃ",
+    "script": "bengali",
+    "unicode": "U+0983",
+    "type": "sign",
+    "bangla_folder": 59
+  },
+  "121": {
+    "label": "ঁ",
+    "script": "bengali",
+    "unicode": "U+0981",
+    "type": "sign",
+    "bangla_folder": 60
+  },
+  "122": {
+    "label": "ক্ষ",
+    "script": "bengali",
+    "unicode": "U+0995+U+09CD+U+09B7",
+    "type": "compound",
+    "bangla_folder": 61
+  },
+  "123": {
+    "label": "জ্ঞ",
+    "script": "bengali",
+    "unicode": "U+099C+U+09CD+U+099E",
+    "type": "compound",
+    "bangla_folder": 62
+  },
+  "124": {
+    "label": "ঞ্চ",
+    "script": "bengali",
+    "unicode": "U+099E+U+09CD+U+099A",
+    "type": "compound",
+    "bangla_folder": 63
+  },
+  "125": {
+    "label": "ঞ্ছ",
+    "script": "bengali",
+    "unicode": "U+099E+U+09CD+U+099B",
+    "type": "compound",
+    "bangla_folder": 64
+  },
+  "126": {
+    "label": "ঞ্জ",
+    "script": "bengali",
+    "unicode": "U+099E+U+09CD+U+099C",
+    "type": "compound",
+    "bangla_folder": 65
+  },
+  "127": {
+    "label": "ত্ত",
+    "script": "bengali",
+    "unicode": "U+09A4+U+09CD+U+09A4",
+    "type": "compound",
+    "bangla_folder": 66
+  },
+  "128": {
+    "label": "ত্র",
+    "script": "bengali",
+    "unicode": "U+09A4+U+09CD+U+09B0",
+    "type": "compound",
+    "bangla_folder": 67
+  },
+  "129": {
+    "label": "দ্ধ",
+    "script": "bengali",
+    "unicode": "U+09A6+U+09CD+U+09A7",
+    "type": "compound",
+    "bangla_folder": 68
+  },
+  "130": {
+    "label": "দ্ব",
+    "script": "bengali",
+    "unicode": "U+09A6+U+09CD+U+09AC",
+    "type": "compound",
+    "bangla_folder": 69
+  },
+  "131": {
+    "label": "ন্ত",
+    "script": "bengali",
+    "unicode": "U+09A8+U+09CD+U+09A4",
+    "type": "compound",
+    "bangla_folder": 70
+  },
+  "132": {
+    "label": "ন্দ",
+    "script": "bengali",
+    "unicode": "U+09A8+U+09CD+U+09A6",
+    "type": "compound",
+    "bangla_folder": 71
+  },
+  "133": {
+    "label": "ন্ধ",
+    "script": "bengali",
+    "unicode": "U+09A8+U+09CD+U+09A7",
+    "type": "compound",
+    "bangla_folder": 72
+  },
+  "134": {
+    "label": "ম্প",
+    "script": "bengali",
+    "unicode": "U+09AE+U+09CD+U+09AA",
+    "type": "compound",
+    "bangla_folder": 73
+  },
+  "135": {
+    "label": "ল্ক",
+    "script": "bengali",
+    "unicode": "U+09B2+U+09CD+U+0995",
+    "type": "compound",
+    "bangla_folder": 74
+  },
+  "136": {
+    "label": "ষ্ট",
+    "script": "bengali",
+    "unicode": "U+09B7+U+09CD+U+099F",
+    "type": "compound",
+    "bangla_folder": 75
+  },
+  "137": {
+    "label": "স্ত",
+    "script": "bengali",
+    "unicode": "U+09B8+U+09CD+U+09A4",
+    "type": "compound",
+    "bangla_folder": 76
+  },
+  "138": {
+    "label": "ক্ত",
+    "script": "bengali",
+    "unicode": "U+0995+U+09CD+U+09A4",
+    "type": "compound",
+    "bangla_folder": 77
+  },
+  "139": {
+    "label": "ক্র",
+    "script": "bengali",
+    "unicode": "U+0995+U+09CD+U+09B0",
+    "type": "compound",
+    "bangla_folder": 78
+  },
+  "140": {
+    "label": "ক্ম",
+    "script": "bengali",
+    "unicode": "U+0995+U+09CD+U+09AE",
+    "type": "compound",
+    "bangla_folder": 79
+  },
+  "141": {
+    "label": "গ্ন",
+    "script": "bengali",
+    "unicode": "U+0997+U+09CD+U+09A8",
+    "type": "compound",
+    "bangla_folder": 80
+  },
+  "142": {
+    "label": "ঙ্ক",
+    "script": "bengali",
+    "unicode": "U+0999+U+09CD+U+0995",
+    "type": "compound",
+    "bangla_folder": 81
+  },
+  "143": {
+    "label": "ঙ্গ",
+    "script": "bengali",
+    "unicode": "U+0999+U+09CD+U+0997",
+    "type": "compound",
+    "bangla_folder": 82
+  },
+  "144": {
+    "label": "ণ্ড",
+    "script": "bengali",
+    "unicode": "U+09A3+U+09CD+U+09A1",
+    "type": "compound",
+    "bangla_folder": 83
+  },
+  "145": {
+    "label": "হ্ম",
+    "script": "bengali",
+    "unicode": "U+09B9+U+09CD+U+09AE",
+    "type": "compound",
+    "bangla_folder": 84
+  }
+}

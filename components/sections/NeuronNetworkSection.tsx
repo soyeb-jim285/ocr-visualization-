@@ -14,6 +14,7 @@ import { NeuronNetworkCanvas } from "@/components/canvas/NeuronNetworkCanvas";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ChartContainer } from "@/components/ui/chart";
+import { HeroHeader } from "@/components/ui/HeroHeaderPreview";
 import { Bar, BarChart, XAxis, YAxis, LabelList } from "recharts";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -87,10 +88,10 @@ function NeuronHeatmapTooltipContent({
           const rows = ch.length, cols = ch[0].length;
           let minVal = Infinity, maxVal = -Infinity;
           for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { if (ch[r][c] < minVal) minVal = ch[r][c]; if (ch[r][c] > maxVal) maxVal = ch[r][c]; }
-          const range = Math.max(maxVal - minVal, 0.001);
+          const range = maxVal - minVal;
           const cellW = w / cols, cellH = h / rows;
           for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-            const [cr, cg, cb] = viridis((ch[r][c] - minVal) / range);
+            const [cr, cg, cb] = viridis(range > 0 ? (ch[r][c] - minVal) / range : 0);
             ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
             ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
           }
@@ -265,10 +266,10 @@ function InspectorPanel({
           const ch = acts[selectedChannel]; const rows = ch.length, cols = ch[0].length;
           let minVal = Infinity, maxVal = -Infinity;
           for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { if (ch[r][c] < minVal) minVal = ch[r][c]; if (ch[r][c] > maxVal) maxVal = ch[r][c]; }
-          const range = Math.max(maxVal - minVal, 0.001);
+          const range = maxVal - minVal;
           const cellW = w / cols, cellH = h / rows;
           for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-            const [cr, cg, cb] = viridis((ch[r][c] - minVal) / range);
+            const [cr, cg, cb] = viridis(range > 0 ? (ch[r][c] - minVal) / range : 0);
             ctx.fillStyle = `rgb(${cr},${cg},${cb})`; ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
           }
         }
@@ -447,10 +448,10 @@ function ChannelThumb({ chIdx, activations, selected, color, onClick }: {
     const ch = activations[chIdx]; const rows = ch.length, cols = ch[0].length;
     let minVal = Infinity, maxVal = -Infinity;
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { if (ch[r][c] < minVal) minVal = ch[r][c]; if (ch[r][c] > maxVal) maxVal = ch[r][c]; }
-    const range = Math.max(maxVal - minVal, 0.001);
+    const range = maxVal - minVal;
     const cellW = 40 / cols, cellH = 40 / rows;
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      const [cr, cg, cb] = viridis((ch[r][c] - minVal) / range);
+      const [cr, cg, cb] = viridis(range > 0 ? (ch[r][c] - minVal) / range : 0);
       ctx.fillStyle = `rgb(${cr},${cg},${cb})`; ctx.fillRect(c * cellW, r * cellH, cellW + 0.5, cellH + 0.5);
     }
   }, [chIdx, activations]);
@@ -572,7 +573,7 @@ export function NeuronNetworkSection() {
     }
   }, [isShrinkingStage, setHeroStage]);
 
-  // Reset wave on clear (hasData→false) or new inference — only animate after revealed
+  // Reset wave + hero stage on clear (hasData→false) or new inference
   const prevHasDataRef = useRef(false);
   const pendingWaveRef = useRef(false);
   useEffect(() => {
@@ -580,6 +581,9 @@ export function NeuronNetworkSection() {
       waveRef.current = 0;
       waveTargetRef.current = 0;
       pendingWaveRef.current = false;
+      if (prevHasDataRef.current) {
+        setHeroStage("drawing");
+      }
     } else if (isRevealedStage) {
       // Already revealed — start wave immediately
       waveRef.current = 0;
@@ -589,7 +593,7 @@ export function NeuronNetworkSection() {
       pendingWaveRef.current = true;
     }
     prevHasDataRef.current = hasData;
-  }, [hasData, layerActivations, isRevealedStage]);
+  }, [hasData, layerActivations, isRevealedStage, setHeroStage]);
 
   // Start pending wave once revealed stage begins
   useEffect(() => {
@@ -688,60 +692,14 @@ export function NeuronNetworkSection() {
       }}
       transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* Hero text */}
-      <motion.div
-        className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col items-center px-4"
-        style={{ paddingTop: Math.max(24, expandedY * 0.22) }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isDrawingStage ? 1 : 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        <motion.p
-          className="mb-3 font-mono text-[11px] uppercase tracking-[0.25em] text-foreground/30"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -8 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          Interactive CNN Visualization
-        </motion.p>
-
-        <motion.h1
-          className="mb-3 text-center text-3xl font-semibold tracking-tight text-foreground sm:text-4xl lg:text-5xl"
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -10 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-        >
-          Neural Network X-Ray
-        </motion.h1>
-
-        <motion.p
-          className="max-w-sm text-center text-sm leading-relaxed text-foreground/40 sm:text-base"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -6 }}
-          transition={{ duration: 0.7, delay: 0.35 }}
-        >
-          Draw a character below to see every layer process it in real time
-        </motion.p>
-      </motion.div>
-
-      {/* Supported characters hint */}
-      <motion.p
-        className="pointer-events-none absolute inset-x-0 z-10 text-center font-mono text-[11px] tracking-wider text-foreground/15"
-        style={{ top: expandedY + expandedCanvasSize + 170 }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isDrawingStage ? 1 : 0 }}
-        transition={{ duration: 0.5, delay: 0.7 }}
-      >
-        A–Z &middot; a–z &middot; 0–9
-      </motion.p>
+      {/* Hero header */}
+      <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center px-4 pt-14 sm:pt-16">
+        <HeroHeader />
+      </div>
 
       <motion.div
         initial={false}
-        animate={
-          isRevealedStage
-            ? { opacity: 1, y: 0, scale: 1 }
-            : { opacity: 0, y: 30, scale: 0.98 }
-        }
+        animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         className={`relative flex w-full items-stretch overflow-hidden ${
           isRevealedStage ? "pointer-events-auto" : "pointer-events-none"
@@ -749,21 +707,21 @@ export function NeuronNetworkSection() {
         ref={containerRef}
       >
         <div className="relative min-w-0 flex-1" ref={canvasContainerRef}>
-          {isRevealedStage ? (
-            <>
-              <NeuronNetworkCanvas
-                width={containerSize.w}
-                height={containerSize.h}
-                activationMapRef={activationMapRef}
-                outputLabelsRef={outputLabelsRef}
-                hoveredLayerRef={hoveredLayerRef}
-                hoveredNeuronRef={hoveredNeuronRef}
-                waveRef={waveRef}
-                onHoverLayer={onHoverLayer}
-                onHoverNeuron={onHoverNeuron}
-                onClickLayer={onClickLayer}
-              />
+          <NeuronNetworkCanvas
+            width={containerSize.w}
+            height={containerSize.h}
+            activationMapRef={activationMapRef}
+            outputLabelsRef={outputLabelsRef}
+            hoveredLayerRef={hoveredLayerRef}
+            hoveredNeuronRef={hoveredNeuronRef}
+            waveRef={waveRef}
+            onHoverLayer={onHoverLayer}
+            onHoverNeuron={onHoverNeuron}
+            onClickLayer={onClickLayer}
+          />
 
+          {isRevealedStage && (
+            <>
               {/* Neuron tooltip */}
               <Tooltip open={!!hoveredNeuron && hasData}>
                 <TooltipTrigger asChild>
@@ -800,12 +758,6 @@ export function NeuronNetworkSection() {
                 </TooltipContent>
               </Tooltip>
             </>
-          ) : (
-            <div className="flex h-full items-center justify-center text-foreground/35">
-              <p className="text-xs uppercase tracking-[0.24em]">
-                Neural map appears after canvas shrinks
-              </p>
-            </div>
           )}
         </div>
 

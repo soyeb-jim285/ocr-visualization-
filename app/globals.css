@@ -201,3 +201,21 @@ canvas {
     @apply text-foreground;
   }
 }
+
+/* Hero header animations */
+@keyframes gradient-shift {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(8px); }
+  15% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+.animate-gradient-shift {
+  animation: gradient-shift 4s linear infinite;
+}
+.animate-fade-up {
+  animation: fade-up 2.2s ease both;
+}

@@ -5,7 +5,7 @@ import { useInferenceStore } from "@/stores/inferenceStore";
 import { EMNIST_CLASSES, BYMERGE_MERGED_INDICES } from "@/lib/model/classes";
 
 const CANVAS_W = 1100;
-const CANVAS_H = 680;
+const CANVAS_H = 1600;
 
 export function NodeGraph2D() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,8 +25,8 @@ export function NodeGraph2D() {
       const row = i < 32 ? i : i - 32;
       return {
         x: denseX + col * denseColGap,
-        y: 60 + row * 18,
-        dataIdx: Math.floor((i / denseCount) * 256),
+        y: 60 + row * 42,
+        dataIdx: Math.floor((i / denseCount) * 512),
       };
     });
 
@@ -36,6 +36,10 @@ export function NodeGraph2D() {
       { label: "0-9", start: 0, end: 10 },
       { label: "A-Z", start: 10, end: 36 },
       { label: "a-z", start: 36, end: 62 },
+      { label: "স্বর", start: 62, end: 73 },
+      { label: "ব্যঞ্জন", start: 73, end: 112 },
+      { label: "০-৯", start: 112, end: 122 },
+      { label: "যুক্ত", start: 122, end: 146 },
     ];
 
     const outputNodes: { x: number; y: number; classIdx: number; label: string; groupLabel: string }[] = [];
@@ -50,9 +54,9 @@ export function NodeGraph2D() {
           label: EMNIST_CLASSES[i],
           groupLabel: group.label,
         });
-        yPos += 13;
+        yPos += 11;
       }
-      yPos += 12; // gap between groups
+      yPos += 10; // gap between groups
     }
 
     return { denseNodes, outputNodes };
@@ -201,8 +205,8 @@ export function NodeGraph2D() {
     ctx.font = "12px sans-serif";
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(226, 232, 240, 0.45)";
-    ctx.fillText("Dense (256 neurons)", 72, 25);
-    ctx.fillText("Output (47 classes)", 730, 14);
+    ctx.fillText("Dense (512 neurons)", 72, 25);
+    ctx.fillText("Output (131 classes)", 730, 14);
 
     // Group labels
     ctx.font = "9px sans-serif";

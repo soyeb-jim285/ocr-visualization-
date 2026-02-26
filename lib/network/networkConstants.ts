@@ -31,17 +31,17 @@ const INPUT_DISPLAY = 20;
 
 const LAYERS_RAW: Omit<NeuronLayerDef, "displayNeurons">[] = [
   { name: "input", displayName: "Input", type: "input", totalNeurons: 784, color: "#94a3b8", rgb: parseHex("#94a3b8"), description: "28×28 pixels" },
-  { name: "conv1", displayName: "Conv1", type: "conv", totalNeurons: 32, color: "#6366f1", rgb: parseHex("#6366f1"), description: "32 channels (3×3)" },
-  { name: "relu1", displayName: "ReLU1", type: "relu", totalNeurons: 32, color: "#818cf8", rgb: parseHex("#818cf8"), description: "32 channels" },
-  { name: "conv2", displayName: "Conv2", type: "conv", totalNeurons: 64, color: "#a78bfa", rgb: parseHex("#a78bfa"), description: "64 channels (3×3)" },
-  { name: "relu2", displayName: "ReLU2", type: "relu", totalNeurons: 64, color: "#8b5cf6", rgb: parseHex("#8b5cf6"), description: "64 channels" },
-  { name: "pool1", displayName: "Pool1", type: "pool", totalNeurons: 64, color: "#06b6d4", rgb: parseHex("#06b6d4"), description: "64 ch → 14×14" },
-  { name: "conv3", displayName: "Conv3", type: "conv", totalNeurons: 128, color: "#0891b2", rgb: parseHex("#0891b2"), description: "128 channels (3×3)" },
-  { name: "relu3", displayName: "ReLU3", type: "relu", totalNeurons: 128, color: "#0e7490", rgb: parseHex("#0e7490"), description: "128 channels" },
-  { name: "pool2", displayName: "Pool2", type: "pool", totalNeurons: 128, color: "#22c55e", rgb: parseHex("#22c55e"), description: "128 ch → 7×7" },
-  { name: "dense1", displayName: "Dense", type: "dense", totalNeurons: 256, color: "#f59e0b", rgb: parseHex("#f59e0b"), description: "256 neurons" },
-  { name: "relu4", displayName: "ReLU4", type: "relu", totalNeurons: 256, color: "#d97706", rgb: parseHex("#d97706"), description: "256 neurons" },
-  { name: "output", displayName: "Output", type: "output", totalNeurons: 47, color: "#ef4444", rgb: parseHex("#ef4444"), description: "Top predictions" },
+  { name: "conv1", displayName: "Conv1", type: "conv", totalNeurons: 64, color: "#6366f1", rgb: parseHex("#6366f1"), description: "64 channels (3×3)" },
+  { name: "relu1", displayName: "ReLU1", type: "relu", totalNeurons: 64, color: "#818cf8", rgb: parseHex("#818cf8"), description: "64 channels" },
+  { name: "conv2", displayName: "Conv2", type: "conv", totalNeurons: 128, color: "#a78bfa", rgb: parseHex("#a78bfa"), description: "128 channels (3×3)" },
+  { name: "relu2", displayName: "ReLU2", type: "relu", totalNeurons: 128, color: "#8b5cf6", rgb: parseHex("#8b5cf6"), description: "128 channels" },
+  { name: "pool1", displayName: "Pool1", type: "pool", totalNeurons: 128, color: "#06b6d4", rgb: parseHex("#06b6d4"), description: "128 ch → 14×14" },
+  { name: "conv3", displayName: "Conv3", type: "conv", totalNeurons: 256, color: "#0891b2", rgb: parseHex("#0891b2"), description: "256 channels (3×3)" },
+  { name: "relu3", displayName: "ReLU3", type: "relu", totalNeurons: 256, color: "#0e7490", rgb: parseHex("#0e7490"), description: "256 channels" },
+  { name: "pool2", displayName: "Pool2", type: "pool", totalNeurons: 256, color: "#22c55e", rgb: parseHex("#22c55e"), description: "256 ch → 7×7" },
+  { name: "dense1", displayName: "Dense", type: "dense", totalNeurons: 512, color: "#f59e0b", rgb: parseHex("#f59e0b"), description: "512 neurons" },
+  { name: "relu4", displayName: "ReLU4", type: "relu", totalNeurons: 512, color: "#d97706", rgb: parseHex("#d97706"), description: "512 neurons" },
+  { name: "output", displayName: "Output", type: "output", totalNeurons: 131, color: "#ef4444", rgb: parseHex("#ef4444"), description: "Top predictions" },
 ];
 
 const MAX_TOTAL = Math.max(...LAYERS_RAW.filter(l => l.name !== "input").map(l => l.totalNeurons));

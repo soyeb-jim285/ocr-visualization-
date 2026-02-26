@@ -13,7 +13,7 @@ interface WeightEvolutionProps {
   snapshots: WeightSnapshots | null;
 }
 
-const EPOCHS = [0, 1, 2, 5, 10, 15, 20, 25, 30, 40, 49];
+const EPOCHS = [0, 1, 2, 5, 10, 15, 20, 25, 30, 40, 50, 60, 74];
 const LAYERS = ["conv1", "conv2", "conv3", "dense1"];
 const HIST_BINS = 50;
 
@@ -99,7 +99,7 @@ function KernelGrid({
   shape: number[];
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const numFilters = Math.min(32, weights.length / 9);
+  const numFilters = Math.min(64, weights.length / 9);
   const kSize = 3;
   const cellPx = 12;
   const gap = 2;
@@ -223,7 +223,7 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
       <div className="flex w-full max-w-lg flex-col items-center gap-2">
         <div className="flex w-full justify-between text-xs text-foreground/40">
           <span>Epoch 0 (random)</span>
-          <span>Epoch 49 (trained)</span>
+          <span>Epoch 74 (trained)</span>
         </div>
         <div className="flex w-full gap-1">
           {availableEpochs.map((epoch) => (

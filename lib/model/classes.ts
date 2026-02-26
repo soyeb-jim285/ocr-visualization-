@@ -1,16 +1,36 @@
-// EMNIST ByMerge: 62 output neurons, but only 47 classes are trained.
-// ByMerge merges 15 lowercase letters that look like their uppercase
-// counterparts into the uppercase class. Those indices are untrained.
+// Combined model: 146 output neurons
+// - Indices 0–61: EMNIST ByMerge (0-9, A-Z, a-z)
+// - Indices 62–145: BanglaLekha-Isolated (84 classes)
 //
-// Label mapping: 0-9 digits, 10-35 uppercase A-Z, 36-61 lowercase a-z
-// Merged (untrained) indices: c(38), i(44), j(45), k(46), l(47), m(48),
-//   o(50), p(51), s(54), u(56), v(57), w(58), x(59), y(60), z(61)
+// BanglaLekha folder order:
+//   Folders 1-11  → indices 62-72:  Vowels (স্বরবর্ণ)
+//   Folders 12-50 → indices 73-111: Consonants + signs (ব্যঞ্জনবর্ণ)
+//   Folders 51-60 → indices 112-121: Digits (সংখ্যা)
+//   Folders 61-84 → indices 122-145: Compounds (যুক্তবর্ণ)
+//
+// EMNIST ByMerge merges 15 lowercase letters that look like their uppercase
+// counterparts into the uppercase class. Those indices are untrained.
 export const EMNIST_CLASSES: string[] = [
+  // EMNIST (0-61)
   "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
   "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
   "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
   "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
   "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+  // BanglaLekha vowels — folders 1-11 (indices 62-72)
+  "অ", "আ", "ই", "ঈ", "উ", "ঊ", "ঋ", "এ", "ঐ", "ও", "ঔ",
+  // BanglaLekha consonants — folders 12-50 (indices 73-111)
+  "ক", "খ", "গ", "ঘ", "ঙ", "চ", "ছ", "জ", "ঝ", "ঞ",
+  "ট", "ঠ", "ড", "ঢ", "ণ", "ত", "থ", "দ", "ধ", "ন",
+  "প", "ফ", "ব", "ভ", "ম", "য", "র", "ল", "শ", "ষ",
+  "স", "হ", "ড়", "ঢ়", "য়",
+  "ৎ", "ং", "ঃ", "ঁ",
+  // BanglaLekha digits — folders 51-60 (indices 112-121)
+  "০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯",
+  // BanglaLekha compounds — folders 61-84 (indices 122-145)
+  "ক্ষ", "জ্ঞ", "ঞ্চ", "ঞ্ছ", "ঞ্জ", "ত্ত", "ত্র", "দ্ধ", "দ্ব", "ন্ত",
+  "ন্দ", "ন্ধ", "ম্প", "ল্ক", "ষ্ট", "স্ত", "ক্ত", "ক্র", "ক্ম", "গ্ন",
+  "ঙ্ক", "ঙ্গ", "ণ্ড", "হ্ম",
 ];
 
 // Indices merged in ByMerge (lowercase → uppercase). These output neurons
@@ -37,6 +57,10 @@ export const CLASS_GROUPS = {
   digits: { start: 0, end: 9, label: "Digits" },
   uppercase: { start: 10, end: 35, label: "Uppercase" },
   lowercase: { start: 36, end: 61, label: "Lowercase" },
+  bnVowels: { start: 62, end: 72, label: "স্বরবর্ণ" },
+  bnConsonants: { start: 73, end: 111, label: "ব্যঞ্জনবর্ণ" },
+  bnDigits: { start: 112, end: 121, label: "বাংলা সংখ্যা" },
+  bnCompounds: { start: 122, end: 145, label: "যুক্তবর্ণ" },
 } as const;
 
-export const NUM_CLASSES = 62;
+export const NUM_CLASSES = 146;

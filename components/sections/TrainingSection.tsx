@@ -34,7 +34,7 @@ export function TrainingSection() {
       <SectionHeader
         step={9}
         title="How It Learned: Training"
-        subtitle="The model wasn't born smart — it started with random weights and learned by seeing millions of examples. Over 50 epochs of training, it gradually improved its ability to recognize characters. Scrub through epochs to see how your drawing would be predicted at each stage."
+        subtitle="The model wasn't born smart — it started with random weights and learned by seeing millions of examples. Over 75 epochs of training, it gradually improved its ability to recognize characters. Scrub through epochs to see how your drawing would be predicted at each stage."
       />
 
       {/* Theory introduction */}
@@ -69,8 +69,8 @@ export function TrainingSection() {
           efficiently using the chain rule, flowing error signals backward
           through every layer. With Adam optimizer (
           <Latex math="\eta = 10^{-3}" />
-          ), the model converges over 50 epochs on the EMNIST ByMerge dataset —
-          roughly 700k training images of handwritten digits and letters.
+          ), the model converges over 75 epochs on EMNIST ByMerge + BanglaLekha-Isolated —
+          roughly 1M training images of handwritten characters in English and Bengali.
         </p>
       </div>
 

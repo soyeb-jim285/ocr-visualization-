@@ -1,18 +1,18 @@
 interface Conv1Data {
   weights: number[];
   biases: number[];
-  shape: [number, number, number, number]; // [32, 1, 3, 3]
+  shape: [number, number, number, number]; // [64, 1, 3, 3]
 }
 
 interface Conv1Weights {
-  kernels: number[][][]; // [32][3][3]
-  biases: number[];      // [32]
+  kernels: number[][][];
+  biases: number[];
 }
 
 let cached: Conv1Weights | null = null;
 
 /**
- * Fetch conv1 weights and reshape to [32][3][3] kernels.
+ * Fetch conv1 weights and reshape to [N][3][3] kernels.
  *
  * Kernels are transposed during reshape to match display-space convolution.
  * The EMNIST pipeline transposes the input before feeding it to the model,
@@ -23,7 +23,7 @@ let cached: Conv1Weights | null = null;
 export async function fetchConv1Weights(): Promise<Conv1Weights> {
   if (cached) return cached;
 
-  const res = await fetch("/models/emnist-cnn/conv1-weights.json");
+  const res = await fetch("/models/combined-cnn/conv1-weights.json");
   const data: Conv1Data = await res.json();
 
   const [numFilters, , kH, kW] = data.shape;
