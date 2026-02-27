@@ -438,7 +438,7 @@ class BanglaLekhaDataset(Dataset):
         w, h = img.size
         scale = target_size / max(w, h)
         new_w, new_h = int(w * scale), int(h * scale)
-        img = img.resize((new_w, new_h), Image.BILINEAR)
+        img = img.resize((new_w, new_h), Image.LANCZOS)
 
         # Center in target_size×target_size black canvas
         padded = Image.new("L", (target_size, target_size), 0)

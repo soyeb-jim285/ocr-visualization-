@@ -1,0 +1,5 @@
+runpod>=1.7.0
+datasets
+huggingface_hub
+onnx
+numpy

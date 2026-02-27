@@ -9,6 +9,7 @@ import { FullyConnectedSection } from "@/components/sections/FullyConnectedSecti
 import { SoftmaxSection } from "@/components/sections/SoftmaxSection";
 import { TrainingSection } from "@/components/sections/TrainingSection";
 import { NeuronNetworkSection } from "@/components/sections/NeuronNetworkSection";
+import { ModelLabWrapper } from "@/components/sections/ModelLabWrapper";
 
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { ScrollTracker } from "@/components/ui/ScrollTracker";
@@ -51,6 +52,9 @@ export default function Home() {
         </LazySection>
         <LazySection id="training">
           <TrainingSection />
+        </LazySection>
+        <LazySection id="model-lab">
+          <ModelLabWrapper />
         </LazySection>
       </main>
     </>

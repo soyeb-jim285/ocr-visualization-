@@ -22,7 +22,12 @@ export function useDrawingCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
+  const onStrokeEndRef = useRef(onStrokeEnd);
   const [hasDrawn, setHasDrawn] = useState(false);
+
+  useEffect(() => {
+    onStrokeEndRef.current = onStrokeEnd;
+  }, [onStrokeEnd]);
 
   const getCtx = useCallback(() => {
     return canvasRef.current?.getContext("2d") ?? null;
@@ -86,11 +91,11 @@ export function useDrawingCanvas({
     lastPoint.current = null;
 
     const canvas = canvasRef.current;
-    if (canvas && onStrokeEnd) {
+    if (canvas && onStrokeEndRef.current) {
       const ctx = canvas.getContext("2d")!;
-      onStrokeEnd(ctx.getImageData(0, 0, width, height));
+      onStrokeEndRef.current(ctx.getImageData(0, 0, width, height));
     }
-  }, [onStrokeEnd, width, height]);
+  }, [width, height]);
 
   // Initialize canvas on mount
   useEffect(() => {
