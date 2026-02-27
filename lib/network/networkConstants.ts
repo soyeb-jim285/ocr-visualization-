@@ -169,9 +169,11 @@ export function computeLayout(w: number, h: number) {
   const posLayerIdx = new Uint8Array(totalNeurons);
   const posNeuronIdx = new Uint8Array(totalNeurons);
 
-  const marginL = Math.max(12, Math.min(40, w * 0.03));
-  const marginR = marginL;
-  const marginY = Math.max(30, Math.min(60, h * 0.08));
+  const marginL = Math.max(20, Math.min(40, w * 0.04));
+  // Extra right margin for output-layer neuron labels drawn to the right of the last column
+  const marginR = Math.max(34, Math.min(55, w * 0.06));
+  // Bottom margin must fit layer-name labels (~38px below the last neuron)
+  const marginY = Math.max(44, Math.min(65, h * 0.09));
   const marginX = marginL; // used by layerX[0]
   const availW = w - marginL - marginR;
   const layerSpacing = availW / (LAYERS.length - 1);

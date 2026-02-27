@@ -9,7 +9,7 @@ import { FullyConnectedSection } from "@/components/sections/FullyConnectedSecti
 import { SoftmaxSection } from "@/components/sections/SoftmaxSection";
 import { TrainingSection } from "@/components/sections/TrainingSection";
 import { NeuronNetworkSection } from "@/components/sections/NeuronNetworkSection";
-import { ScrollProgress } from "@/components/ui/ScrollProgress";
+
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { ScrollTracker } from "@/components/ui/ScrollTracker";
 import { NetworkView3D } from "@/components/three/NetworkView3D";
@@ -19,7 +19,7 @@ export default function Home() {
   return (
     <>
       <EpochPrefetcher />
-      <ScrollProgress />
+
       <ViewToggle />
       <ScrollTracker />
       <NetworkView3D />
