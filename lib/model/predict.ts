@@ -1,5 +1,5 @@
 import * as ort from "onnxruntime-web";
-import { loadModel } from "./loadModel";
+import { loadModel, invalidateSession } from "./loadModel";
 import {
   INTERMEDIATE_OUTPUTS,
   LAYER_SHAPES,
@@ -21,13 +21,23 @@ export interface InferenceResult {
 export async function runInference(
   inputData: Float32Array
 ): Promise<InferenceResult> {
-  const session = await loadModel();
+  let session = await loadModel();
 
   // Create input tensor (NCHW: batch=1, channels=1, height=28, width=28)
   const inputTensor = new ort.Tensor("float32", inputData, [1, 1, 28, 28]);
 
-  // Run inference
-  const results = await session.run({ input: inputTensor });
+  let results;
+  try {
+    results = await session.run({ input: inputTensor });
+  } catch (e) {
+    // Session may be corrupted — recreate it and retry once
+    console.warn("ONNX session.run failed, recreating session:", e);
+    invalidateSession();
+    session = await loadModel();
+    results = await session.run({
+      input: new ort.Tensor("float32", inputData, [1, 1, 28, 28]),
+    });
+  }
 
   const layerActivations: LayerActivations = {};
 

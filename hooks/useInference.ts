@@ -5,6 +5,7 @@ import { preprocessCanvas } from "@/lib/model/preprocess";
 import { runInference } from "@/lib/model/predict";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { useUIStore } from "@/stores/uiStore";
+import { triggerCustomInfer } from "@/lib/model-lab/customInferBridge";
 
 export function useInference() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,19 +34,20 @@ export function useInference() {
 
       try {
         const { tensor, pixelArray } = preprocessCanvas(imageData);
-        // Abort if reset happened during preprocessing
         if (useInferenceStore.getState().generation !== gen) return;
         store.setInputTensor(pixelArray);
 
         const { prediction, layerActivations } = await runInference(tensor);
-        // Abort if reset happened during inference
         if (useInferenceStore.getState().generation !== gen) return;
         store.setPrediction(prediction);
         store.setLayerActivations(layerActivations);
+
+        // Trigger custom model inference AFTER main inference completes.
+        // ONNX Runtime WASM backend can't handle concurrent session.run() calls.
+        triggerCustomInfer(tensor);
       } catch (error) {
         console.error("Inference failed:", error);
       } finally {
-        // Only clear isInferring if this generation is still current
         const current = useInferenceStore.getState();
         if (current.generation === gen) {
           current.setIsInferring(false);

@@ -29,3 +29,8 @@ export async function loadModel(
 export function isModelLoaded(): boolean {
   return cachedSession !== null;
 }
+
+/** Invalidate the cached session so the next loadModel() re-creates it. */
+export function invalidateSession(): void {
+  cachedSession = null;
+}

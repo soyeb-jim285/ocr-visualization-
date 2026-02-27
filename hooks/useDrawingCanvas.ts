@@ -91,9 +91,16 @@ export function useDrawingCanvas({
     lastPoint.current = null;
 
     const canvas = canvasRef.current;
-    if (canvas && onStrokeEndRef.current) {
-      const ctx = canvas.getContext("2d")!;
-      onStrokeEndRef.current(ctx.getImageData(0, 0, width, height));
+    const cb = onStrokeEndRef.current;
+    if (canvas && cb) {
+      try {
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          cb(ctx.getImageData(0, 0, width, height));
+        }
+      } catch (e) {
+        console.error("stopDrawing: failed to capture canvas", e);
+      }
     }
   }, [width, height]);
 

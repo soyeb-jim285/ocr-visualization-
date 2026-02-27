@@ -5,6 +5,7 @@ import { useDrawingCanvas } from "@/hooks/useDrawingCanvas";
 import { useInference } from "@/hooks/useInference";
 import { ImageUploader } from "@/components/canvas/ImageUploader";
 import { useInferenceStore } from "@/stores/inferenceStore";
+import { triggerCustomClear } from "@/lib/model-lab/customInferBridge";
 
 const INTERNAL_SIZE = 280; // Internal resolution
 
@@ -52,6 +53,7 @@ export function DrawingCanvas({
     cancelInference();
     rawClear();
     useInferenceStore.getState().reset();
+    triggerCustomClear();
     hasFiredFirstDrawRef.current = false;
   }, [rawClear, cancelInference]);
 

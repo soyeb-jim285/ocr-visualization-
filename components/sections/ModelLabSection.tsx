@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { SectionWrapper } from "@/components/ui/SectionWrapper";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ArchitectureBuilder } from "@/components/model-lab/ArchitectureBuilder";
@@ -9,6 +9,10 @@ import { TrainingChart } from "@/components/model-lab/TrainingChart";
 import { ModelLabInference } from "@/components/model-lab/ModelLabInference";
 import { useModelLabStore } from "@/stores/modelLabStore";
 import { disposeModel } from "@/lib/model-lab/memoryManager";
+import {
+  registerCustomInfer,
+  unregisterCustomInfer,
+} from "@/lib/model-lab/customInferBridge";
 import type * as ort from "onnxruntime-web";
 
 // TF.js types — the actual import is dynamic
@@ -133,9 +137,10 @@ export function ModelLabSection() {
       store.getState().setCurrentEpoch(metrics.epoch);
     },
     onComplete: (session: ort.InferenceSession, layerNames: string[], _numClasses: number) => {
+      const validNames = layerNames.filter((n) => n && n !== "output");
       onnxSessionRef.current = session;
-      gpuLayerNamesRef.current = layerNames;
-      store.getState().setTrainedModel(layerNames);
+      gpuLayerNamesRef.current = validNames;
+      store.getState().setTrainedModel(validNames);
       store.getState().setPhase("trained");
       store.getState().setGpuStatus(null);
     },
@@ -224,35 +229,77 @@ export function ModelLabSection() {
 
   const handleCustomInfer = useCallback(
     async (inputData: Float32Array) => {
-      const mode = store.getState().trainingMode;
+      try {
+        const mode = store.getState().trainingMode;
+        const hasOnnx = !!onnxSessionRef.current;
+        const hasTfModel = !!modelRef.current;
+        const hasTf = !!tfRef.current;
+        console.log("[model-lab] handleCustomInfer called", {
+          mode,
+          hasOnnx,
+          hasTfModel,
+          hasTf,
+          inputLen: inputData.length,
+        });
 
-      if ((mode === "gpu" || mode === "hf") && onnxSessionRef.current) {
-        const { runGpuModelInference } = await import(
-          "@/lib/model-lab/gpuInference"
-        );
-        const result = await runGpuModelInference(
-          onnxSessionRef.current,
-          gpuLayerNamesRef.current,
-          inputData,
-        );
-        store.getState().setCustomPrediction(result.prediction);
-        store.getState().setCustomActivations(result.layerActivations);
-      } else if (modelRef.current && tfRef.current) {
-        const { runCustomInference } = await import(
-          "@/lib/model-lab/customInference"
-        );
-        const result = runCustomInference(
-          tfRef.current,
-          modelRef.current,
-          intermediateNamesRef.current,
-          inputData,
-        );
-        store.getState().setCustomPrediction(result.prediction);
-        store.getState().setCustomActivations(result.layerActivations);
+        if ((mode === "gpu" || mode === "hf") && onnxSessionRef.current) {
+          const { runGpuModelInference } = await import(
+            "@/lib/model-lab/gpuInference"
+          );
+          const result = await runGpuModelInference(
+            onnxSessionRef.current,
+            gpuLayerNamesRef.current,
+            inputData,
+          );
+          console.log("[model-lab] GPU inference result:", result.prediction?.length, "classes");
+          store.getState().setCustomPrediction(result.prediction);
+          store.getState().setCustomActivations(result.layerActivations);
+        } else if (modelRef.current && tfRef.current) {
+          const { runCustomInference } = await import(
+            "@/lib/model-lab/customInference"
+          );
+          const result = runCustomInference(
+            tfRef.current,
+            modelRef.current,
+            intermediateNamesRef.current,
+            inputData,
+          );
+          console.log("[model-lab] Browser inference result:", result.prediction?.length, "classes");
+          store.getState().setCustomPrediction(result.prediction);
+          store.getState().setCustomActivations(result.layerActivations);
+        } else {
+          console.warn("[model-lab] No model available for inference — neither branch matched");
+        }
+      } catch (e) {
+        console.error("Custom model inference failed:", e);
       }
     },
     [store],
   );
+
+  // Register the custom inference callback so the main inference pipeline
+  // (useInference) can trigger it directly after each stroke.
+  const handleCustomInferRef = useRef(handleCustomInfer);
+  handleCustomInferRef.current = handleCustomInfer;
+  useEffect(() => {
+    registerCustomInfer(
+      (tensor) => {
+        if (!store.getState().hasTrainedModel) return;
+        console.log("[model-lab] bridge: triggering custom inference");
+        handleCustomInferRef.current(tensor).catch((e) => {
+          console.error("[model-lab] bridge: custom inference failed:", e);
+        });
+      },
+      () => {
+        console.log("[model-lab] bridge: clearing custom predictions");
+        store.getState().setCustomPrediction(null);
+        store.getState().setCustomActivations({});
+      },
+    );
+    return () => {
+      unregisterCustomInfer();
+    };
+  }, [store]);
 
   return (
     <SectionWrapper id="model-lab" fullHeight={false}>
@@ -278,7 +325,7 @@ export function ModelLabSection() {
           <TrainingChart />
 
           {(phase === "trained" || hasTrainedModel) && (
-            <ModelLabInference onInfer={handleCustomInfer} />
+            <ModelLabInference />
           )}
 
           {phase === "idle" && (

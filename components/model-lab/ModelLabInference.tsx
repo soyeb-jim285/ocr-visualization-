@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/chart";
 import { useModelLabStore } from "@/stores/modelLabStore";
 import { useInferenceStore } from "@/stores/inferenceStore";
-import { preprocessCanvas } from "@/lib/model/preprocess";
 import { EMNIST_CLASSES } from "@/lib/model/classes";
 
 // Precompute label maps to avoid creating new arrays in selectors
@@ -36,10 +35,6 @@ const customConfig = {
 const onnxConfig = {
   prob: { label: "Confidence", color: "#06b6d4" },
 } satisfies ChartConfig;
-
-interface ModelLabInferenceProps {
-  onInfer: (inputData: Float32Array) => void;
-}
 
 function getTop5(prediction: number[] | null, labelMap: string[]) {
   if (!prediction) return [];
@@ -135,21 +130,10 @@ function PredictionChart({
   );
 }
 
-export function ModelLabInference({ onInfer }: ModelLabInferenceProps) {
+export function ModelLabInference() {
   const customPrediction = useModelLabStore((s) => s.customPrediction);
   const datasetType = useModelLabStore((s) => s.datasetType);
   const onnxPrediction = useInferenceStore((s) => s.prediction);
-  const inputImageData = useInferenceStore((s) => s.inputImageData);
-  const prevImageDataRef = useRef<ImageData | null>(null);
-
-  // Run custom inference whenever the main canvas input changes
-  useEffect(() => {
-    if (!inputImageData || inputImageData === prevImageDataRef.current) return;
-    prevImageDataRef.current = inputImageData;
-
-    const { tensor } = preprocessCanvas(inputImageData);
-    onInfer(tensor);
-  }, [inputImageData, onInfer]);
 
   const customLabelMap = LABEL_MAPS[datasetType] ?? EMNIST_CLASSES;
 

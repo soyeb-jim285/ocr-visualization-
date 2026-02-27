@@ -24,12 +24,22 @@ export async function runGpuModelInference(
   inputData: Float32Array,
 ): Promise<GpuInferenceResult> {
   const inputTensor = new ort.Tensor("float32", inputData, [1, 1, 28, 28]);
-  const results = await session.run({ input: inputTensor });
+
+  // Only request the specific outputs we need — the intermediate layer names
+  // plus "output". Avoid using session.outputNames which may include empty names
+  // from the ONNX export that cause OrtRun to fail.
+  const requestedOutputs = [
+    ...intermediateLayerNames.filter((n) => n && n !== "output"),
+    "output",
+  ];
+  console.log("[gpu-infer] session.outputNames:", session.outputNames);
+  console.log("[gpu-infer] requesting outputs:", requestedOutputs);
+  const results = await session.run({ input: inputTensor }, requestedOutputs);
 
   const layerActivations: LayerActivations = {};
 
   for (const name of intermediateLayerNames) {
-    if (name === "output") continue;
+    if (!name || name === "output") continue;
     const tensor = results[name];
     if (!tensor) continue;
 

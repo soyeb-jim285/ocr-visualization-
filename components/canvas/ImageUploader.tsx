@@ -22,18 +22,24 @@ export function ImageUploader({ compact = false }: ImageUploaderProps) {
 
       // Access actions via getState() to avoid subscribing to the entire store
       const store = useInferenceStore.getState();
+      const gen = store.generation;
       store.setIsInferring(true);
       try {
         const { tensor, pixelArray } = await preprocessImage(file);
+        if (useInferenceStore.getState().generation !== gen) return;
         store.setInputTensor(pixelArray);
 
         const { prediction, layerActivations } = await runInference(tensor);
+        if (useInferenceStore.getState().generation !== gen) return;
         store.setPrediction(prediction);
         store.setLayerActivations(layerActivations);
       } catch (error) {
         console.error("Image processing failed:", error);
       } finally {
-        useInferenceStore.getState().setIsInferring(false);
+        const current = useInferenceStore.getState();
+        if (current.generation === gen) {
+          current.setIsInferring(false);
+        }
       }
     },
     [modelLoaded]
