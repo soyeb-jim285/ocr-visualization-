@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
 import { useUIStore } from "@/stores/uiStore";
 import { SECTION_IDS } from "@/hooks/useScrollSection";
 
@@ -15,13 +14,12 @@ const SECTION_LABELS = [
   "Dense",
   "Softmax",
   "Training",
+  "Model Lab",
 ];
 
-export function ScrollProgress() {
-  const { scrollYProgress } = useScroll();
+export function Header() {
   const activeSection = useUIStore((s) => s.activeSection);
 
-  const scaleX = useTransform(scrollYProgress, [0, 1], [0, 1]);
   const lastSection = SECTION_LABELS.length - 1;
   const safeActiveSection = Math.min(Math.max(activeSection, 0), lastSection);
   const activeLabel = SECTION_LABELS[safeActiveSection] ?? SECTION_LABELS[0];
@@ -35,14 +33,6 @@ export function ScrollProgress() {
 
   return (
     <div className="fixed left-0 right-0 top-0 z-50">
-      {/* Progress bar */}
-      <div className="h-0.5 w-full bg-border/20">
-        <motion.div
-          className="h-full origin-left bg-accent-primary"
-          style={{ scaleX }}
-        />
-      </div>
-
       {/* Section dots - desktop */}
       <div className="hidden items-center justify-center gap-1 bg-background/70 py-2 backdrop-blur-lg md:flex">
         {SECTION_LABELS.map((label, i) => (

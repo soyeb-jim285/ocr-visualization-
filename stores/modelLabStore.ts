@@ -69,6 +69,7 @@ interface ModelLabState {
   removeConvLayer: (id: string) => void;
   updateConvLayer: (id: string, updates: Partial<ConvLayerConfig>) => void;
   reorderConvLayers: (fromIndex: number, toIndex: number) => void;
+  setConvLayerOrder: (layers: ConvLayerConfig[]) => void;
   setDenseConfig: (config: Partial<DenseConfig>) => void;
 
   // Actions — Mode
@@ -173,6 +174,12 @@ export const useModelLabStore = create<ModelLabState>((set, get) => ({
       const layers = [...s.architecture.convLayers];
       const [moved] = layers.splice(fromIndex, 1);
       layers.splice(toIndex, 0, moved);
+      const arch = { ...s.architecture, convLayers: layers };
+      return { architecture: arch, validation: revalidate(arch, s.datasetType) };
+    }),
+
+  setConvLayerOrder: (layers) =>
+    set((s) => {
       const arch = { ...s.architecture, convLayers: layers };
       return { architecture: arch, validation: revalidate(arch, s.datasetType) };
     }),

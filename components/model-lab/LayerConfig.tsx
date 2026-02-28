@@ -7,40 +7,12 @@ import {
   ACTIVATION_OPTIONS,
   POOLING_OPTIONS,
 } from "@/lib/model-lab/architecture";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Switch } from "@/components/ui/switch";
 
 interface LayerConfigProps {
   layer: ConvLayerConfig;
   onUpdate: (updates: Partial<ConvLayerConfig>) => void;
-}
-
-function ButtonGroup<T extends string | number>({
-  options,
-  value,
-  onChange,
-  format,
-}: {
-  options: readonly T[];
-  value: T;
-  onChange: (v: T) => void;
-  format?: (v: T) => string;
-}) {
-  return (
-    <div className="flex flex-wrap gap-1">
-      {options.map((opt) => (
-        <button
-          key={String(opt)}
-          onClick={() => onChange(opt)}
-          className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-            value === opt
-              ? "bg-indigo-500/20 text-indigo-400"
-              : "bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60"
-          }`}
-        >
-          {format ? format(opt) : String(opt)}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 export function LayerConfig({ layer, onUpdate }: LayerConfigProps) {
@@ -51,11 +23,23 @@ export function LayerConfig({ layer, onUpdate }: LayerConfigProps) {
         <label className="mb-1 block text-[11px] uppercase tracking-wider text-foreground/35">
           Filters
         </label>
-        <ButtonGroup
-          options={FILTER_OPTIONS}
-          value={layer.filters}
-          onChange={(v) => onUpdate({ filters: v })}
-        />
+        <ToggleGroup
+          type="single"
+          value={String(layer.filters)}
+          onValueChange={(v) => v && onUpdate({ filters: Number(v) as typeof layer.filters })}
+          spacing={1}
+          className="flex flex-wrap gap-1"
+        >
+          {FILTER_OPTIONS.map((opt) => (
+            <ToggleGroupItem
+              key={opt}
+              value={String(opt)}
+              className="h-auto min-w-0 shrink rounded-md px-2.5 py-1 text-xs font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
+            >
+              {opt}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
 
       {/* Kernel size */}
@@ -63,12 +47,23 @@ export function LayerConfig({ layer, onUpdate }: LayerConfigProps) {
         <label className="mb-1 block text-[11px] uppercase tracking-wider text-foreground/35">
           Kernel
         </label>
-        <ButtonGroup
-          options={KERNEL_OPTIONS}
-          value={layer.kernelSize}
-          onChange={(v) => onUpdate({ kernelSize: v as 3 | 5 | 7 })}
-          format={(v) => `${v}×${v}`}
-        />
+        <ToggleGroup
+          type="single"
+          value={String(layer.kernelSize)}
+          onValueChange={(v) => v && onUpdate({ kernelSize: Number(v) as 3 | 5 | 7 })}
+          spacing={1}
+          className="flex flex-wrap gap-1"
+        >
+          {KERNEL_OPTIONS.map((opt) => (
+            <ToggleGroupItem
+              key={opt}
+              value={String(opt)}
+              className="h-auto min-w-0 shrink rounded-md px-2.5 py-1 text-xs font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
+            >
+              {opt}×{opt}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
 
       {/* Activation */}
@@ -76,11 +71,23 @@ export function LayerConfig({ layer, onUpdate }: LayerConfigProps) {
         <label className="mb-1 block text-[11px] uppercase tracking-wider text-foreground/35">
           Activation
         </label>
-        <ButtonGroup<Activation>
-          options={ACTIVATION_OPTIONS}
+        <ToggleGroup
+          type="single"
           value={layer.activation}
-          onChange={(v) => onUpdate({ activation: v })}
-        />
+          onValueChange={(v) => v && onUpdate({ activation: v as Activation })}
+          spacing={1}
+          className="flex flex-wrap gap-1"
+        >
+          {ACTIVATION_OPTIONS.map((opt) => (
+            <ToggleGroupItem
+              key={opt}
+              value={opt}
+              className="h-auto min-w-0 shrink rounded-md px-2.5 py-1 text-xs font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
+            >
+              {opt}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
 
       {/* Pooling */}
@@ -88,27 +95,33 @@ export function LayerConfig({ layer, onUpdate }: LayerConfigProps) {
         <label className="mb-1 block text-[11px] uppercase tracking-wider text-foreground/35">
           Pooling
         </label>
-        <ButtonGroup<PoolingType>
-          options={POOLING_OPTIONS}
+        <ToggleGroup
+          type="single"
           value={layer.pooling}
-          onChange={(v) => onUpdate({ pooling: v })}
-        />
+          onValueChange={(v) => v && onUpdate({ pooling: v as PoolingType })}
+          spacing={1}
+          className="flex flex-wrap gap-1"
+        >
+          {POOLING_OPTIONS.map((opt) => (
+            <ToggleGroupItem
+              key={opt}
+              value={opt}
+              className="h-auto min-w-0 shrink rounded-md px-2.5 py-1 text-xs font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
+            >
+              {opt}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       </div>
 
       {/* BatchNorm toggle */}
       <div className="flex items-center gap-2">
-        <button
-          onClick={() => onUpdate({ batchNorm: !layer.batchNorm })}
-          className={`h-5 w-9 rounded-full transition ${
-            layer.batchNorm ? "bg-indigo-500" : "bg-white/10"
-          }`}
-        >
-          <div
-            className={`h-4 w-4 rounded-full bg-white transition-transform ${
-              layer.batchNorm ? "translate-x-4" : "translate-x-0.5"
-            }`}
-          />
-        </button>
+        <Switch
+          size="sm"
+          checked={layer.batchNorm}
+          onCheckedChange={(checked) => onUpdate({ batchNorm: checked })}
+          className="data-[state=checked]:bg-indigo-500"
+        />
         <span className="text-xs text-foreground/50">BatchNorm</span>
       </div>
     </div>

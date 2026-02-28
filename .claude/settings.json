@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); file_path=$(echo \"$input\" | jq -r '.tool_input.file_path // empty'); if echo \"$file_path\" | grep -qE '\\.env|\\.env\\.local|settings\\.local\\.json'; then echo 'BLOCKED: Sensitive file edit — do this manually' >&2; exit 2; fi; exit 0"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); file_path=$(echo \"$input\" | jq -r '.tool_input.file_path // empty'); if echo \"$file_path\" | grep -qE '\\.(ts|tsx)$'; then cd /stuff/Study/projects/portfolio/ocr-visualization && pnpm lint --fix --quiet 2>/dev/null; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

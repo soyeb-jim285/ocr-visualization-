@@ -6,6 +6,9 @@ import { useModelLabStore } from "@/stores/modelLabStore";
 import { LayerConfig } from "./LayerConfig";
 import { MAX_CONV_LAYERS } from "@/lib/model-lab/architecture";
 import type { Activation } from "@/lib/model-lab/architecture";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 const ACTIVATION_OPTIONS: Activation[] = ["relu", "gelu", "silu", "leakyRelu", "tanh"];
 
@@ -77,32 +80,38 @@ export function ArchitectureBuilder() {
                 </button>
 
                 {/* Reorder */}
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => i > 0 && reorderConvLayers(i, i - 1)}
                   disabled={i === 0}
-                  className="p-0.5 text-foreground/25 hover:text-foreground/50 disabled:opacity-20"
+                  className="text-foreground/25 hover:text-foreground/50 hover:bg-transparent"
                 >
                   <ChevronUp size={14} />
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() =>
                     i < convLayers.length - 1 &&
                     reorderConvLayers(i, i + 1)
                   }
                   disabled={i === convLayers.length - 1}
-                  className="p-0.5 text-foreground/25 hover:text-foreground/50 disabled:opacity-20"
+                  className="text-foreground/25 hover:text-foreground/50 hover:bg-transparent"
                 >
                   <ChevronDown size={14} />
-                </button>
+                </Button>
 
                 {/* Remove */}
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => removeConvLayer(layer.id)}
                   disabled={convLayers.length <= 1}
-                  className="p-0.5 text-foreground/25 hover:text-red-400 disabled:opacity-20"
+                  className="text-foreground/25 hover:text-red-400 hover:bg-transparent"
                 >
                   <Trash2 size={14} />
-                </button>
+                </Button>
               </div>
 
               {/* Expanded config */}
@@ -122,13 +131,14 @@ export function ArchitectureBuilder() {
 
         {/* Add layer */}
         {convLayers.length < MAX_CONV_LAYERS && (
-          <button
+          <Button
+            variant="outline"
             onClick={addConvLayer}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border/40 py-2 text-xs text-foreground/35 transition hover:border-indigo-500/40 hover:text-indigo-400"
+            className="w-full border-dashed border-border/40 text-xs text-foreground/35 hover:border-indigo-500/40 hover:text-indigo-400 hover:bg-transparent"
           >
             <Plus size={14} />
             Add Conv Layer
-          </button>
+          </Button>
         )}
       </div>
 
@@ -142,58 +152,56 @@ export function ArchitectureBuilder() {
             <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
               Width
             </label>
-            <input
-              type="number"
+            <Slider
+              value={[dense.width]}
+              onValueChange={([v]) => setDenseConfig({ width: v })}
               min={64}
               max={1024}
               step={64}
-              value={dense.width}
-              onChange={(e) =>
-                setDenseConfig({
-                  width: Math.max(64, Math.min(1024, +e.target.value)),
-                })
-              }
-              className="w-full rounded-md border border-border/40 bg-black/30 px-2 py-1 font-mono text-xs text-foreground/70"
+              className="my-2 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:border-indigo-500 [&_[data-slot=slider-thumb]]:size-3"
             />
+            <span className="block text-center font-mono text-[10px] text-foreground/40">
+              {dense.width}
+            </span>
           </div>
           <div>
             <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
               Dropout
             </label>
-            <input
-              type="number"
+            <Slider
+              value={[dense.dropout]}
+              onValueChange={([v]) => setDenseConfig({ dropout: v })}
               min={0}
               max={0.7}
               step={0.05}
-              value={dense.dropout}
-              onChange={(e) =>
-                setDenseConfig({
-                  dropout: Math.max(0, Math.min(0.7, +e.target.value)),
-                })
-              }
-              className="w-full rounded-md border border-border/40 bg-black/30 px-2 py-1 font-mono text-xs text-foreground/70"
+              className="my-2 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:border-indigo-500 [&_[data-slot=slider-thumb]]:size-3"
             />
+            <span className="block text-center font-mono text-[10px] text-foreground/40">
+              {dense.dropout.toFixed(2)}
+            </span>
           </div>
         </div>
         <div className="mt-2">
           <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
             Activation
           </label>
-          <div className="flex flex-wrap gap-1">
+          <ToggleGroup
+            type="single"
+            value={dense.activation}
+            onValueChange={(v) => v && setDenseConfig({ activation: v as Activation })}
+            spacing={1}
+            className="flex flex-wrap gap-1"
+          >
             {ACTIVATION_OPTIONS.map((act) => (
-              <button
+              <ToggleGroupItem
                 key={act}
-                onClick={() => setDenseConfig({ activation: act })}
-                className={`rounded-md px-2 py-1 text-xs font-medium transition ${
-                  dense.activation === act
-                    ? "bg-indigo-500/20 text-indigo-400"
-                    : "bg-white/5 text-foreground/40 hover:bg-white/10"
-                }`}
+                value={act}
+                className="h-auto min-w-0 shrink rounded-md px-2 py-1 text-xs font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
               >
                 {act}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
         </div>
       </div>
 

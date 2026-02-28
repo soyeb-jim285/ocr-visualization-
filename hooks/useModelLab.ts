@@ -1,27 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { SectionWrapper } from "@/components/ui/SectionWrapper";
-import { SectionHeader } from "@/components/ui/SectionHeader";
-import { ArchitectureBuilder } from "@/components/model-lab/ArchitectureBuilder";
-import { TrainingControls } from "@/components/model-lab/TrainingControls";
-import { TrainingChart } from "@/components/model-lab/TrainingChart";
-import { ExportPanel } from "@/components/model-lab/ExportPanel";
-import { ModelLabInference } from "@/components/model-lab/ModelLabInference";
 import { useModelLabStore } from "@/stores/modelLabStore";
 import { useInferenceStore } from "@/stores/inferenceStore";
-import { NetworkDiagram } from "@/components/model-lab/NetworkDiagram";
 import { disposeModel } from "@/lib/model-lab/memoryManager";
 import {
   registerCustomInfer,
   unregisterCustomInfer,
 } from "@/lib/model-lab/customInferBridge";
 import type * as ort from "onnxruntime-web";
-
-// TF.js types — the actual import is dynamic
 import type * as TF from "@tensorflow/tfjs";
 
-export function ModelLabSection() {
+/**
+ * Shared hook that encapsulates all Model Lab training logic, refs, and callbacks.
+ * Used by all Model Lab layout variants so they can focus purely on UI.
+ */
+export function useModelLab() {
   const store = useModelLabStore;
   const phase = useModelLabStore((s) => s.phase);
   const hasTrainedModel = useModelLabStore((s) => s.hasTrainedModel);
@@ -51,10 +45,6 @@ export function ModelLabSection() {
     return tf;
   }, []);
 
-  /**
-   * After training completes, auto-run custom inference if the user already
-   * has a drawing on the canvas so predictions appear immediately.
-   */
   const inferExistingDrawing = useCallback(() => {
     const imageData = useInferenceStore.getState().inputImageData;
     if (!imageData) return;
@@ -64,7 +54,6 @@ export function ModelLabSection() {
     });
   }, []);
 
-  /** Reset training state shared by both modes. */
   const resetTrainingState = useCallback(() => {
     useModelLabStore.setState({
       trainingHistory: [],
@@ -85,7 +74,6 @@ export function ModelLabSection() {
     const state = store.getState();
     const { architecture, datasetType, learningRate, epochs, batchSize, optimizer } = state;
 
-    // Dispose previous model
     if (modelRef.current && tfRef.current) {
       modelRef.current = disposeModel(tfRef.current, modelRef.current);
     }
@@ -95,35 +83,21 @@ export function ModelLabSection() {
 
     try {
       store.getState().setPhase("loading-data");
-
       const tf = await loadTf();
-
       const { loadDataset } = await import("@/lib/model-lab/dataLoader");
       const dataset = await loadDataset(datasetType);
 
       store.getState().setPhase("building");
-
       const { buildModel } = await import("@/lib/model-lab/buildModel");
-      const { model, intermediateLayerNames } = buildModel(
-        tf,
-        architecture,
-        dataset.numClasses,
-      );
+      const { model, intermediateLayerNames } = buildModel(tf, architecture, dataset.numClasses);
 
       modelRef.current = model;
       intermediateNamesRef.current = intermediateLayerNames;
-
       store.getState().setPhase("training");
 
-      const { createTrainingController } = await import(
-        "@/lib/model-lab/trainModel"
-      );
-
+      const { createTrainingController } = await import("@/lib/model-lab/trainModel");
       const controller = createTrainingController(tf, model, dataset, {
-        learningRate,
-        epochs,
-        batchSize,
-        optimizer,
+        learningRate, epochs, batchSize, optimizer,
       }, {
         onEpochEnd: (metrics) => {
           store.getState().addEpochMetrics(metrics);
@@ -148,7 +122,6 @@ export function ModelLabSection() {
     }
   }, [loadTf, store, resetTrainingState, inferExistingDrawing]);
 
-  /** Shared callbacks for server-side training (HF or RunPod). */
   const serverCallbacks = useCallback(() => ({
     onStatusChange: (status: string) => {
       store.getState().setGpuStatus(status);
@@ -164,11 +137,9 @@ export function ModelLabSection() {
       onnxSessionRef.current = session;
       gpuLayerNamesRef.current = validNames;
 
-      // Store bytes for export
       if (bytesOrUrl instanceof Uint8Array) {
         onnxBytesRef.current = bytesOrUrl;
       } else {
-        // URL case (RunPod) — eagerly fetch and cache as bytes before URL expires
         onnxModelUrlRef.current = bytesOrUrl;
         fetch(bytesOrUrl)
           .then((r) => r.arrayBuffer())
@@ -200,51 +171,31 @@ export function ModelLabSection() {
 
   const handleHfTrain = useCallback(async () => {
     const { architecture, datasetType, learningRate, epochs, batchSize, optimizer, maxSamples } = prepareServerTrain();
-
-    const { createGpuTrainingController } = await import(
-      "@/lib/model-lab/gpuTraining"
-    );
-
+    const { createGpuTrainingController } = await import("@/lib/model-lab/gpuTraining");
     const controller = createGpuTrainingController(
-      {
-        architecture,
-        training: { dataset: datasetType, learningRate, epochs, batchSize, optimizer, maxSamples },
-      },
+      { architecture, training: { dataset: datasetType, learningRate, epochs, batchSize, optimizer, maxSamples } },
       serverCallbacks(),
     );
-
     gpuControllerRef.current = controller;
     await controller.start();
   }, [prepareServerTrain, serverCallbacks]);
 
   const handleRunpodTrain = useCallback(async () => {
     const { architecture, datasetType, learningRate, epochs, batchSize, optimizer, maxSamples } = prepareServerTrain();
-
-    const { createRunpodTrainingController } = await import(
-      "@/lib/model-lab/runpodTraining"
-    );
-
+    const { createRunpodTrainingController } = await import("@/lib/model-lab/runpodTraining");
     const controller = createRunpodTrainingController(
-      {
-        architecture,
-        training: { dataset: datasetType, learningRate, epochs, batchSize, optimizer, maxSamples },
-      },
+      { architecture, training: { dataset: datasetType, learningRate, epochs, batchSize, optimizer, maxSamples } },
       serverCallbacks(),
     );
-
     gpuControllerRef.current = controller;
     await controller.start();
   }, [prepareServerTrain, serverCallbacks]);
 
   const handleTrain = useCallback(() => {
     const mode = store.getState().trainingMode;
-    if (mode === "gpu") {
-      handleRunpodTrain();
-    } else if (mode === "hf") {
-      handleHfTrain();
-    } else {
-      handleBrowserTrain();
-    }
+    if (mode === "gpu") handleRunpodTrain();
+    else if (mode === "hf") handleHfTrain();
+    else handleBrowserTrain();
   }, [handleBrowserTrain, handleHfTrain, handleRunpodTrain, store]);
 
   const handleStop = useCallback(() => {
@@ -271,7 +222,6 @@ export function ModelLabSection() {
       const { downloadModelWeights } = await import("@/lib/model-lab/exportUtils");
       downloadModelWeights(onnxBytesRef.current);
     } else if (modelRef.current) {
-      // TF.js browser model — use built-in save to downloads
       await modelRef.current.save("downloads://model");
     }
   }, []);
@@ -306,40 +256,23 @@ export function ModelLabSection() {
         const hasTfModel = !!modelRef.current;
         const hasTf = !!tfRef.current;
         console.log("[model-lab] handleCustomInfer called", {
-          mode,
-          hasOnnx,
-          hasTfModel,
-          hasTf,
-          inputLen: inputData.length,
+          mode, hasOnnx, hasTfModel, hasTf, inputLen: inputData.length,
         });
 
         if ((mode === "gpu" || mode === "hf") && onnxSessionRef.current) {
-          const { runGpuModelInference } = await import(
-            "@/lib/model-lab/gpuInference"
-          );
+          const { runGpuModelInference } = await import("@/lib/model-lab/gpuInference");
           const result = await runGpuModelInference(
-            onnxSessionRef.current,
-            gpuLayerNamesRef.current,
-            inputData,
+            onnxSessionRef.current, gpuLayerNamesRef.current, inputData,
           );
-          console.log("[model-lab] GPU inference result:", result.prediction?.length, "classes");
           store.getState().setCustomPrediction(result.prediction);
           store.getState().setCustomActivations(result.layerActivations);
         } else if (modelRef.current && tfRef.current) {
-          const { runCustomInference } = await import(
-            "@/lib/model-lab/customInference"
-          );
+          const { runCustomInference } = await import("@/lib/model-lab/customInference");
           const result = runCustomInference(
-            tfRef.current,
-            modelRef.current,
-            intermediateNamesRef.current,
-            inputData,
+            tfRef.current, modelRef.current, intermediateNamesRef.current, inputData,
           );
-          console.log("[model-lab] Browser inference result:", result.prediction?.length, "classes");
           store.getState().setCustomPrediction(result.prediction);
           store.getState().setCustomActivations(result.layerActivations);
-        } else {
-          console.warn("[model-lab] No model available for inference — neither branch matched");
         }
       } catch (e) {
         console.error("Custom model inference failed:", e);
@@ -348,21 +281,16 @@ export function ModelLabSection() {
     [store],
   );
 
-  // Register the custom inference callback so the main inference pipeline
-  // (useInference) can trigger it directly after each stroke.
   const handleCustomInferRef = useRef(handleCustomInfer);
   handleCustomInferRef.current = handleCustomInfer;
+
   useEffect(() => {
     registerCustomInfer(
       (tensor) => {
         if (!store.getState().hasTrainedModel) return;
-        console.log("[model-lab] bridge: triggering custom inference");
-        handleCustomInferRef.current(tensor).catch((e) => {
-          console.error("[model-lab] bridge: custom inference failed:", e);
-        });
+        handleCustomInferRef.current(tensor).catch(console.error);
       },
       () => {
-        console.log("[model-lab] bridge: clearing custom predictions");
         store.getState().setCustomPrediction(null);
         store.getState().setCustomActivations({});
       },
@@ -372,45 +300,19 @@ export function ModelLabSection() {
     };
   }, [store]);
 
-  return (
-    <SectionWrapper id="model-lab" fullHeight={false}>
-      <SectionHeader
-        step={10}
-        title="Model Lab"
-        subtitle="Design your own CNN architecture, choose a dataset, and train it live in the browser. After training, draw characters to compare your model's predictions with the pre-trained model."
-      />
-
-      <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
-        {/* Left column: Architecture + Training controls */}
-        <div className="w-full space-y-6 lg:w-[380px] lg:shrink-0">
-          <ArchitectureBuilder />
-          <TrainingControls
-            onTrain={handleTrain}
-            onStop={handleStop}
-            onReset={handleReset}
-          />
-        </div>
-
-        {/* Right column: Charts + Inference */}
-        <div className="min-w-0 flex-1 space-y-6">
-          {(phase === "trained" || hasTrainedModel) && (
-            <ExportPanel
-              onExportModel={handleExportModel}
-              onExportReport={handleExportReport}
-              onExportChart={handleExportChart}
-              modelFormat={trainingMode === "browser" ? "TF.js" : "ONNX"}
-            />
-          )}
-
-          <TrainingChart ref={chartContainerRef} />
-
-          {(phase === "trained" || hasTrainedModel) && (
-            <ModelLabInference />
-          )}
-
-          {phase === "idle" && <NetworkDiagram />}
-        </div>
-      </div>
-    </SectionWrapper>
-  );
+  return {
+    // State
+    phase,
+    hasTrainedModel,
+    trainingMode,
+    // Actions
+    handleTrain,
+    handleStop,
+    handleReset,
+    handleExportModel,
+    handleExportReport,
+    handleExportChart,
+    // Refs
+    chartContainerRef,
+  };
 }

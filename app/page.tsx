@@ -13,6 +13,7 @@ import { ModelLabWrapper } from "@/components/sections/ModelLabWrapper";
 
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { ScrollTracker } from "@/components/ui/ScrollTracker";
+import { Header } from "@/components/ui/Header";
 import { NetworkView3D } from "@/components/three/NetworkView3D";
 import { LazySection } from "@/components/ui/LazySection";
 
@@ -21,6 +22,7 @@ export default function Home() {
     <>
       <EpochPrefetcher />
 
+      <Header />
       <ViewToggle />
       <ScrollTracker />
       <NetworkView3D />

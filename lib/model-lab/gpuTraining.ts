@@ -29,6 +29,7 @@ export interface GpuTrainingCallbacks {
     session: ort.InferenceSession,
     layerNames: string[],
     numClasses: number,
+    onnxBytes: Uint8Array,
   ) => void;
   onError: (message: string) => void;
   onStatusChange: (status: string) => void;
@@ -116,6 +117,7 @@ export function createGpuTrainingController(
               session,
               parsed.layerNames,
               parsed.numClasses,
+              bytes,
             );
           } else if (parsed.type === "error") {
             callbacks.onError(parsed.message);

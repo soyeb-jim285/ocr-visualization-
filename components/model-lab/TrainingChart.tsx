@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { forwardRef, useMemo } from "react";
 import {
   LineChart,
   Line,
@@ -25,7 +25,7 @@ const accConfig = {
   valAcc: { label: "Val Acc", color: "#4ade80" },
 } satisfies ChartConfig;
 
-export function TrainingChart() {
+export const TrainingChart = forwardRef<HTMLDivElement>(function TrainingChart(_props, ref) {
   const trainingHistory = useModelLabStore((s) => s.trainingHistory);
 
   const data = useMemo(
@@ -48,7 +48,7 @@ export function TrainingChart() {
         Training Progress
       </h3>
 
-      <div className="flex w-full flex-col gap-4 rounded-xl border border-border/50 bg-black/20 p-3 sm:flex-row sm:gap-3 sm:p-4">
+      <div ref={ref} className="flex w-full flex-col gap-4 rounded-xl border border-border/50 bg-black/20 p-3 sm:flex-row sm:gap-3 sm:p-4">
         {/* Loss chart */}
         <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
           <span className="text-[11px] font-semibold text-[#ef4444]">Loss</span>
@@ -239,4 +239,4 @@ export function TrainingChart() {
       </div>
     </div>
   );
-}
+});

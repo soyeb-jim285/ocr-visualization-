@@ -13,7 +13,7 @@ import modal
 DATA_DIR = "/root/data"
 HF_DATASET = "soyeb-jim285/ocr-handwriting-data"
 HF_REPO = "soyeb-jim285/ocr-visualization-models"
-NUM_CLASSES_MAP = {"digits": 10, "emnist": 62, "bengali": 84, "combined": 146}
+NUM_CLASSES_MAP = {"digits": 10, "emnist": 62, "bangla": 84, "combined": 146}
 
 
 # ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@ def preprocess_datasets():
 
     ds = load_dataset(HF_DATASET)
 
-    for dtype in ["digits", "emnist", "bengali", "combined"]:
+    for dtype in ["digits", "emnist", "bangla", "combined"]:
         out_dir = f"{DATA_DIR}/{dtype}"
         os.makedirs(out_dir, exist_ok=True)
 
@@ -39,7 +39,7 @@ def preprocess_datasets():
                 split_ds = split_ds.filter(lambda x: x["label"] < 10)
             elif dtype == "emnist":
                 split_ds = split_ds.filter(lambda x: x["label"] < 62)
-            elif dtype == "bengali":
+            elif dtype == "bangla":
                 split_ds = split_ds.filter(lambda x: x["label"] >= 62)
 
             images, labels = [], []
@@ -47,7 +47,7 @@ def preprocess_datasets():
                 arr = np.array(row["image"].convert("L"), dtype=np.float32) / 255.0
                 images.append(arr)
                 label = row["label"]
-                if dtype == "bengali":
+                if dtype == "bangla":
                     label -= 62
                 labels.append(label)
 

@@ -27,6 +27,7 @@ export interface RunpodTrainingCallbacks {
     session: ort.InferenceSession,
     layerNames: string[],
     numClasses: number,
+    modelUrl: string,
   ) => void;
   onError: (message: string) => void;
   onStatusChange: (status: string) => void;
@@ -126,6 +127,7 @@ export function createRunpodTrainingController(
                 session,
                 parsed.layerNames,
                 parsed.numClasses,
+                parsed.modelUrl,
               );
             } catch (onnxErr) {
               console.error(`[gpu] Model load failed:`, onnxErr);
