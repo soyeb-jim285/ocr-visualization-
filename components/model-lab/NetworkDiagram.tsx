@@ -69,7 +69,7 @@ export function NetworkDiagram() {
       const h = dim?.height ?? "?";
       const w = dim?.width ?? "?";
 
-      const parts = [layer.activation];
+      const parts: string[] = [layer.activation];
       if (layer.pooling !== "none")
         parts.push(layer.pooling === "max" ? "MaxPool" : "AvgPool");
       if (layer.batchNorm) parts.push("BN");
