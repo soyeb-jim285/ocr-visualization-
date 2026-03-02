@@ -83,9 +83,10 @@ export function runCustomInference(
   const finalTensor = outputs[outputs.length - 1];
   const prediction = Array.from(finalTensor.dataSync() as Float32Array);
 
-  // Dispose all output tensors
+  // Dispose output tensors only — do NOT dispose extractionModel as it
+  // shares weights with the original model (disposing it would destroy
+  // the model's layers for future inference calls).
   outputs.forEach((t) => t.dispose());
-  extractionModel.dispose();
 
   return { prediction, layerActivations };
 }

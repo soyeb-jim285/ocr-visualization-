@@ -82,8 +82,7 @@ export function ActivationSection() {
     return { negCount, negPercent, total, activeNeurons };
   }, [beforeRelu, afterRelu]);
 
-  const numFilters = conv1Maps?.length ?? 0;
-  const hasData = !!beforeRelu;
+  const numFilters = conv1Maps?.length ?? 64;
 
   return (
     <SectionWrapper id="activation">
@@ -206,113 +205,98 @@ export function ActivationSection() {
             </span>
           </div>
 
-          {hasData ? (
-            <>
-              {/* Before → After heatmaps */}
-              <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
-                <div className="flex flex-col items-center gap-2">
-                  <span className="text-xs font-medium text-red-400">
-                    Before ReLU
-                  </span>
-                  <ActivationHeatmap data={beforeRelu} size={120} />
-                  <span className="text-[11px] text-foreground/30">
-                    Contains negatives
-                  </span>
-                </div>
-
-                <div className="flex flex-col items-center gap-1">
-                  <Latex
-                    math="\xrightarrow{\max(0,\,x)}"
-                    className="hidden text-foreground/40 sm:block"
-                  />
-                  <Latex
-                    math="\downarrow"
-                    className="text-foreground/40 sm:hidden"
-                  />
-                </div>
-
-                <div className="flex flex-col items-center gap-2">
-                  <span className="text-xs font-medium text-green-400">
-                    After ReLU
-                  </span>
-                  {afterRelu ? (
-                    <ActivationHeatmap data={afterRelu} size={120} />
-                  ) : (
-                    <div className="flex h-[120px] w-[120px] items-center justify-center rounded-md border border-border bg-surface">
-                      <span className="text-xs text-foreground/20">
-                        No data
-                      </span>
-                    </div>
-                  )}
-                  <span className="text-[11px] text-foreground/30">
-                    Negatives zeroed
-                  </span>
-                </div>
-              </div>
-
-              {/* Stats — single line below heatmaps */}
-              {stats && (
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="font-mono font-semibold text-red-400">{stats.negCount}</span>
-                  <span className="text-foreground/40">zeroed</span>
-                  <span className="text-foreground/15">|</span>
-                  <span className="font-mono font-semibold text-foreground/60">{stats.negPercent}%</span>
-                  <span className="text-foreground/40">sparsity</span>
-                  <span className="text-foreground/15">|</span>
-                  <span className="font-mono font-semibold text-green-400">{stats.activeNeurons}</span>
-                  <span className="text-foreground/40">active</span>
-                </div>
+          {/* Before → After heatmaps */}
+          <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-xs font-medium text-red-400">
+                Before ReLU
+              </span>
+              {beforeRelu ? (
+                <ActivationHeatmap data={beforeRelu} size={120} />
+              ) : (
+                <div className="h-[120px] w-[120px] rounded-md border border-border/50 bg-black" />
               )}
-            </>
-          ) : (
-            <div className="flex h-32 items-center justify-center">
-              <p className="text-foreground/30">
-                Draw a character above to see activations
-              </p>
+              <span className="text-[11px] text-foreground/30">
+                Contains negatives
+              </span>
+            </div>
+
+            <div className="flex flex-col items-center gap-1">
+              <Latex
+                math="\xrightarrow{\max(0,\,x)}"
+                className="hidden text-foreground/40 sm:block"
+              />
+              <Latex
+                math="\downarrow"
+                className="text-foreground/40 sm:hidden"
+              />
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-xs font-medium text-green-400">
+                After ReLU
+              </span>
+              {afterRelu ? (
+                <ActivationHeatmap data={afterRelu} size={120} />
+              ) : (
+                <div className="h-[120px] w-[120px] rounded-md border border-border/50 bg-black" />
+              )}
+              <span className="text-[11px] text-foreground/30">
+                Negatives zeroed
+              </span>
+            </div>
+          </div>
+
+          {/* Stats — single line below heatmaps */}
+          {stats && (
+            <div className="flex items-center gap-4 text-sm">
+              <span className="font-mono font-semibold text-red-400">{stats.negCount}</span>
+              <span className="text-foreground/40">zeroed</span>
+              <span className="text-foreground/15">|</span>
+              <span className="font-mono font-semibold text-foreground/60">{stats.negPercent}%</span>
+              <span className="text-foreground/40">sparsity</span>
+              <span className="text-foreground/15">|</span>
+              <span className="font-mono font-semibold text-green-400">{stats.activeNeurons}</span>
+              <span className="text-foreground/40">active</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Filter selection: clickable feature map thumbnails — full width */}
-      {hasData && (
-        <div className="mt-6 space-y-3">
-          <p className="text-center text-xs text-foreground/40">
-            Select a filter — click any feature map below
-          </p>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-            {relu1Maps
-              ? relu1Maps.map((fm, i) => (
-                  <ActivationHeatmap
-                    key={i}
-                    data={fm}
-                    size={56}
-                    label={`#${i + 1}`}
-                    onClick={() => setSelectedFilter(i)}
-                    selected={i === selectedFilter}
-                  />
-                ))
-              : Array.from({ length: numFilters }, (_, i) => (
+      <div className="mt-6 space-y-3">
+        <p className="text-center text-xs text-foreground/40">
+          Select a filter — click any feature map below
+        </p>
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+          {relu1Maps
+            ? relu1Maps.map((fm, i) => (
+                <ActivationHeatmap
+                  key={i}
+                  data={fm}
+                  size={56}
+                  label={`#${i + 1}`}
+                  onClick={() => setSelectedFilter(i)}
+                  selected={i === selectedFilter}
+                />
+              ))
+            : Array.from({ length: numFilters }, (_, i) => (
+                <div
+                  key={i}
+                  className={`flex flex-col items-center gap-1 ${
+                    i === selectedFilter ? "opacity-100" : "opacity-40"
+                  }`}
+                  onClick={() => setSelectedFilter(i)}
+                >
                   <div
-                    key={i}
-                    className={`flex flex-col items-center gap-1 ${
-                      i === selectedFilter ? "opacity-100" : "opacity-40"
-                    }`}
-                  >
-                    <div
-                      className="border border-border/50"
-                      style={{
-                        width: 56,
-                        height: 56,
-                        backgroundColor: "var(--surface)",
-                      }}
-                    />
-                    <span className="text-xs text-foreground/40">#{i + 1}</span>
-                  </div>
-                ))}
-          </div>
+                    className="cursor-pointer border border-border/50 bg-black"
+                    style={{ width: 56, height: 56 }}
+                  />
+                  <span className="text-xs text-foreground/40">#{i + 1}</span>
+                </div>
+              ))}
         </div>
-      )}
+      </div>
     </SectionWrapper>
   );
 }

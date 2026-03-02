@@ -166,41 +166,79 @@ class MultiOutputWrapper(nn.Module):
 # ---------------------------------------------------------------------------
 
 
+# Module-level pooled data cache (stratified split computed once)
+_pooled_cache: dict | None = None
+
+
+def _get_pooled_data():
+    """Pool all HF splits, do a single stratified per-class 80/20 split."""
+    global _pooled_cache
+    if _pooled_cache is not None:
+        return _pooled_cache
+
+    print(f"Loading full dataset from {HF_DATASET}...")
+    ds = load_dataset(HF_DATASET)
+
+    all_images, all_labels = [], []
+    for split_name in ["train", "test"]:
+        for row in ds[split_name]:
+            arr = np.array(row["image"].convert("L"), dtype=np.float32) / 255.0
+            all_images.append(arr)
+            all_labels.append(row["label"])
+
+    all_images = np.array(all_images)[:, np.newaxis, :, :]
+    all_labels = np.array(all_labels, dtype=np.int64)
+
+    rng = np.random.default_rng(42)
+    classes = np.unique(all_labels)
+    train_idx, test_idx = [], []
+    for c in classes:
+        idx = np.where(all_labels == c)[0]
+        rng.shuffle(idx)
+        n_train = round(len(idx) * 0.8)
+        train_idx.extend(idx[:n_train].tolist())
+        test_idx.extend(idx[n_train:].tolist())
+
+    rng.shuffle(train_idx)
+    rng.shuffle(test_idx)
+    train_idx = np.array(train_idx)
+    test_idx = np.array(test_idx)
+
+    _pooled_cache = {
+        "train_images": all_images[train_idx],
+        "train_labels": all_labels[train_idx],
+        "test_images": all_images[test_idx],
+        "test_labels": all_labels[test_idx],
+    }
+    print(f"  Pooled: {len(train_idx)} train, {len(test_idx)} test (stratified)")
+    return _pooled_cache
+
+
 def _load_hf_data(dataset_type: str):
-    """Load and cache the HF dataset, filtered by type."""
+    """Load and cache the HF dataset, filtered by type with stratified split."""
     if dataset_type in _dataset_cache:
         return _dataset_cache[dataset_type]
 
-    print(f"Loading dataset '{dataset_type}' from {HF_DATASET}...")
-    ds = load_dataset(HF_DATASET)
+    pooled = _get_pooled_data()
 
-    def process_split(split_ds):
-        # Filter by dataset type
+    def filter_split(images, labels):
         if dataset_type == "digits":
-            split_ds = split_ds.filter(lambda x: x["label"] < 10)
+            mask = labels < 10
         elif dataset_type == "emnist":
-            split_ds = split_ds.filter(lambda x: x["label"] < 62)
+            mask = labels < 62
         elif dataset_type == "bengali":
-            split_ds = split_ds.filter(lambda x: x["label"] >= 62)
+            mask = labels >= 62
+        else:
+            mask = np.ones(len(labels), dtype=bool)
 
-        # Extract images and labels
-        images = []
-        labels = []
-        for row in split_ds:
-            img = row["image"].convert("L")
-            arr = np.array(img, dtype=np.float32) / 255.0
-            images.append(arr)
-            label = row["label"]
-            if dataset_type == "bengali":
-                label = label - 62  # remap to 0-83
-            labels.append(label)
+        imgs = images[mask]
+        lbls = labels[mask].copy()
+        if dataset_type == "bengali":
+            lbls -= 62
+        return imgs, lbls
 
-        images = np.array(images)[:, np.newaxis, :, :]  # (N, 1, 28, 28)
-        labels = np.array(labels, dtype=np.int64)
-        return images, labels
-
-    train_imgs, train_labels = process_split(ds["train"])
-    test_imgs, test_labels = process_split(ds["test"])
+    train_imgs, train_labels = filter_split(pooled["train_images"], pooled["train_labels"])
+    test_imgs, test_labels = filter_split(pooled["test_images"], pooled["test_labels"])
 
     result = {
         "train_images": train_imgs,
@@ -209,7 +247,7 @@ def _load_hf_data(dataset_type: str):
         "test_labels": test_labels,
     }
     _dataset_cache[dataset_type] = result
-    print(f"  Loaded: {len(train_imgs)} train, {len(test_imgs)} test")
+    print(f"  {dataset_type}: {len(train_imgs)} train, {len(test_imgs)} test")
     return result
 
 

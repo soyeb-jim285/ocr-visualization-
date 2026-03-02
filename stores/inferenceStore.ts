@@ -26,6 +26,9 @@ interface InferenceState {
   // Loading state
   isInferring: boolean;
 
+  /** Last inference wall-clock time in milliseconds */
+  inferenceTimeMs: number | null;
+
   /** Monotonic counter bumped on reset — lets async work detect stale results */
   generation: number;
 
@@ -36,6 +39,7 @@ interface InferenceState {
   setPrediction: (prediction: number[] | null) => void;
   setSelectedNeuron: (neuron: NeuronSelection | null) => void;
   setIsInferring: (val: boolean) => void;
+  setInferenceTimeMs: (ms: number | null) => void;
   reset: () => void;
 }
 
@@ -47,6 +51,7 @@ export const useInferenceStore = create<InferenceState>((set) => ({
   topPrediction: null,
   selectedNeuron: null,
   isInferring: false,
+  inferenceTimeMs: null,
   generation: 0,
 
   setInputImageData: (data) => set({ inputImageData: data }),
@@ -71,6 +76,8 @@ export const useInferenceStore = create<InferenceState>((set) => ({
 
   setIsInferring: (val) => set({ isInferring: val }),
 
+  setInferenceTimeMs: (ms) => set({ inferenceTimeMs: ms }),
+
   reset: () =>
     set((s) => ({
       inputImageData: null,
@@ -80,6 +87,7 @@ export const useInferenceStore = create<InferenceState>((set) => ({
       topPrediction: null,
       selectedNeuron: null,
       isInferring: false,
+      inferenceTimeMs: null,
       generation: s.generation + 1,
     })),
 }));

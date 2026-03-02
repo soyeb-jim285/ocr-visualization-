@@ -39,10 +39,14 @@ function TypingAnimation() {
 
 export function HeroHeader() {
   return (
-    <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col items-center gap-1.5">
       <h1 className="text-center text-2xl font-semibold tracking-tight text-foreground sm:text-4xl md:text-[2.7rem]">
         Peel Back the Layers of Recognition
       </h1>
+      <p className="max-w-xl text-center text-sm leading-relaxed text-foreground/40 sm:text-base">
+        An interactive deep dive into how a CNN reads handwritten characters
+        — draw anything and watch 13 layers process it in real time.
+      </p>
       <TypingAnimation />
     </div>
   );

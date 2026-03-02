@@ -59,10 +59,16 @@ interface ModelLabState {
   hasTrainedModel: boolean;
   intermediateLayerNames: string[];
 
+  // UI — expanded layer in ArchitectureBuilder
+  expandedLayerId: string | null;
+
   // Custom inference results
   customPrediction: number[] | null;
   customTopPrediction: { classIndex: number; confidence: number } | null;
   customActivations: LayerActivations;
+
+  // Actions — UI
+  setExpandedLayerId: (id: string | null) => void;
 
   // Actions — Architecture
   addConvLayer: () => void;
@@ -139,10 +145,16 @@ export const useModelLabStore = create<ModelLabState>((set, get) => ({
   hasTrainedModel: false,
   intermediateLayerNames: [],
 
+  // UI
+  expandedLayerId: null,
+
   // Inference
   customPrediction: null,
   customTopPrediction: null,
   customActivations: {},
+
+  // UI actions
+  setExpandedLayerId: (id) => set({ expandedLayerId: id }),
 
   // Architecture actions
   addConvLayer: () =>
@@ -240,6 +252,7 @@ export const useModelLabStore = create<ModelLabState>((set, get) => ({
     set({
       architecture: { ...DEFAULT_ARCHITECTURE, convLayers: [...DEFAULT_ARCHITECTURE.convLayers] },
       validation: revalidate(DEFAULT_ARCHITECTURE, get().datasetType),
+      expandedLayerId: null,
       gpuStatus: null,
       phase: "idle",
       errorMessage: null,

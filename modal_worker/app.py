@@ -21,38 +21,69 @@ NUM_CLASSES_MAP = {"digits": 10, "emnist": 62, "bangla": 84, "combined": 146}
 # ---------------------------------------------------------------------------
 
 def preprocess_datasets():
-    """Runs during image build. Loads HF dataset, filters each type, saves as .npy."""
+    """Runs during image build. Loads HF dataset, pools train+test, does a
+    stratified per-class 80/20 split, then saves as .npy."""
     import os
     import numpy as np
     from datasets import load_dataset
 
     ds = load_dataset(HF_DATASET)
 
+    # Pool all samples from both splits
+    all_images, all_labels = [], []
+    for split_name in ["train", "test"]:
+        for row in ds[split_name]:
+            arr = np.array(row["image"].convert("L"), dtype=np.float32) / 255.0
+            all_images.append(arr)
+            all_labels.append(row["label"])
+
+    all_images = np.array(all_images)[:, np.newaxis, :, :]
+    all_labels = np.array(all_labels, dtype=np.int64)
+
+    # Stratified per-class split (80% train / 20% test, deterministic)
+    rng = np.random.default_rng(42)
+    classes = np.unique(all_labels)
+    train_idx, test_idx = [], []
+    for c in classes:
+        idx = np.where(all_labels == c)[0]
+        rng.shuffle(idx)
+        n_train = round(len(idx) * 0.8)
+        train_idx.extend(idx[:n_train].tolist())
+        test_idx.extend(idx[n_train:].tolist())
+
+    rng.shuffle(train_idx)
+    rng.shuffle(test_idx)
+    train_idx = np.array(train_idx)
+    test_idx = np.array(test_idx)
+
+    pooled = {
+        "train_images": all_images[train_idx],
+        "train_labels": all_labels[train_idx],
+        "test_images": all_images[test_idx],
+        "test_labels": all_labels[test_idx],
+    }
+
     for dtype in ["digits", "emnist", "bangla", "combined"]:
         out_dir = f"{DATA_DIR}/{dtype}"
         os.makedirs(out_dir, exist_ok=True)
 
         for split_name in ["train", "test"]:
-            split_ds = ds[split_name]
+            imgs = pooled[f"{split_name}_images"]
+            lbls = pooled[f"{split_name}_labels"]
 
             if dtype == "digits":
-                split_ds = split_ds.filter(lambda x: x["label"] < 10)
+                mask = lbls < 10
             elif dtype == "emnist":
-                split_ds = split_ds.filter(lambda x: x["label"] < 62)
+                mask = lbls < 62
             elif dtype == "bangla":
-                split_ds = split_ds.filter(lambda x: x["label"] >= 62)
+                mask = lbls >= 62
+            else:
+                mask = np.ones(len(lbls), dtype=bool)
 
-            images, labels = [], []
-            for row in split_ds:
-                arr = np.array(row["image"].convert("L"), dtype=np.float32) / 255.0
-                images.append(arr)
-                label = row["label"]
-                if dtype == "bangla":
-                    label -= 62
-                labels.append(label)
-
-            imgs = np.array(images)[:, np.newaxis, :, :]
-            lbls = np.array(labels, dtype=np.int64)
+            imgs = imgs[mask]
+            lbls = lbls[mask].copy()
+            if dtype == "bangla":
+                lbls -= 62
 
             np.save(f"{out_dir}/{split_name}_images.npy", imgs)
             np.save(f"{out_dir}/{split_name}_labels.npy", lbls)

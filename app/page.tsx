@@ -11,6 +11,7 @@ import { TrainingSection } from "@/components/sections/TrainingSection";
 import { NeuronNetworkSection } from "@/components/sections/NeuronNetworkSection";
 import { ModelLabWrapper } from "@/components/sections/ModelLabWrapper";
 
+import { FooterSection } from "@/components/sections/FooterSection";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { ScrollTracker } from "@/components/ui/ScrollTracker";
 import { Header } from "@/components/ui/Header";
@@ -59,6 +60,7 @@ export default function Home() {
           <ModelLabWrapper />
         </LazySection>
       </main>
+      <FooterSection />
     </>
   );
 }

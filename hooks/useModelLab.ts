@@ -122,14 +122,28 @@ export function useModelLab() {
     }
   }, [loadTf, store, resetTrainingState, inferExistingDrawing]);
 
-  const serverCallbacks = useCallback(() => ({
+  const lastEpochTimeRef = useRef<number | null>(null);
+
+  const serverCallbacks = useCallback(() => {
+    lastEpochTimeRef.current = null;
+    return {
     onStatusChange: (status: string) => {
       store.getState().setGpuStatus(status);
     },
-    onEpochEnd: (metrics: { epoch: number; loss: number; acc: number; valLoss: number; valAcc: number }) => {
+    onEpochEnd: (metrics: { epoch: number; loss: number; acc: number; valLoss: number; valAcc: number; epochTimeMs?: number }) => {
+      // Prefer server-provided epochTimeMs (from elapsedSec), fall back to client-side timing
+      const now = performance.now();
+      let epochTimeMs = metrics.epochTimeMs;
+      if (epochTimeMs == null) {
+        epochTimeMs = lastEpochTimeRef.current != null
+          ? now - lastEpochTimeRef.current
+          : undefined;
+      }
+      lastEpochTimeRef.current = now;
+
       store.getState().setGpuStatus(null);
       store.getState().setPhase("training");
-      store.getState().addEpochMetrics(metrics);
+      store.getState().addEpochMetrics({ ...metrics, epochTimeMs });
       store.getState().setCurrentEpoch(metrics.epoch);
     },
     onComplete: (session: ort.InferenceSession, layerNames: string[], _numClasses: number, bytesOrUrl: Uint8Array | string) => {
@@ -157,7 +171,7 @@ export function useModelLab() {
       store.getState().setPhase("error");
       store.getState().setGpuStatus(null);
     },
-  }), [store, inferExistingDrawing]);
+  };}, [store, inferExistingDrawing]);
 
   const prepareServerTrain = useCallback(() => {
     const state = store.getState();

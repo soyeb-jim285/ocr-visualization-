@@ -268,10 +268,23 @@ export function SoftmaxSection() {
           {hasData ? (
             <SoftmaxChart entries={entries} topIdx={topIdx} />
           ) : (
-            <div className="flex h-48 items-center justify-center">
-              <p className="text-foreground/30">
-                Draw a character above to see predictions
-              </p>
+            <div className="flex w-full flex-col items-center gap-3">
+              <div className="w-full">
+                <p className="mb-1 text-center text-[11px] text-foreground/35">
+                  Raw logits (before softmax)
+                </p>
+                <div className="h-[160px] w-full rounded-lg border border-border bg-surface" />
+              </div>
+              <Latex
+                math="\downarrow\;\sigma(\mathbf{z})_i = \frac{e^{z_i}}{\sum e^{z_j}}"
+                className="text-foreground/30"
+              />
+              <div className="w-full">
+                <p className="mb-1 text-center text-[11px] text-foreground/35">
+                  Probabilities (after softmax)
+                </p>
+                <div className="h-[160px] w-full rounded-lg border border-border bg-surface" />
+              </div>
             </div>
           )}
         </div>

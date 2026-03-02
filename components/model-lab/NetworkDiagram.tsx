@@ -34,6 +34,7 @@ export function NetworkDiagram() {
   const architecture = useModelLabStore((s) => s.architecture);
   const validation = useModelLabStore((s) => s.validation);
   const datasetType = useModelLabStore((s) => s.datasetType);
+  const expandedLayerId = useModelLabStore((s) => s.expandedLayerId);
 
   const blocks = useMemo(() => {
     const { convLayers, dense } = architecture;
@@ -111,6 +112,11 @@ export function NetworkDiagram() {
     return result;
   }, [architecture, validation, datasetType]);
 
+  // Map expandedLayerId to block index (blocks[0]=Input, conv starts at 1)
+  const highlightBlockIdx = expandedLayerId
+    ? architecture.convLayers.findIndex((l) => l.id === expandedLayerId) + 1
+    : -1;
+
   const blockHeight = 44;
   const gap = 28;
   const totalHeight = blocks.length * blockHeight + (blocks.length - 1) * gap + 32;
@@ -140,6 +146,16 @@ export function NetworkDiagram() {
               </feMerge>
             </filter>
           ))}
+          {/* Highlight glow for selected layer */}
+          <filter id="glow-highlight" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+            <feFlood floodColor="#6366f1" floodOpacity="0.6" />
+            <feComposite in2="blur" operator="in" />
+            <feMerge>
+              <feMergeNode />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
         {blocks.map((block, i) => {
@@ -148,6 +164,7 @@ export function NetworkDiagram() {
           const rx = 6;
           const filterIdx =
             block.color === "#06b6d4" ? 0 : block.color === "#6366f1" ? 1 : 2;
+          const isHighlighted = i === highlightBlockIdx;
 
           // Connector to next block
           let connector = null;
@@ -204,11 +221,12 @@ export function NetworkDiagram() {
                 width={block.width}
                 height={blockHeight}
                 rx={rx}
-                fill={`${block.color}10`}
+                fill={isHighlighted ? `${block.color}30` : `${block.color}10`}
                 stroke={block.color}
-                strokeOpacity={0.4}
-                strokeWidth={1}
-                filter={`url(#glow-${filterIdx})`}
+                strokeOpacity={isHighlighted ? 0.9 : 0.4}
+                strokeWidth={isHighlighted ? 1.5 : 1}
+                filter={isHighlighted ? "url(#glow-highlight)" : `url(#glow-${filterIdx})`}
+                style={{ transition: "fill 0.2s, stroke-opacity 0.2s, stroke-width 0.2s" }}
               />
 
               {/* Label */}
@@ -217,10 +235,10 @@ export function NetworkDiagram() {
                 y={y + 16}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill="rgba(232,232,237,0.7)"
+                fill={isHighlighted ? "rgba(232,232,237,0.95)" : "rgba(232,232,237,0.7)"}
                 fontSize="10"
                 fontFamily="var(--font-mono), monospace"
-                fontWeight="500"
+                fontWeight={isHighlighted ? "600" : "500"}
               >
                 {block.label}
               </text>
@@ -231,7 +249,7 @@ export function NetworkDiagram() {
                 y={y + 32}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill="rgba(232,232,237,0.3)"
+                fill={isHighlighted ? "rgba(232,232,237,0.55)" : "rgba(232,232,237,0.3)"}
                 fontSize="9"
                 fontFamily="var(--font-mono), monospace"
               >

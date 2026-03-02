@@ -70,7 +70,7 @@ export function TrainingSection() {
           through every layer. With Adam optimizer (
           <Latex math="\eta = 10^{-3}" />
           ), the model converges over 75 epochs on EMNIST ByMerge + BanglaLekha-Isolated —
-          roughly 1M training images of handwritten characters in English and Bengali.
+          roughly 980K training images of handwritten characters in English and Bengali.
         </p>
       </div>
 

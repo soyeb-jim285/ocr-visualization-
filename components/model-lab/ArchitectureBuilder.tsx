@@ -1,11 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronUp, ChevronDown, Plus, Trash2 } from "lucide-react";
+import { useCallback } from "react";
+import { GripVertical, ChevronRight, Plus, Trash2 } from "lucide-react";
+import { Accordion as AccordionPrimitive } from "radix-ui";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import { CSS } from "@dnd-kit/utilities";
 import { useModelLabStore } from "@/stores/modelLabStore";
 import { LayerConfig } from "./LayerConfig";
 import { MAX_CONV_LAYERS } from "@/lib/model-lab/architecture";
-import type { Activation } from "@/lib/model-lab/architecture";
+import type { Activation, ConvLayerConfig } from "@/lib/model-lab/architecture";
+import { Accordion, AccordionItem, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -18,6 +37,99 @@ function formatPooling(p: string) {
   return "";
 }
 
+/* ------------------------------------------------------------------ */
+/*  Sortable conv-layer row                                           */
+/* ------------------------------------------------------------------ */
+
+function SortableConvLayer({
+  layer,
+  index,
+  total,
+  removeConvLayer,
+  updateConvLayer,
+}: {
+  layer: ConvLayerConfig;
+  index: number;
+  total: number;
+  removeConvLayer: (id: string) => void;
+  updateConvLayer: (id: string, updates: Partial<ConvLayerConfig>) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: layer.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const summary = `Conv ${layer.filters} ${layer.kernelSize}×${layer.kernelSize} ${layer.activation}${layer.pooling !== "none" ? ` ${formatPooling(layer.pooling)}` : ""}${layer.batchNorm ? " BN" : ""}`;
+
+  return (
+    <AccordionItem
+      ref={setNodeRef}
+      style={style}
+      value={layer.id}
+      className="rounded-lg border border-border/50 bg-black/20"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        {/* Drag handle */}
+        <button
+          type="button"
+          className="shrink-0 cursor-grab touch-none text-foreground/20 hover:text-foreground/40 active:cursor-grabbing"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical size={14} />
+        </button>
+
+        <span className="shrink-0 font-mono text-[10px] text-foreground/30">
+          {index + 1}
+        </span>
+
+        <AccordionPrimitive.Trigger className="flex flex-1 items-center gap-1.5 text-left text-xs font-medium text-foreground/65 hover:text-foreground/80 [&[data-state=open]>svg]:rotate-90">
+          <ChevronRight
+            size={12}
+            className="shrink-0 text-foreground/30 transition-transform duration-200"
+          />
+          {summary}
+        </AccordionPrimitive.Trigger>
+
+        {/* Remove */}
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={() => removeConvLayer(layer.id)}
+          disabled={total <= 1}
+          className="text-foreground/25 hover:text-red-400 hover:bg-transparent"
+        >
+          <Trash2 size={14} />
+        </Button>
+      </div>
+
+      {/* Expanded config */}
+      <AccordionContent className="border-t border-border/30 px-3 pb-3 pt-0">
+        <LayerConfig
+          layer={layer}
+          onUpdate={(updates) => updateConvLayer(layer.id, updates)}
+        />
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main builder                                                       */
+/* ------------------------------------------------------------------ */
+
 export function ArchitectureBuilder() {
   const {
     architecture,
@@ -25,14 +137,39 @@ export function ArchitectureBuilder() {
     addConvLayer,
     removeConvLayer,
     updateConvLayer,
-    reorderConvLayers,
+    setConvLayerOrder,
     setDenseConfig,
+    setExpandedLayerId,
   } = useModelLabStore();
-
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { convLayers, dense } = architecture;
   const { spatialDims, paramCount, errors, warnings } = validation;
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = convLayers.findIndex((l) => l.id === active.id);
+      const newIndex = convLayers.findIndex((l) => l.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      setConvLayerOrder(arrayMove(convLayers, oldIndex, newIndex));
+    },
+    [convLayers, setConvLayerOrder],
+  );
+
+  const handleAccordionChange = useCallback(
+    (value: string) => {
+      setExpandedLayerId(value || null);
+    },
+    [setExpandedLayerId],
+  );
 
   return (
     <div className="space-y-4">
@@ -45,7 +182,7 @@ export function ArchitectureBuilder() {
         </span>
         {spatialDims.slice(1).map((dim, i) => (
           <span key={i} className="flex items-center gap-1">
-            <span className="text-foreground/20">→</span>
+            <span className="text-foreground/20">&rarr;</span>
             <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono">
               {dim.height}×{dim.width}×{convLayers[i]?.filters ?? "?"}
             </span>
@@ -54,93 +191,47 @@ export function ArchitectureBuilder() {
       </div>
 
       {/* Conv layers stack */}
-      <div className="space-y-2">
-        {convLayers.map((layer, i) => {
-          const isExpanded = expandedId === layer.id;
-          const summary = `Conv ${layer.filters} ${layer.kernelSize}×${layer.kernelSize} ${layer.activation}${layer.pooling !== "none" ? ` ${formatPooling(layer.pooling)}` : ""}${layer.batchNorm ? " BN" : ""}`;
-
-          return (
-            <div
-              key={layer.id}
-              className="rounded-lg border border-border/50 bg-black/20"
-            >
-              {/* Header */}
-              <div className="flex items-center gap-2 px-3 py-2">
-                <span className="shrink-0 font-mono text-[10px] text-foreground/30">
-                  {i + 1}
-                </span>
-
-                <button
-                  onClick={() =>
-                    setExpandedId(isExpanded ? null : layer.id)
-                  }
-                  className="flex-1 text-left text-xs font-medium text-foreground/65 hover:text-foreground/80"
-                >
-                  {summary}
-                </button>
-
-                {/* Reorder */}
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => i > 0 && reorderConvLayers(i, i - 1)}
-                  disabled={i === 0}
-                  className="text-foreground/25 hover:text-foreground/50 hover:bg-transparent"
-                >
-                  <ChevronUp size={14} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() =>
-                    i < convLayers.length - 1 &&
-                    reorderConvLayers(i, i + 1)
-                  }
-                  disabled={i === convLayers.length - 1}
-                  className="text-foreground/25 hover:text-foreground/50 hover:bg-transparent"
-                >
-                  <ChevronDown size={14} />
-                </Button>
-
-                {/* Remove */}
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  onClick={() => removeConvLayer(layer.id)}
-                  disabled={convLayers.length <= 1}
-                  className="text-foreground/25 hover:text-red-400 hover:bg-transparent"
-                >
-                  <Trash2 size={14} />
-                </Button>
-              </div>
-
-              {/* Expanded config */}
-              {isExpanded && (
-                <div className="border-t border-border/30 px-3 pb-3">
-                  <LayerConfig
-                    layer={layer}
-                    onUpdate={(updates) =>
-                      updateConvLayer(layer.id, updates)
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Add layer */}
-        {convLayers.length < MAX_CONV_LAYERS && (
-          <Button
-            variant="outline"
-            onClick={addConvLayer}
-            className="w-full border-dashed border-border/40 text-xs text-foreground/35 hover:border-indigo-500/40 hover:text-indigo-400 hover:bg-transparent"
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        modifiers={[restrictToVerticalAxis]}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={convLayers.map((l) => l.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <Accordion
+            type="single"
+            collapsible
+            className="space-y-2"
+            onValueChange={handleAccordionChange}
           >
-            <Plus size={14} />
-            Add Conv Layer
-          </Button>
-        )}
-      </div>
+            {convLayers.map((layer, i) => (
+              <SortableConvLayer
+                key={layer.id}
+                layer={layer}
+                index={i}
+                total={convLayers.length}
+                removeConvLayer={removeConvLayer}
+                updateConvLayer={updateConvLayer}
+              />
+            ))}
+
+            {/* Add layer */}
+            {convLayers.length < MAX_CONV_LAYERS && (
+              <Button
+                variant="outline"
+                onClick={addConvLayer}
+                className="w-full border-dashed border-border/40 text-xs text-foreground/35 hover:border-indigo-500/40 hover:text-indigo-400 hover:bg-transparent"
+              >
+                <Plus size={14} />
+                Add Conv Layer
+              </Button>
+            )}
+          </Accordion>
+        </SortableContext>
+      </DndContext>
 
       {/* Dense config */}
       <div className="rounded-lg border border-border/50 bg-black/20 px-3 py-3">

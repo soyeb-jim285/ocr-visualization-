@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useModelLabStore } from "@/stores/modelLabStore";
 import type { TrainingMode } from "@/stores/modelLabStore";
 import type { DatasetType } from "@/lib/model-lab/dataLoader";
@@ -9,6 +10,15 @@ import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  const s = ms / 1000;
+  if (s < 60) return `${s.toFixed(1)}s`;
+  const m = Math.floor(s / 60);
+  const rem = Math.round(s % 60);
+  return `${m}m ${rem}s`;
+}
 
 const DATASET_TABS: { value: DatasetType; label: string; desc: string }[] = [
   { value: "digits", label: "Digits", desc: "0-9 (10 classes, fastest)" },
@@ -61,11 +71,24 @@ export function TrainingControls({
     currentEpoch,
     currentBatch,
     totalBatches,
+    trainingHistory,
     validation,
     errorMessage,
   } = useModelLabStore();
 
   const isTraining = phase === "training";
+
+  const timingInfo = useMemo(() => {
+    if (trainingHistory.length === 0) return null;
+    const times = trainingHistory
+      .map((m) => m.epochTimeMs)
+      .filter((t): t is number => t != null);
+    if (times.length === 0) return null;
+    const avgMs = times.reduce((a, b) => a + b, 0) / times.length;
+    const elapsed = times.reduce((a, b) => a + b, 0);
+    const remaining = Math.max(0, (epochs - currentEpoch) * avgMs);
+    return { avgMs, elapsed, remaining };
+  }, [trainingHistory, epochs, currentEpoch]);
   const isBusy = phase === "loading-data" || phase === "building" || phase === "training";
   const hasErrors = validation.errors.length > 0;
 
@@ -324,6 +347,33 @@ export function TrainingControls({
         )}
       </div>
 
+      {/* Timing stats */}
+      {timingInfo && (
+        <div className="flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[11px] text-foreground/35">
+          <span>
+            {formatDuration(timingInfo.avgMs)}/epoch
+          </span>
+          <span>
+            elapsed: {formatDuration(timingInfo.elapsed)}
+          </span>
+          {isTraining && timingInfo.remaining > 0 && (
+            <span>
+              ~{formatDuration(timingInfo.remaining)} remaining
+            </span>
+          )}
+          {isTraining && (
+            <span>
+              est. total: ~{formatDuration(timingInfo.avgMs * epochs)}
+            </span>
+          )}
+          {!isTraining && phase === "trained" && (
+            <span>
+              total: {formatDuration(timingInfo.elapsed)}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Progress bar */}
       {isTraining && trainingMode === "browser" && totalBatches > 0 && (
         <Progress
@@ -341,6 +391,13 @@ export function TrainingControls({
               : "[&_[data-slot=progress-indicator]]:bg-purple-500"
           )}
         />
+      )}
+
+      {/* Cold-start hint for server modes */}
+      {phase === "loading-data" && trainingMode !== "browser" && (
+        <p className="text-[11px] text-foreground/30">
+          Cold start may take up to ~1 minute while the server spins up.
+        </p>
       )}
 
       {/* Error message */}

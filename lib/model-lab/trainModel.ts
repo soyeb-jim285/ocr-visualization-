@@ -16,6 +16,7 @@ export interface EpochMetrics {
   acc: number;
   valLoss: number;
   valAcc: number;
+  epochTimeMs?: number;
 }
 
 export interface TrainingCallbacks {
@@ -100,6 +101,7 @@ export function createTrainingController(
     );
 
     const totalBatches = Math.ceil(dataset.numTrain / config.batchSize);
+    let epochStartTime = 0;
 
     try {
       await model.fit(trainXs, trainYs, {
@@ -109,16 +111,21 @@ export function createTrainingController(
         shuffle: true,
         yieldEvery: "batch",
         callbacks: {
+          onEpochBegin: () => {
+            epochStartTime = performance.now();
+          },
           onBatchEnd: (batch) => {
             callbacks.onBatchEnd(batch + 1, totalBatches);
           },
           onEpochEnd: (epoch, logs) => {
+            const epochTimeMs = performance.now() - epochStartTime;
             callbacks.onEpochEnd({
               epoch: epoch + 1,
               loss: logs?.loss ?? 0,
               acc: logs?.acc ?? 0,
               valLoss: logs?.val_loss ?? 0,
               valAcc: logs?.val_acc ?? 0,
+              epochTimeMs,
             });
           },
         },

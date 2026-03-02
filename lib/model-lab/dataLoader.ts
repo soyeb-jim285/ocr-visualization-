@@ -82,19 +82,75 @@ async function fetchAndParse(url: string): Promise<RawBinary> {
   return { totalSamples, trainSamples, imageSize, numClasses, images, labels };
 }
 
+/**
+ * Stratified train/test split — ensures each class has the same ratio of
+ * train vs test samples (~80/20). Samples within each class are shuffled
+ * with a deterministic seed so the split is reproducible.
+ */
 function splitData(
   raw: RawBinary,
   labelMap: string[],
+  trainRatio = 0.8,
 ): LoadedDataset {
   const ppi = raw.imageSize * raw.imageSize;
-  const numTrain = raw.trainSamples;
-  const numTest = raw.totalSamples - numTrain;
+
+  // Group sample indices by class
+  const byClass = new Map<number, number[]>();
+  for (let i = 0; i < raw.totalSamples; i++) {
+    const cls = raw.labels[i];
+    let list = byClass.get(cls);
+    if (!list) { list = []; byClass.set(cls, list); }
+    list.push(i);
+  }
+
+  // Deterministic shuffle (Fisher-Yates with simple seed)
+  const seededShuffle = (arr: number[], seed: number) => {
+    let s = seed;
+    const next = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 0x100000000; };
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(next() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  };
+
+  const trainIndices: number[] = [];
+  const testIndices: number[] = [];
+
+  for (const [cls, indices] of byClass) {
+    seededShuffle(indices, cls * 31 + 42);
+    const nTrain = Math.round(indices.length * trainRatio);
+    for (let i = 0; i < nTrain; i++) trainIndices.push(indices[i]);
+    for (let i = nTrain; i < indices.length; i++) testIndices.push(indices[i]);
+  }
+
+  // Shuffle the final arrays so classes are interleaved
+  seededShuffle(trainIndices, 7);
+  seededShuffle(testIndices, 13);
+
+  const numTrain = trainIndices.length;
+  const numTest = testIndices.length;
+
+  const trainImages = new Float32Array(numTrain * ppi);
+  const trainLabels = new Uint8Array(numTrain);
+  for (let i = 0; i < numTrain; i++) {
+    const src = trainIndices[i];
+    trainImages.set(raw.images.subarray(src * ppi, (src + 1) * ppi), i * ppi);
+    trainLabels[i] = raw.labels[src];
+  }
+
+  const testImages = new Float32Array(numTest * ppi);
+  const testLabels = new Uint8Array(numTest);
+  for (let i = 0; i < numTest; i++) {
+    const src = testIndices[i];
+    testImages.set(raw.images.subarray(src * ppi, (src + 1) * ppi), i * ppi);
+    testLabels[i] = raw.labels[src];
+  }
 
   return {
-    trainImages: raw.images.slice(0, numTrain * ppi),
-    trainLabels: raw.labels.slice(0, numTrain),
-    testImages: raw.images.slice(numTrain * ppi),
-    testLabels: raw.labels.slice(numTrain),
+    trainImages,
+    trainLabels,
+    testImages,
+    testLabels,
     numClasses: raw.numClasses,
     numTrain,
     numTest,

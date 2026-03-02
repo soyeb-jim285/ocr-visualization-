@@ -109,5 +109,5 @@ export function useDrawingCanvas({
     clear();
   }, [clear]);
 
-  return { canvasRef, clear, hasDrawn, startDrawing, draw, stopDrawing };
+  return { canvasRef, clear, hasDrawn, setHasDrawn, startDrawing, draw, stopDrawing };
 }

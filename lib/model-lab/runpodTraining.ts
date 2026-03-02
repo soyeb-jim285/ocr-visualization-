@@ -86,6 +86,8 @@ export function createRunpodTrainingController(
       const decoder = new TextDecoder();
       let buffer = "";
 
+      let lastElapsedSec = 0;
+
       const processSSEChunks = async (chunks: string[]) => {
         for (const chunk of chunks) {
           const dataLine = chunk
@@ -104,6 +106,13 @@ export function createRunpodTrainingController(
           if (parsed.type === "status") {
             callbacks.onStatusChange(parsed.message);
           } else if (parsed.type === "epoch") {
+            const elapsedSec: number = parsed.elapsedSec ?? 0;
+            const epochTimeMs =
+              elapsedSec > 0
+                ? (elapsedSec - lastElapsedSec) * 1000
+                : undefined;
+            lastElapsedSec = elapsedSec;
+
             callbacks.onStatusChange("");
             callbacks.onEpochEnd({
               epoch: parsed.epoch,
@@ -111,6 +120,7 @@ export function createRunpodTrainingController(
               acc: parsed.acc,
               valLoss: parsed.valLoss,
               valAcc: parsed.valAcc,
+              epochTimeMs,
             });
           } else if (parsed.type === "complete") {
             console.log(

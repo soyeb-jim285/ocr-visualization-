@@ -29,6 +29,7 @@ import {
   type NeuronLayerDef,
   type HoveredNeuron,
 } from "@/lib/network/networkConstants";
+import { useSharedCanvas } from "@/hooks/useSharedCanvas";
 
 // ---------------------------------------------------------------------------
 // NeuronHeatmapTooltipContent
@@ -470,10 +471,12 @@ function ChannelThumb({ chIdx, activations, selected, color, onClick }: {
 
 export function NeuronNetworkSection() {
   const dragControls = useDragControls();
+  const sharedPixels = useSharedCanvas();
   const inputTensor = useInferenceStore(s => s.inputTensor);
   const layerActivations = useInferenceStore(s => s.layerActivations);
   const prediction = useInferenceStore(s => s.prediction);
   const topPrediction = useInferenceStore(s => s.topPrediction);
+  const inferenceTimeMs = useInferenceStore(s => s.inferenceTimeMs);
   const heroStage = useUIStore(s => s.heroStage);
   const setHeroStage = useUIStore(s => s.setHeroStage);
 
@@ -813,7 +816,14 @@ export function NeuronNetworkSection() {
             variant={shouldUseFloatingLayout ? "floating" : "hero"}
             displaySize={shouldUseFloatingLayout ? floatingCanvasSize : expandedCanvasSize}
             onFirstDraw={handleFirstDraw}
+            sharedPixels={sharedPixels}
           />
+
+          {shouldUseFloatingLayout && (
+            <p className="mt-0.5 text-center font-mono text-[9px] text-foreground/30" style={{ visibility: inferenceTimeMs !== null ? "visible" : "hidden" }}>
+              {inferenceTimeMs !== null ? (inferenceTimeMs < 1 ? "<1" : Math.round(inferenceTimeMs)) : "0"}ms
+            </p>
+          )}
 
           {isDrawingStage && (
             <motion.div

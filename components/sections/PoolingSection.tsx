@@ -295,7 +295,7 @@ export function PoolingSection() {
   const beforePool = relu2Maps?.[selectedFilter];
   const afterPool = pool1Maps?.[selectedFilter];
 
-  const numFilters = relu2Maps?.length ?? 0;
+  const numFilters = relu2Maps?.length ?? 128;
   const hasData = !!beforePool;
 
   const stats = useMemo(() => {
@@ -390,56 +390,58 @@ export function PoolingSection() {
               </span>
             </>
           ) : (
-            <div className="flex h-32 items-center justify-center">
-              <p className="text-foreground/30">
-                Draw a character above to see activations
-              </p>
+            <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-xs font-medium text-foreground/60">Before Pooling</span>
+                <div className="rounded-md border border-border/50 bg-black" style={{ width: 140, height: 140 }} />
+                <span className="font-mono text-[11px] text-foreground/30">28&times;28</span>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-xs font-medium text-foreground/60">After Pooling</span>
+                <div className="rounded-md border border-border/50 bg-black" style={{ width: 140, height: 140 }} />
+                <span className="font-mono text-[11px] text-foreground/30">14&times;14</span>
+              </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Filter selection: clickable thumbnails — full width */}
-      {hasData && (
-        <div className="mt-6 space-y-3">
-          <p className="text-center text-xs text-foreground/40">
-            Select a filter — click any feature map below
-          </p>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-            {pool1Maps
-              ? pool1Maps.map((fm, i) => (
-                  <ActivationHeatmap
-                    key={i}
-                    data={fm}
-                    size={56}
-                    label={`#${i + 1}`}
-                    onClick={() => setSelectedFilter(i)}
-                    selected={i === selectedFilter}
-                  />
-                ))
-              : Array.from({ length: numFilters }, (_, i) => (
+      <div className="mt-6 space-y-3">
+        <p className="text-center text-xs text-foreground/40">
+          Select a filter — click any feature map below
+        </p>
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+          {pool1Maps
+            ? pool1Maps.map((fm, i) => (
+                <ActivationHeatmap
+                  key={i}
+                  data={fm}
+                  size={56}
+                  label={`#${i + 1}`}
+                  onClick={() => setSelectedFilter(i)}
+                  selected={i === selectedFilter}
+                />
+              ))
+            : Array.from({ length: numFilters }, (_, i) => (
+                <div
+                  key={i}
+                  className={`flex flex-col items-center gap-1 ${
+                    i === selectedFilter ? "opacity-100" : "opacity-40"
+                  }`}
+                  onClick={() => setSelectedFilter(i)}
+                >
                   <div
-                    key={i}
-                    className={`flex flex-col items-center gap-1 ${
-                      i === selectedFilter ? "opacity-100" : "opacity-40"
-                    }`}
-                  >
-                    <div
-                      className="border border-border/50"
-                      style={{
-                        width: 56,
-                        height: 56,
-                        backgroundColor: "var(--surface)",
-                      }}
-                    />
-                    <span className="text-xs text-foreground/40">
-                      #{i + 1}
-                    </span>
-                  </div>
-                ))}
-          </div>
+                    className="cursor-pointer border border-border/50 bg-black"
+                    style={{ width: 56, height: 56 }}
+                  />
+                  <span className="text-xs text-foreground/40">
+                    #{i + 1}
+                  </span>
+                </div>
+              ))}
         </div>
-      )}
+      </div>
     </SectionWrapper>
   );
 }

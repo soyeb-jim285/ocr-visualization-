@@ -263,27 +263,46 @@ export function FullyConnectedSection() {
 
         {/* Right: visualization */}
         <div className="flex w-full shrink-0 flex-col items-center gap-4 lg:w-auto">
-          {hasData ? (
-            <div className="flex flex-col items-center gap-4">
-              <InputStrip pool2Maps={pool2Maps} />
+          <div className="flex flex-col items-center gap-4">
+            {hasData ? (
+              <>
+                <InputStrip pool2Maps={pool2Maps} />
 
-              {/* Arrow: flatten + dense */}
-              <div className="flex flex-col items-center gap-0.5">
-                <Latex
-                  math="\downarrow\; W \cdot \mathbf{x} + \mathbf{b}"
-                  className="text-foreground/30"
-                />
-              </div>
+                {/* Arrow: flatten + dense */}
+                <div className="flex flex-col items-center gap-0.5">
+                  <Latex
+                    math="\downarrow\; W \cdot \mathbf{x} + \mathbf{b}"
+                    className="text-foreground/30"
+                  />
+                </div>
 
-              <NeuronGrid activations={relu4} />
-            </div>
-          ) : (
-            <div className="flex h-48 items-center justify-center">
-              <p className="text-foreground/30">
-                Draw a character above to see activations
-              </p>
-            </div>
-          )}
+                <NeuronGrid activations={relu4} />
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[11px] text-foreground/30">
+                    Flattened input (12,544 values)
+                  </span>
+                  <div className="rounded-sm border border-border/40 bg-black" style={{ width: GRID_W, height: STRIP_H }} />
+                </div>
+
+                <div className="flex flex-col items-center gap-0.5">
+                  <Latex
+                    math="\downarrow\; W \cdot \mathbf{x} + \mathbf{b}"
+                    className="text-foreground/30"
+                  />
+                </div>
+
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-[11px] text-foreground/30">
+                    Hidden layer — 512 neurons (32&times;16)
+                  </span>
+                  <div className="rounded-md border border-border/60 bg-black" style={{ width: GRID_W, height: GRID_H }} />
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </SectionWrapper>

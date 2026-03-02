@@ -37,10 +37,13 @@ export function useInference() {
         if (useInferenceStore.getState().generation !== gen) return;
         store.setInputTensor(pixelArray);
 
+        const t0 = performance.now();
         const { prediction, layerActivations } = await runInference(tensor);
+        const t1 = performance.now();
         if (useInferenceStore.getState().generation !== gen) return;
         store.setPrediction(prediction);
         store.setLayerActivations(layerActivations);
+        store.setInferenceTimeMs(t1 - t0);
 
         // Trigger custom model inference AFTER main inference completes.
         // ONNX Runtime WASM backend can't handle concurrent session.run() calls.

@@ -77,10 +77,12 @@ export function DeeperLayersSection() {
               cellSize={56}
             />
           ) : (
-            <div className="viz-empty-state h-32">
-              <p className="text-foreground/30">
-                Draw a character to see deeper features
-              </p>
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+              {Array.from({ length: 32 }, (_, i) => (
+                <div key={i} className="flex flex-col items-center gap-1 opacity-40">
+                  <div className="border border-border/50 bg-black" style={{ width: 56, height: 56 }} />
+                </div>
+              ))}
             </div>
           )}
           {conv3Maps && conv3Maps.length > 32 && (
@@ -91,57 +93,77 @@ export function DeeperLayersSection() {
         </div>
 
         {/* ReLU3: 128 filters, 14x14 */}
-        {relu3Maps && (
-          <div>
-            <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
-              <span className="rounded-full bg-accent-tertiary/10 px-3 py-1 text-sm font-medium text-accent-tertiary">
-                After ReLU
-              </span>
-              <span className="text-xs text-foreground/40 sm:text-sm">
-                128 feature maps &middot; 14&times;14 &middot; negatives zeroed
-              </span>
-            </div>
-            <FeatureMapGrid
-              featureMaps={relu3Maps.slice(0, 32)}
-              layerName="relu3"
-              columns={8}
-              columnsSm={4}
-              cellSize={56}
-            />
-            {relu3Maps.length > 32 && (
-              <p className="mt-2 text-center text-xs text-foreground/30">
-                Showing 32 of {relu3Maps.length} feature maps
-              </p>
-            )}
+        <div>
+          <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
+            <span className="rounded-full bg-accent-tertiary/10 px-3 py-1 text-sm font-medium text-accent-tertiary">
+              After ReLU
+            </span>
+            <span className="text-xs text-foreground/40 sm:text-sm">
+              128 feature maps &middot; 14&times;14 &middot; negatives zeroed
+            </span>
           </div>
-        )}
+          {relu3Maps ? (
+            <>
+              <FeatureMapGrid
+                featureMaps={relu3Maps.slice(0, 32)}
+                layerName="relu3"
+                columns={8}
+                columnsSm={4}
+                cellSize={56}
+              />
+              {relu3Maps.length > 32 && (
+                <p className="mt-2 text-center text-xs text-foreground/30">
+                  Showing 32 of {relu3Maps.length} feature maps
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+              {Array.from({ length: 32 }, (_, i) => (
+                <div key={i} className="flex flex-col items-center gap-1 opacity-40">
+                  <div className="border border-border/50 bg-black" style={{ width: 56, height: 56 }} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Pool2: 128 filters, 7x7 */}
-        {pool2Maps && (
-          <div>
-            <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
-              <span className="rounded-full bg-accent-warning/10 px-3 py-1 text-sm font-medium text-accent-warning">
-                After Pooling
-              </span>
-              <span className="text-xs text-foreground/40 sm:text-sm">
-                128 feature maps &middot; 7&times;7 each
-              </span>
-            </div>
-            <FeatureMapGrid
-              featureMaps={pool2Maps.slice(0, 16)}
-              layerName="pool2"
-              columns={8}
-              columnsSm={4}
-              cellSize={56}
-            />
-            <p className="mt-3 text-center text-sm text-foreground/40">
-              These compact 7&times;7 feature maps will be flattened into a
-              single vector of{" "}
-              <Latex math="7 \times 7 \times 128 = 6{,}272" /> values for the
-              dense layers.
-            </p>
+        <div>
+          <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
+            <span className="rounded-full bg-accent-warning/10 px-3 py-1 text-sm font-medium text-accent-warning">
+              After Pooling
+            </span>
+            <span className="text-xs text-foreground/40 sm:text-sm">
+              128 feature maps &middot; 7&times;7 each
+            </span>
           </div>
-        )}
+          {pool2Maps ? (
+            <>
+              <FeatureMapGrid
+                featureMaps={pool2Maps.slice(0, 16)}
+                layerName="pool2"
+                columns={8}
+                columnsSm={4}
+                cellSize={56}
+              />
+              <p className="mt-3 text-center text-sm text-foreground/40">
+                These compact 7&times;7 feature maps will be flattened into a
+                single vector of{" "}
+                <Latex math="7 \times 7 \times 128 = 6{,}272" /> values for the
+                dense layers.
+              </p>
+            </>
+          ) : (
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+              {Array.from({ length: 16 }, (_, i) => (
+                <div key={i} className="flex flex-col items-center gap-1 opacity-40">
+                  <div className="border border-border/50 bg-black" style={{ width: 56, height: 56 }} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </SectionWrapper>
   );

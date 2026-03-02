@@ -28,6 +28,19 @@ export const metadata: Metadata = {
     "deep learning",
     "OCR",
   ],
+  openGraph: {
+    title: "Neural Network X-Ray",
+    description:
+      "Draw a character and watch every layer of a CNN process it in real time — from raw pixels to confident prediction.",
+    type: "website",
+    siteName: "Neural Network X-Ray",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Neural Network X-Ray",
+    description:
+      "Interactive visualization of how CNNs recognize handwritten characters. Draw anything and see 13 layers process it live.",
+  },
 };
 
 export default function RootLayout({

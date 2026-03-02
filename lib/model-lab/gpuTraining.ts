@@ -47,6 +47,7 @@ export function createGpuTrainingController(
   let cancelled = false;
 
   const start = async () => {
+    let lastElapsedSec = 0;
     try {
       callbacks.onStatusChange("Connecting to GPU server...");
 
@@ -97,12 +98,20 @@ export function createGpuTrainingController(
           const parsed = JSON.parse(jsonStr);
 
           if (parsed.type === "epoch") {
+            const elapsedSec: number = parsed.elapsedSec ?? 0;
+            const epochTimeMs =
+              elapsedSec > 0
+                ? (elapsedSec - lastElapsedSec) * 1000
+                : undefined;
+            lastElapsedSec = elapsedSec;
+
             callbacks.onEpochEnd({
               epoch: parsed.epoch,
               loss: parsed.loss,
               acc: parsed.acc,
               valLoss: parsed.valLoss,
               valAcc: parsed.valAcc,
+              epochTimeMs,
             });
           } else if (parsed.type === "complete") {
             // Decode base64 ONNX → ArrayBuffer → InferenceSession
