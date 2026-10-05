@@ -1,0 +1,59 @@
+name: brag-video
+on:
+  push:
+    branches: [brag-video]
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: System deps
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-noto-core
+      - name: Build + serve app
+        env: { NEXT_TELEMETRY_DISABLED: "1" }
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          (pnpm start > app.log 2>&1 &)
+          for i in $(seq 1 60); do curl -sf localhost:3000 >/dev/null && break; sleep 2; done
+      - name: Tooling
+        working-directory: brag
+        run: |
+          npm i --no-save playwright
+          npx playwright install --with-deps chromium
+          pip install -q numpy scipy
+      - name: Capture app (frame-stepped clock)
+        working-directory: brag
+        run: node capture.mjs
+      - name: Score
+        working-directory: brag
+        run: python music.py out/audio.wav
+      - name: Render
+        working-directory: brag
+        run: |
+          node render.mjs
+          ffmpeg -y -i out/video.mp4 -i out/audio.wav -c:v copy -c:a aac -b:a 192k -shortest -movflags +faststart out/brag.mp4
+          ffmpeg -y -i out/brag-poster.png -q:v 2 out/brag.jpg
+          ffprobe -v error -show_entries format=duration -of csv=p=0 out/brag.mp4
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: brag
+          path: |
+            brag/out/brag.mp4
+            brag/out/brag.jpg
+            brag/out/review/
+            brag/out/cap/draw/0012.png
+            brag/out/cap/draw/0060.png
+            brag/out/cap/draw/0120.png
+            brag/out/cap/draw/0200.png
+            app.log

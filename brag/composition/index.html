@@ -1,0 +1,184 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&family=Geist+Mono:wght@400;500&family=Noto+Serif+Bengali:wght@400&display=block" rel="stylesheet">
+<style>
+  :root { --bg:#06080b; --ink:#e9eef2; --ink2:#b4c0ca; --ink3:#8896a3; --phos:#8fe3ff; --ann:#ff6b4a; --rule:rgba(170,205,225,.14); }
+  * { margin:0; box-sizing:border-box; }
+  html, body { width:1920px; height:1080px; overflow:hidden; background:var(--bg); }
+  body {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(143,227,255,.06), transparent 70%),
+      linear-gradient(var(--rule) 1px, transparent 1px) 0 0/64px 64px,
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px) 0 0/64px 64px,
+      var(--bg);
+    background-blend-mode: normal;
+    font-family: "Newsreader", serif; color: var(--ink);
+  }
+  .grid-dim { position:absolute; inset:0; background:rgba(6,8,11,.82); }
+  .layer { position:absolute; inset:0; opacity:0; }
+  #clip { position:absolute; inset:0; width:1920px; height:1080px; transform-origin:62% 45%; }
+  .serif { font-family:"Newsreader", serif; font-weight:300; letter-spacing:-.02em; line-height:1.02; }
+  .mono { font-family:"Geist Mono", monospace; text-transform:uppercase; letter-spacing:.14em; font-size:22px; color:var(--ink3); }
+  .mono b { color:var(--ann); font-weight:500; }
+  .t { position:absolute; opacity:0; will-change:transform,opacity; }
+  .scrim-left { position:absolute; inset:0; background:linear-gradient(90deg, rgba(6,8,11,.92) 0%, rgba(6,8,11,.6) 38%, transparent 55%); }
+  .scrim-top { position:absolute; inset:0; background:linear-gradient(180deg, rgba(6,8,11,.85) 0%, rgba(6,8,11,.4) 26%, transparent 40%); }
+  .plate { position:absolute; left:50%; overflow:hidden; border:1px solid var(--rule); background:#030507; box-shadow:0 40px 120px rgba(0,0,0,.6); }
+  .plate img { position:absolute; left:0; top:0; transform-origin:0 0; }
+  .marks::before, .marks::after { content:""; position:absolute; width:22px; height:22px; border:1.5px solid var(--phos); opacity:.7; }
+  .marks::before { left:-1px; top:-1px; border-right:0; border-bottom:0; }
+  .marks::after { right:-1px; bottom:-1px; border-left:0; border-top:0; }
+  .cap { left:184px; top:860px; }
+  .cap .mono { margin-bottom:18px; }
+  .cap .serif { font-size:76px; }
+  em { font-style:italic; }
+  .bn { font-family:"Noto Serif Bengali", serif; font-weight:400; }
+</style>
+</head>
+<body>
+  <!-- S1–S2: real app capture (frame-stepped) -->
+  <div class="layer" id="L-clip">
+    <img id="clip" alt="" src="../out/cap/draw/0012.png">
+    <div class="scrim-left" id="scrimL"></div>
+    <div class="scrim-top" id="scrimT"></div>
+    <div class="t" id="hook" style="left:184px; top:356px;">
+      <div class="mono" style="margin-bottom:26px;"><b>FIG. 0</b> &nbsp;· specimen</div>
+      <div class="serif" style="font-size:150px;">Draw a letter.</div>
+    </div>
+    <div class="t" id="reveal" style="left:0; width:1920px; top:96px; text-align:center;">
+      <div class="mono" style="margin-bottom:22px;"><b>FIG. 1</b> &nbsp;· 13 layers, live</div>
+      <div class="serif" style="font-size:96px;">Watch a network <em>read</em> it.</div>
+    </div>
+  </div>
+
+  <!-- S3: feature-map tray -->
+  <div class="layer" id="L-tray">
+    <div class="plate marks" id="P-tray"><img src="../assets/tray.png" id="I-tray"></div>
+    <div class="t cap" id="C-tray">
+      <div class="mono"><b>FIG. 5.2</b> &nbsp;· feature maps</div>
+      <div class="serif">Every filter. Every layer. <em>Live.</em></div>
+    </div>
+  </div>
+
+  <!-- S4: softmax verdict -->
+  <div class="layer" id="L-verdict">
+    <div class="plate marks" id="P-verdict"><img src="../assets/verdict.png" id="I-verdict"></div>
+    <div class="t cap" id="C-verdict">
+      <div class="mono"><b>FIG. 8</b> &nbsp;· verdict</div>
+      <div class="serif">146 characters. Latin <em>and</em> <span class="bn">বাংলা</span>.</div>
+    </div>
+  </div>
+
+  <!-- S5: training curves -->
+  <div class="layer" id="L-curves">
+    <div class="plate marks" id="P-curves"><img src="../assets/curves.png" id="I-curves"></div>
+    <div class="t cap" id="C-curves">
+      <div class="mono"><b>FIG. 9.2</b> &nbsp;· training</div>
+      <div class="serif">40 epochs. 980K handwritten glyphs.</div>
+    </div>
+  </div>
+
+  <!-- S6: outro -->
+  <div class="layer" id="L-outro">
+    <div class="t" id="O1" style="left:0; width:1920px; top:330px; text-align:center;">
+      <div class="mono" style="margin-bottom:34px;"><b>●</b> &nbsp;Combined-CNN v2</div>
+      <div class="serif" style="font-size:168px;">Neural Network <em>X-Ray</em></div>
+    </div>
+    <div class="t mono" id="O2" style="left:0; width:1920px; top:640px; text-align:center; font-size:26px; color:var(--ink2);">
+      1.7M parameters &nbsp;·&nbsp; 7 MB &nbsp;·&nbsp; runs in your browser
+    </div>
+    <div class="t" id="O3" style="left:0; width:1920px; top:760px; text-align:center;">
+      <span style="font-family:'Geist Mono',monospace; font-size:44px; color:var(--phos); letter-spacing:.04em; border-bottom:1.5px solid rgba(143,227,255,.4); padding-bottom:8px;">ocr.soyebjim.me</span>
+    </div>
+  </div>
+
+<script>
+const FPS = 30;
+const CLIP_START = 12;                       // capture frame shown at t=0 (stroke starts at 15)
+const S = {                                  // scene windows (seconds)
+  clip:    [0.0, 7.4],
+  tray:    [7.4, 11.0],
+  verdict: [11.0, 14.6],
+  curves:  [14.6, 18.2],
+  outro:   [18.2, 21.4],
+};
+const DURATION = 21.4;
+// crop boxes in the 1920×1080 source stills: [x, y, w, h]
+const CROPS = { tray: [424, 664, 1072, 412], verdict: [424, 684, 1072, 330], curves: [424, 108, 1072, 452] };
+
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = (x) => 1 - Math.pow(1 - clamp(x), 3);              // easeOutCubic
+const smooth = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
+const $ = (id) => document.getElementById(id);
+
+// scene envelope: fade in over `fi`, out over `fo` (dip through background between scenes)
+function env(t, [a, b], fi = 0.3, fo = 0.3) { return Math.min(smooth((t - a) / fi), smooth((b - t) / fo)); }
+// text in: rise + fade starting at `at`, holds; leaves with its scene
+function textIn(el, t, at, rise = 26, dur = 0.55) {
+  const k = ease((t - at) / dur);
+  el.style.opacity = k;
+  el.style.transform = `translateY(${(1 - k) * rise}px)`;
+}
+function textOut(el, t, at, dur = 0.35) {
+  const k = smooth((t - at) / dur);
+  el.style.opacity = Math.min(+el.style.opacity, 1 - k);
+}
+
+function placePlate(name, t, [a, b]) {
+  const [x, y, w, h] = CROPS[name];
+  const W = 1560, scale = W / w, H = h * scale;
+  const top = Math.max(96, (830 - H) / 2);
+  const P = $("P-" + name), I = $("I-" + name);
+  P.style.width = W + "px"; P.style.height = H + "px"; P.style.top = top + "px";
+  // slow push-in + drift over the scene
+  const k = (t - a) / (b - a);
+  const z = 1 + 0.045 * k;
+  P.style.transform = `translateX(-50%) translateY(${(1 - ease((t - a) / 0.6)) * 30}px)`;
+  I.style.transform = `scale(${scale * z}) translate(${-x - w * (z - 1) / 2 / z}px, ${-y - h * (z - 1) / 2 / z}px)`;
+}
+
+const clipImg = $("clip");
+let meta = null;
+async function loadMeta() {
+  try { meta = await (await fetch("../out/cap/draw/meta.json")).json(); } catch { meta = { frames: 238 }; }
+}
+const loaded = loadMeta();
+
+window.renderAt = async function (t) {
+  await loaded;
+  // --- S1/S2 clip
+  const Lc = $("L-clip");
+  Lc.style.opacity = env(t, S.clip, 0.01, 0.35);
+  const fi = Math.min(meta.frames - 1, CLIP_START + Math.round(t * FPS));
+  const src = `../out/cap/draw/${String(fi).padStart(4, "0")}.png`;
+  if (!clipImg.src.endsWith(src.slice(2))) { clipImg.src = src; await clipImg.decode().catch(() => {}); }
+  const zoom = 1 + 0.03 * smooth(t / 3) - 0.03 * smooth((t - 2.6) / 1.4);   // gentle push toward the card, release on reveal
+  clipImg.style.transform = `scale(${zoom})`;
+  $("scrimL").style.opacity = 1 - smooth((t - 2.5) / 0.6);
+  $("scrimT").style.opacity = smooth((t - 3.0) / 0.6);
+  textIn($("hook"), t, 0.15); textOut($("hook"), t, 2.6);
+  textIn($("reveal"), t, 3.7);
+
+  // --- S3–S5 stills
+  for (const name of ["tray", "verdict", "curves"]) {
+    const w = S[name];
+    $("L-" + name).style.opacity = env(t, w);
+    placePlate(name, t, w);
+    textIn($("C-" + name), t, w[0] + 0.35);
+  }
+
+  // --- S6 outro
+  $("L-outro").style.opacity = env(t, S.outro, 0.35, 0.01);
+  textIn($("O1"), t, S.outro[0] + 0.2, 30, 0.8);
+  textIn($("O2"), t, S.outro[0] + 0.75);
+  textIn($("O3"), t, S.outro[0] + 1.1);
+  const fade = smooth((DURATION - t) / 0.5);            // final fade to black
+  document.body.style.filter = `brightness(${fade})`;
+};
+window.DURATION = DURATION;
+window.FPS = FPS;
+</script>
+</body>
+</html>
