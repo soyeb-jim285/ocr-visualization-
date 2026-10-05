@@ -28,8 +28,8 @@ jobs:
       - name: Tooling
         working-directory: brag
         run: |
-          npm i --no-save playwright
-          npx playwright install --with-deps chromium
+          pnpm install --ignore-workspace --no-frozen-lockfile
+          pnpm exec playwright install --with-deps chromium
           pip install -q numpy scipy
       - name: Capture app (frame-stepped clock)
         working-directory: brag
