@@ -23,7 +23,7 @@
   .mono { font-family:"Geist Mono", monospace; text-transform:uppercase; letter-spacing:.14em; font-size:22px; color:var(--ink3); }
   .mono b { color:var(--ann); font-weight:500; }
   .t { position:absolute; opacity:0; will-change:transform,opacity; }
-  .scrim-left { position:absolute; inset:0; background:linear-gradient(90deg, rgba(6,8,11,.92) 0%, rgba(6,8,11,.6) 38%, transparent 55%); }
+  .scrim-left { position:absolute; inset:0; background:linear-gradient(90deg, #06080b 0%, #06080b 56%, transparent 60%); }
   .scrim-top { position:absolute; inset:0; background:linear-gradient(180deg, rgba(6,8,11,.85) 0%, rgba(6,8,11,.4) 26%, transparent 40%); }
   .plate { position:absolute; left:50%; overflow:hidden; border:1px solid var(--rule); background:#030507; box-shadow:0 40px 120px rgba(0,0,0,.6); }
   .plate img { position:absolute; left:0; top:0; transform-origin:0 0; }
@@ -45,7 +45,7 @@
     <div class="scrim-top" id="scrimT"></div>
     <div class="t" id="hook" style="left:184px; top:356px;">
       <div class="mono" style="margin-bottom:26px;"><b>FIG. 0</b> &nbsp;· specimen</div>
-      <div class="serif" style="font-size:150px;">Draw a letter.</div>
+      <div class="serif" style="font-size:128px;">Draw a character.</div>
     </div>
     <div class="t" id="reveal" style="left:0; width:1920px; top:96px; text-align:center;">
       <div class="mono" style="margin-bottom:22px;"><b>FIG. 1</b> &nbsp;· 13 layers, live</div>
@@ -106,7 +106,7 @@ const S = {                                  // scene windows (seconds)
 };
 const DURATION = 21.4;
 // crop boxes in the 1920×1080 source stills: [x, y, w, h]
-const CROPS = { tray: [424, 664, 1072, 412], verdict: [424, 684, 1072, 330], curves: [424, 108, 1072, 452] };
+const CROPS = { tray: [396, 664, 1128, 412], verdict: [396, 680, 1128, 336], curves: [396, 104, 1128, 460] };
 
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const ease = (x) => 1 - Math.pow(1 - clamp(x), 3);              // easeOutCubic
@@ -114,7 +114,7 @@ const smooth = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
 const $ = (id) => document.getElementById(id);
 
 // scene envelope: fade in over `fi`, out over `fo` (dip through background between scenes)
-function env(t, [a, b], fi = 0.3, fo = 0.3) { return Math.min(smooth((t - a) / fi), smooth((b - t) / fo)); }
+function env(t, [a, b], fi = 0.2, fo = 0.2) { return Math.min(smooth((t - a) / fi), smooth((b - t) / fo)); }
 // text in: rise + fade starting at `at`, holds; leaves with its scene
 function textIn(el, t, at, rise = 26, dur = 0.55) {
   const k = ease((t - at) / dur);
@@ -128,7 +128,7 @@ function textOut(el, t, at, dur = 0.35) {
 
 function placePlate(name, t, [a, b]) {
   const [x, y, w, h] = CROPS[name];
-  const W = 1560, scale = W / w, H = h * scale;
+  const W = 1440, scale = W / w, H = h * scale;
   const top = Math.max(96, (830 - H) / 2);
   const P = $("P-" + name), I = $("I-" + name);
   P.style.width = W + "px"; P.style.height = H + "px"; P.style.top = top + "px";
