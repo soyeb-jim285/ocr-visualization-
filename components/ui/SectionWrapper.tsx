@@ -10,7 +10,7 @@ interface SectionWrapperProps {
   id: string;
   children: React.ReactNode;
   className?: string;
-  /** Opt in to min-h-screen (default false: plates are as tall as their content) */
+  /** Opt in to min-h-svh (default false: plates are as tall as their content) */
   fullHeight?: boolean;
   /** Plate signal color: a CSS value ("var(--sig-pool)") or a short token ("pool") */
   sig?: string;
@@ -32,13 +32,13 @@ export function SectionWrapper({
   return (
     <section
       id={id}
-      className={`plate py-[clamp(64px,12vh,144px)] ${fullHeight ? "min-h-screen" : ""} ${className ?? ""}`}
+      className={`plate py-12 md:py-[clamp(64px,12svh,144px)] ${fullHeight ? "min-h-svh" : ""} ${className ?? ""}`}
       style={sigValue ? ({ "--sig": sigValue } as CSSProperties) : undefined}
     >
       <PlateContext.Provider value={{ mirror }}>
         <div className="relative z-10 mx-auto max-w-[1200px] px-4 md:px-16 min-[1400px]:px-8">
           <motion.div
-            className="plate-rule mb-10 md:mb-14"
+            className="plate-rule mb-8 md:mb-14"
             initial={reduce ? false : { scaleX: 0 }}
             whileInView={{ scaleX: 1 }}
             viewport={{ once: true, margin: "-8% 0px" }}

@@ -9,6 +9,7 @@ import {
   getPrefetchedCount,
   prefetchAllEpochs,
   getInferenceCache,
+  clearInferenceCache,
 } from "@/lib/model/epochModels";
 import { preprocessCanvas } from "@/lib/model/preprocess";
 import { useInferenceStore } from "@/stores/inferenceStore";
@@ -92,6 +93,8 @@ export function EpochNetworkVisualization() {
     tensorRef.current = null;
     inputTensor2DRef.current = null;
     // Sync with the shared cache (EpochPrefetcher clears it on input change)
+    // clear here too: effect order vs EpochPrefetcher must not let a stale cache hit through
+    clearInferenceCache();
     resultsCacheRef.current = getInferenceCache();
     if (inputImageData) {
       const { tensor, pixelArray } = preprocessCanvas(inputImageData);
@@ -178,18 +181,30 @@ export function EpochNetworkVisualization() {
     // Cache hit — instant
     const cached = resultsCacheRef.current.get(epoch);
     if (cached) {
+      setError(null);
       applyResult(cached, epoch);
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    const tensor = tensorRef.current;
+    const cache = resultsCacheRef.current;
     try {
-      const result = await runEpochInference(tensorRef.current, epoch);
-      resultsCacheRef.current.set(epoch, result);
+      let result;
+      try {
+        result = await runEpochInference(tensor, epoch);
+      } catch (e) {
+        console.warn("Epoch inference failed, retrying once:", e);
+        result = await runEpochInference(tensor, epoch);
+      }
+      // input changed while running: drop the stale result
+      if (tensorRef.current !== tensor) return;
+      cache.set(epoch, result);
       applyResult(result, epoch);
-    } catch {
-      if (pendingEpochRef.current === epoch) {
+    } catch (err) {
+      console.error(err);
+      if (pendingEpochRef.current === epoch && tensorRef.current === tensor) {
         setError("Model checkpoint not available");
         setEpochPrediction(null);
         setEpochActivations({});
@@ -207,12 +222,14 @@ export function EpochNetworkVisualization() {
       // If cached, apply immediately — no debounce needed
       const cached = resultsCacheRef.current.get(epoch);
       if (cached) {
+        setError(null);
         if (debounceRef.current) clearTimeout(debounceRef.current);
         applyResult(cached, epoch);
         return;
       }
 
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (tensorRef.current) setIsLoading(true);
       debounceRef.current = setTimeout(() => {
         runAtEpoch(epoch);
       }, 100);
@@ -272,7 +289,8 @@ export function EpochNetworkVisualization() {
   }, []);
   const onClickLayer = useCallback(() => {}, []);
 
-  const topPrediction = epochPrediction
+  // pending checkpoint: don't show the previous epoch's prediction next to the new epoch number
+  const topPrediction = epochPrediction && !isLoading
     ? (() => {
         const maxIdx = epochPrediction.indexOf(Math.max(...epochPrediction));
         return {
@@ -305,7 +323,37 @@ export function EpochNetworkVisualization() {
         </div>
       )}
 
-      <div className="well plate-marks relative overflow-x-auto scrollbar-none">
+      {hasInput && (
+        <div className="flex items-end justify-between font-mono text-[11px] text-ink-3 sm:hidden">
+          <div>
+            <p className="tracking-[0.08em]">PREDICTION</p>
+            <p className="flex items-baseline gap-2">
+              <span className="font-serif text-4xl leading-none text-annotation">{topPrediction?.label ?? "–"}</span>
+              {topPrediction && (
+                <span className="text-xs tabular-nums text-ink">{(topPrediction.confidence * 100).toFixed(1)}%</span>
+              )}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="tracking-[0.08em]">EPOCH</p>
+            <p className="text-2xl leading-none tabular-nums text-ink">
+              {String(currentEpoch).padStart(3, "0")}
+              <span className="ml-1 text-[11px] text-ink-3">/ {TOTAL_EPOCHS - 1}</span>
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div
+        ref={(el) => {
+          // center the wide network on first show (phones)
+          if (el && !el.dataset.c && el.scrollWidth > el.clientWidth) {
+            el.dataset.c = "1";
+            el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+          }
+        }}
+        className={`well plate-marks relative overflow-x-auto overscroll-x-contain scrollbar-none transition-opacity ${isLoading && hasActivations ? "opacity-50" : ""}`}
+      >
         {!(hasInput && hasActivations) && (
           <div className="flex h-[300px] items-center justify-center px-6 text-center lg:h-[360px]">
             <p className="font-serif text-xl italic text-ink-3 sm:text-2xl">
@@ -323,7 +371,7 @@ export function EpochNetworkVisualization() {
         <div
           className={
             hasInput && hasActivations
-              ? "relative h-[560px] min-w-[720px] sm:h-[680px] lg:h-[780px]"
+              ? "relative h-[460px] min-w-[720px] sm:h-[680px] lg:h-[780px]"
               : "absolute inset-0"
           }
           aria-hidden={!(hasInput && hasActivations)}
@@ -349,7 +397,7 @@ export function EpochNetworkVisualization() {
 
           {hasInput && (
             <>
-              <div className="pointer-events-none absolute left-4 top-4 z-10 font-mono text-[11px] text-ink-3">
+              <div className="pointer-events-none absolute left-4 top-4 z-10 max-sm:hidden font-mono text-[11px] text-ink-3">
                 <p className="tracking-[0.08em]">PREDICTION</p>
                 {topPrediction && (
                   <motion.div
@@ -372,7 +420,7 @@ export function EpochNetworkVisualization() {
                 )}
               </div>
 
-              <div className="pointer-events-none absolute right-4 top-4 z-10 text-right font-mono text-[11px] text-ink-3">
+              <div className="pointer-events-none absolute right-4 top-4 z-10 max-sm:hidden text-right font-mono text-[11px] text-ink-3">
                 <p className="tracking-[0.08em]">EPOCH</p>
                 <p className="text-3xl leading-none tabular-nums text-ink">
                   {String(currentEpoch).padStart(3, "0")}
@@ -384,8 +432,12 @@ export function EpochNetworkVisualization() {
         </div>
       </div>
 
+      {hasInput && hasActivations && (
+        <p className="caption sm:hidden">Swipe sideways to pan the network</p>
+      )}
+
       {/* Transport */}
-      <div className="flex w-full items-center gap-4">
+      <div className="flex w-full items-center gap-4 max-sm:sticky max-sm:bottom-[env(safe-area-inset-bottom)] max-sm:z-10 max-sm:bg-bg/90 max-sm:py-2 max-sm:backdrop-blur">
         <button
           onClick={() => setIsPlaying(!isPlaying)}
           disabled={!hasInput}
@@ -416,13 +468,13 @@ export function EpochNetworkVisualization() {
             disabled={!hasInput}
             aria-label="Training epoch"
           />
-          <div className="flex w-full flex-wrap justify-between gap-2">
-            {[0, 10, 20, 30, 50, 74].map((e) => (
+          <div className="flex w-full justify-between gap-1">
+            {[0, 5, 10, 20, 30, TOTAL_EPOCHS - 1].map((e) => (
               <button
                 key={e}
                 onClick={() => { handleEpochChange(e); setIsPlaying(false); }}
                 data-selected={currentEpoch === e}
-                className="chip !h-6 !min-h-0 !px-1.5 !text-[10.5px] max-sm:!min-h-8"
+                className="chip !h-6 !min-h-0 !px-1.5 !text-[10.5px] max-sm:!min-h-11 max-sm:!min-w-11 max-sm:justify-center max-sm:[&:nth-child(2)]:hidden"
               >
                 {e}
               </button>

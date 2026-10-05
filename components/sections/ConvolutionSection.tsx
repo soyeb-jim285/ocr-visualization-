@@ -9,7 +9,7 @@ export function ConvolutionSection() {
     <SectionWrapper id="convolution" sig="conv1">
       <SectionHeader
         step={2}
-        tag="Conv1 · 64 ch · 28×28"
+        tag="Conv1 · 32 ch · 28×28"
         title="Finding Patterns: Convolution"
         subtitle="A small 3×3 filter slides across the entire image, computing a dot product at each position. Different filters detect different features: edges, curves, corners."
       />

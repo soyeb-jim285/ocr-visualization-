@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { SectionWrapper } from "@/components/ui/SectionWrapper";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ActivationHeatmap } from "@/components/visualizations/ActivationHeatmap";
@@ -23,7 +23,16 @@ export function SecondConvSection() {
     return best;
   }, [liveMaps]);
   const selectedFilter = picked && picked.maps === liveMaps ? picked.i : bestFilter;
-  const setSelectedFilter = (i: number) => setPicked({ maps: liveMaps, i });
+  const previewRef = useRef<HTMLDivElement>(null);
+  const setSelectedFilter = (i: number) => {
+    setPicked({ maps: liveMaps, i });
+    // phones: preview sits a screen above the picker, so bring it into view
+    if (window.matchMedia("(max-width: 639px)").matches)
+      previewRef.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "center",
+      });
+  };
 
   const conv2Maps = layerActivations["conv2"] as number[][][] | undefined;
   const relu2Maps = layerActivations["relu2"] as number[][][] | undefined;
@@ -31,7 +40,7 @@ export function SecondConvSection() {
   const beforeRelu = conv2Maps?.[selectedFilter];
   const afterRelu = relu2Maps?.[selectedFilter];
 
-  const numFilters = conv2Maps?.length ?? 128;
+  const numFilters = conv2Maps?.length ?? 64;
 
   const stats = useMemo(() => {
     if (!beforeRelu) return null;
@@ -54,9 +63,9 @@ export function SecondConvSection() {
     <SectionWrapper id="second-conv" sig="conv2">
       <SectionHeader
         step={4}
-        tag="Conv2 · 128 ch · 28×28"
+        tag="Conv2 · 64 ch · 28×28"
         title="Second Pass: Deeper Patterns"
-        subtitle="The first convolution detected simple edges. Now a second convolution layer reads all 64 of those edge maps simultaneously, learning to combine them into more complex features: curves, corners, intersections."
+        subtitle="The first convolution detected simple edges. Now a second convolution layer reads all 32 of those edge maps simultaneously, learning to combine them into more complex features: curves, corners, intersections."
       />
 
       <div className="grid grid-cols-1 gap-x-6 gap-y-12 lg:grid-cols-12">
@@ -64,8 +73,8 @@ export function SecondConvSection() {
         <Reveal className="min-w-0 space-y-5 lg:col-span-9 lg:col-start-4">
           <p className="prose-body">
             Unlike conv1 which read a single grayscale channel, conv2 reads{" "}
-            <em className="text-ink">all 64 feature maps</em> from relu1 at once. Each of its 128
-            filters has a 3&times;3&times;64 kernel, computing a weighted
+            <em className="text-ink">all 32 feature maps</em> from relu1 at once. Each of its 64
+            filters has a 3&times;3&times;32 kernel, computing a weighted
             sum across all input channels at every spatial position. This allows
             it to detect features that require <em className="text-ink">combinations</em> of edges,
             like a curve (horizontal edge meeting a vertical edge).
@@ -74,7 +83,7 @@ export function SecondConvSection() {
           <div className="formula !text-[0.9em] [scrollbar-width:thin] [scrollbar-color:var(--rule-strong)_transparent]">
             <Latex
               display
-              math="O_k(i,j) = \text{ReLU}\!\left(\sum_{c=1}^{64}\sum_{m,n} I_c(i{+}m,\,j{+}n) \cdot K_{k,c}(m,n) + b_k\right)"
+              math="O_k(i,j) = \text{ReLU}\!\left(\sum_{c=1}^{32}\sum_{m,n} I_c(i{+}m,\,j{+}n) \cdot K_{k,c}(m,n) + b_k\right)"
             />
             <span className="eq-no">(4)</span>
           </div>
@@ -87,9 +96,10 @@ export function SecondConvSection() {
 
           <p className="prose-body !text-sm">
             The shape transforms:{" "}
-            <Latex math="(64, 28, 28) \xrightarrow{\text{conv2 + ReLU}} (128, 28, 28)" />.
+            <Latex math="(32, 28, 28) \xrightarrow{\text{conv2 + ReLU}} (64, 28, 28)" />.
             Parameters:{" "}
-            <Latex math="128 \times (3 \times 3 \times 64 + 1) = 73{,}856" />.
+            <Latex math="64 \times (3 \times 3 \times 32 + 1) = 18{,}496" />
+            (BatchNorm, folded into these weights for inference, adds 2 more per channel during training).
             After convolution, ReLU is applied again, zeroing negatives to
             maintain non-linearity. The output is now ready for max pooling,
             which will compress the spatial dimensions in the next step.
@@ -98,8 +108,8 @@ export function SecondConvSection() {
 
         {/* Right: before / after ReLU */}
         <Reveal delay={0.16} className="min-w-0 lg:col-span-9 lg:col-start-4">
-          <div className="figure">
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
+          <div className="figure" ref={previewRef}>
+            <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
               <HeatFig label="CONV2 OUTPUT" caption="Before ReLU" data={beforeRelu} />
               <Latex
                 math="\xrightarrow{\max(0,\,x)}"
@@ -123,7 +133,7 @@ export function SecondConvSection() {
         </Reveal>
       </div>
 
-      {/* Specimen gallery: all 128 maps */}
+      {/* Specimen gallery: all 64 maps */}
       <Reveal className="figure mt-16">
         <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
           <p className="font-serif text-xl italic text-ink-2">
@@ -134,7 +144,7 @@ export function SecondConvSection() {
             {relu2Maps ? ` (${deadCount} of ${relu2Maps.length} silent for this drawing)` : ""}.
           </p>
         </div>
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] justify-items-center gap-x-2 gap-y-3">
+        <div className="grid grid-cols-6 justify-items-center gap-x-2 gap-y-3 sm:grid-cols-[repeat(auto-fill,minmax(56px,1fr))]">
           {relu2Maps
             ? relu2Maps.map((fm, i) => (
                 <ActivationHeatmap
@@ -149,12 +159,12 @@ export function SecondConvSection() {
             : Array.from({ length: numFilters }, (_, i) => (
                 <div
                   key={i}
-                  className={`tile cursor-pointer border border-rule bg-bg-inset ${
+                  aria-hidden
+                  className={`tile border border-rule bg-bg-inset ${
                     i === selectedFilter ? "opacity-100" : "opacity-50"
                   }`}
                   data-selected={i === selectedFilter ? "true" : undefined}
-                  style={{ width: 56, height: 56 }}
-                  onClick={() => setSelectedFilter(i)}
+                  style={{ width: 56, maxWidth: "100%", aspectRatio: "1" }}
                 />
               ))}
         </div>
@@ -183,12 +193,12 @@ function HeatFig({
           {data ? (
             <ActivationHeatmap data={data} size={180} />
           ) : (
-            <div className="h-[180px] w-[180px]" />
+            <div className="mx-auto h-[180px] w-[180px]" />
           )}
         </div>
-        <div className="ml-2 flex h-[180px] flex-col items-center justify-between font-mono text-[10px] text-ink-3">
+        <div className="ml-2 flex h-[180px] flex-col items-center justify-between font-mono text-[11px] text-ink-3">
           <span>max</span>
-          <span className="legend-ramp" />
+          <span className="legend-ramp !h-auto min-h-0 flex-1 my-1" />
           <span>0</span>
         </div>
       </div>

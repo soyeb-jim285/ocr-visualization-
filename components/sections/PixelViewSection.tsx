@@ -28,10 +28,10 @@ export function PixelViewSection() {
         step={1}
         tag="Input · 1 ch · 28×28"
         title="What Does a Computer See?"
-        subtitle="Your drawing is captured on a 280×280 canvas, then downsampled to a 28×28 grid of numbers. Each pixel becomes a value between 0 and 1. Hover to see how each output pixel is computed."
+        subtitle="Your drawing is captured on a 280×280 canvas, then downsampled to a 28×28 grid of numbers. Each pixel becomes a value between 0 and 1. Hover or tap to see how each output pixel is computed."
       />
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-12 lg:gap-x-6">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-12 lg:gap-x-6">
         <motion.div {...reveal()} className="min-w-0 space-y-6 lg:col-span-5">
           <p className="prose-body">
             The canvas captures your strokes at 280&times;280 pixels, white ink
@@ -56,7 +56,7 @@ export function PixelViewSection() {
                 <dt className="text-ink">
                   <Latex math={sym} />
                 </dt>
-                <dd className="font-mono text-[11px] text-ink-3">{desc}</dd>
+                <dd className="font-mono text-xs text-ink-3">{desc}</dd>
               </div>
             ))}
           </dl>
@@ -70,7 +70,7 @@ export function PixelViewSection() {
           </p>
         </motion.div>
 
-        <motion.div {...reveal(0.16)} className="min-w-0 self-start lg:sticky lg:top-24 lg:col-span-7">
+        <motion.div {...reveal(0.16)} className="min-w-0 self-start max-lg:order-first lg:sticky lg:top-24 lg:col-span-7">
           <PixelGrid />
         </motion.div>
       </div>

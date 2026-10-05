@@ -30,7 +30,7 @@ const notoBengali = Noto_Sans_Bengali({
   display: "swap",
 });
 
-export const viewport: Viewport = { themeColor: "#06080b", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#06080b", colorScheme: "dark", viewportFit: "cover" };
 
 export const metadata: Metadata = {
   title: "Neural Network X-Ray | Interactive CNN Visualization",

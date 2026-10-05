@@ -3,6 +3,10 @@ export interface TrainingHistory {
   accuracy: number[];
   val_loss: number[];
   val_accuracy: number[];
+  emnist_val_accuracy?: number[];
+  bangla_val_accuracy?: number[];
+  train_batch_loss?: number[];
+  lr?: number[];
 }
 
 export interface WeightSnapshot {

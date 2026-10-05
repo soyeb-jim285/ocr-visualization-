@@ -1,7 +1,7 @@
 interface Conv1Data {
   weights: number[];
   biases: number[];
-  shape: [number, number, number, number]; // [64, 1, 3, 3]
+  shape: [number, number, number, number]; // [32, 1, 3, 3]
 }
 
 interface Conv1Weights {

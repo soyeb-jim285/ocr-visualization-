@@ -5,6 +5,8 @@ import {
   nchwToChannels,
   softmax,
 } from "./modelUtils";
+import { loadModel } from "./loadModel";
+import { serialRun } from "./runQueue";
 import type { InferenceResult } from "./predict";
 
 ort.env.wasm.numThreads = 1;
@@ -34,7 +36,7 @@ export async function loadEpochModel(
   const paddedEpoch = String(epoch).padStart(2, "0");
   const hfBase = process.env.NEXT_PUBLIC_MODEL_BASE_URL
     || "https://huggingface.co/soyeb-jim285/ocr-visualization-models/resolve/main";
-  const modelUrl = `${hfBase}/bn_emnist_cnn/checkpoints/epoch-${paddedEpoch}/model.onnx`;
+  const modelUrl = `${hfBase}/v2/checkpoints/epoch-${paddedEpoch}/model.onnx`;
   const loadPromise = ort.InferenceSession.create(modelUrl)
     .then((session) => {
       sessionCache.set(epoch, session);
@@ -61,7 +63,7 @@ export async function predictAtEpoch(
 ): Promise<number[]> {
   const session = await loadEpochModel(epoch);
   const inputTensor = new ort.Tensor("float32", inputData, [1, 1, 28, 28]);
-  const results = await session.run({ input: inputTensor });
+  const results = await serialRun(() => session.run({ input: inputTensor }));
   const output = results["output"]?.data as Float32Array;
   if (!output) return [];
   // New multi-output models emit raw logits — apply softmax with ByMerge masking
@@ -79,7 +81,7 @@ export async function runEpochInference(
 ): Promise<InferenceResult> {
   const session = await loadEpochModel(epoch);
   const inputTensor = new ort.Tensor("float32", inputData, [1, 1, 28, 28]);
-  const results = await session.run({ input: inputTensor });
+  const results = await serialRun(() => session.run({ input: inputTensor }));
 
   const layerActivations: Record<string, number[][][] | number[]> = {};
 
@@ -117,10 +119,10 @@ export function prefetchAdjacentEpochs(currentEpoch: number): void {
 }
 
 /** Number of total epochs available */
-export const TOTAL_EPOCHS = 75;
+export const TOTAL_EPOCHS = 40;
 
 /** Key epochs to prefetch upfront (rest load on-demand when user scrubs) */
-export const PREFETCH_EPOCHS = [0, 5, 20, 74];
+export const PREFETCH_EPOCHS = [0, 5, 20, 39];
 
 let prefetchAllStarted = false;
 
@@ -158,7 +160,11 @@ export function prefetchAllEpochs(
     }
   }
 
-  loadBatch();
+  // Wait for the main model, then a few idle seconds, so we don't compete with WASM init / first inference
+  loadModel()
+    .catch(() => {})
+    .then(() => new Promise((r) => setTimeout(r, 4000)))
+    .then(loadBatch);
 }
 
 /** Get number of cached sessions */

@@ -21,7 +21,7 @@ Next.js 16.1.6, React 19, TypeScript, Tailwind CSS 4 (@theme inline in globals.c
 ### Inference Pipeline
 1. **Draw** → `DrawingCanvas` captures strokes on 280×280 internal canvas
 2. **Preprocess** (`lib/model/preprocess.ts`) → grayscale, bilinear resize to 28×28, transpose for EMNIST format, output Float32Array [1,1,28,28]
-3. **Infer** (`lib/model/predict.ts`) → ONNX model at `/public/models/combined-cnn/model.onnx` extracts 11 intermediate layer activations + softmax output (62 classes, 47 valid — ByMerge masks 15 untrained indices)
+3. **Infer** (`lib/model/predict.ts`) → ONNX model at `/public/models/combined-cnn/model.onnx` (v2: conv 32/64/128 ch, dense 256, ~1.74M params, ~7MB) extracts 11 intermediate layer activations + softmax output (146 classes; ByMerge masks 15 untrained indices)
 4. **Store** → `inferenceStore` holds activations, prediction, input tensor globally
 5. **Debounce** → `useInference` hook debounces at 150ms
 
@@ -44,7 +44,7 @@ The most complex component. Key optimizations:
 - **Sqrt-compressed activation normalization** across all layers
 
 ### Epoch Checkpoints
-75 epoch models (`TOTAL_EPOCHS`) hosted on HuggingFace (`soyeb-jim285/ocr-visualization-models`). Loaded by `lib/model/epochModels.ts`: ±1 epoch around the current one are prefetched, plus a lazy background prefetch of 4 key epochs (the rest load on demand when scrubbing).
+40 epoch models (`TOTAL_EPOCHS`, epochs 0..39) served from `${NEXT_PUBLIC_MODEL_BASE_URL || HF}/v2/checkpoints/epoch-XX/model.onnx` (HF repo `soyeb-jim285/ocr-visualization-models`; set `NEXT_PUBLIC_MODEL_BASE_URL=/models` in `.env.local` to use local files under `public/models/v2/`, gitignored, until uploaded to HF under `v2/`). Loaded by `lib/model/epochModels.ts`: ±1 epoch around the current one are prefetched, plus a lazy background prefetch of 4 key epochs ([0,5,20,39]) (the rest load on demand when scrubbing).
 
 Legacy: `public/models/emnist-cnn` (only referenced by `scripts/`) and `public/models/checkpoints` (only local copy of checkpoints) are not used by the app; do not delete.
 

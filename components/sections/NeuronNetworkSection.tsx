@@ -8,7 +8,7 @@ import {
   useEffect,
   useLayoutEffect,
 } from "react";
-import { motion, useDragControls, type PanInfo } from "framer-motion";
+import { motion, useDragControls, useScroll, useTransform, type PanInfo } from "framer-motion";
 import { DrawingCanvas } from "@/components/canvas/DrawingCanvas";
 import { NeuronNetworkCanvas } from "@/components/canvas/NeuronNetworkCanvas";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -333,22 +333,23 @@ function InspectorPanel({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
-        className="max-h-[90dvh] gap-4 overflow-y-auto p-0 sm:max-w-[900px]"
+        className="max-h-[88svh] gap-4 overflow-y-auto p-0 max-sm:bottom-0 max-sm:inset-x-0 max-sm:w-auto sm:max-w-[900px]"
         style={{ borderColor: `${dl.color}66` }}
+        onOpenAutoFocus={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement).focus(); }}
       >
         <DialogHeader className="px-5 pt-6 pb-0 sm:px-6">
           <p className="font-mono text-[11px] tracking-[0.08em]" style={{ color: dl.color }}>LAYER {String(inspectedLayerNumber(dl.name)).padStart(2, "0")}</p>
-          <DialogTitle className="flex flex-wrap items-baseline gap-x-3 font-serif text-3xl font-normal">
+          <DialogTitle className="flex flex-wrap items-baseline gap-x-3 font-serif text-2xl font-normal sm:text-3xl">
             {dl.displayName}
             <span className="font-mono text-xs font-normal text-ink-3">
               {dl.totalNeurons.toLocaleString()} {unitLabel}
             </span>
           </DialogTitle>
-          <DialogDescription>{dl.description}</DialogDescription>
+          <DialogDescription className={dl.description === `${dl.totalNeurons} neurons` ? "sr-only" : undefined}>{dl.description}</DialogDescription>
         </DialogHeader>
 
         {stats && (
-          <div className="mx-5 flex flex-wrap gap-x-5 gap-y-1 border-y border-rule py-2.5 font-mono text-xs text-ink-3 sm:mx-6">
+          <div className="mx-5 grid grid-cols-2 gap-x-5 gap-y-1 border-y border-rule py-2.5 font-mono text-xs text-ink-3 sm:mx-6 sm:flex sm:flex-wrap">
             <span>MIN <span className="text-ink">{stats.min.toFixed(3)}</span></span>
             <span>MAX <span className="text-ink">{stats.max.toFixed(3)}</span></span>
             <span>MEAN <span className="text-ink">{stats.mean.toFixed(3)}</span></span>
@@ -409,9 +410,9 @@ function InspectorPanel({
               ref={mainCanvasRef}
               width={snapshot.channelCount > 0 ? 350 : 500}
               height={snapshot.channelCount > 0 ? 350 : 300}
-              className="max-w-full shrink-0 rounded-[2px] border border-rule"
+              className="mx-auto max-w-[240px] shrink-0 rounded-[2px] border border-rule sm:mx-0 sm:max-w-full"
               style={{
-                width: snapshot.channelCount > 0 ? 350 : "100%",
+                width: snapshot.channelCount > 0 ? "min(350px, 100%)" : "100%",
                 height: snapshot.channelCount > 0 ? "auto" : 300,
                 aspectRatio: snapshot.channelCount > 0 ? "1 / 1" : undefined,
                 imageRendering: dl.type === "input" ? "pixelated" : "auto",
@@ -420,9 +421,9 @@ function InspectorPanel({
             {snapshot.channelCount > 0 && (
               <div className="min-w-0 flex-1">
                 <p className="mb-2 font-mono text-[11px] text-ink-3">
-                  {snapshot.channelCount} channels · click to inspect
+                  <span className="sm:hidden">Tap</span><span className="max-sm:hidden">Click</span> a channel to inspect
                 </p>
-                <div className="flex max-h-[340px] flex-wrap gap-1 overflow-y-auto">
+                <div className="grid grid-cols-6 gap-1.5 sm:flex sm:max-h-[340px] sm:flex-wrap sm:gap-1 sm:overflow-y-auto">
                   {Array.from({ length: snapshot.channelCount }, (_, i) => (
                     <ChannelThumb
                       key={i} chIdx={i}
@@ -471,7 +472,7 @@ function ChannelThumb({ chIdx, activations, selected, color, onClick }: {
   return (
     <canvas
       ref={canvasRef} width={40} height={40} onClick={onClick}
-      className="h-10 w-10 cursor-pointer rounded-[2px] [image-rendering:pixelated]"
+      className="aspect-square w-full cursor-pointer rounded-[2px] [image-rendering:pixelated] sm:size-10"
       style={{ outline: selected ? `1px solid ${color}` : "none", outlineOffset: 2 }}
     />
   );
@@ -480,6 +481,22 @@ function ChannelThumb({ chIdx, activations, selected, color, onClick }: {
 // ---------------------------------------------------------------------------
 // NeuronNetworkSection — main exported component
 // ---------------------------------------------------------------------------
+
+// Layout viewport. On phones, ignore height-only changes <120px (Safari toolbar collapse) so the
+// network and floating card do not re-layout while scrolling. sb = safe-area-inset-bottom.
+let sv = { w: 0, h: 0, sb: 0 };
+function readViewport() {
+  const w = document.documentElement.clientWidth, h = window.innerHeight;
+  if (!(w < 640 && sv.w === w && Math.abs(h - sv.h) < 120)) {
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;visibility:hidden;padding-bottom:env(safe-area-inset-bottom)";
+    document.body.appendChild(probe);
+    const sb = parseFloat(getComputedStyle(probe).paddingBottom) || 0;
+    probe.remove();
+    sv = { w, h, sb };
+  }
+  return sv;
+}
 
 export function NeuronNetworkSection() {
   const dragControls = useDragControls();
@@ -496,7 +513,7 @@ export function NeuronNetworkSection() {
 
   const [inspectedLayerIdx, setInspectedLayerIdx] = useState<number | null>(null);
   const [inspectedNeuronIdx, setInspectedNeuronIdx] = useState<number | null>(null);
-  const [viewport, setViewport] = useState({ w: 0, h: 0 });
+  const [viewport, setViewport] = useState({ w: 0, h: 0, sb: 0 });
   const [customFloatingPos, setCustomFloatingPos] = useState<{ x: number; y: number } | null>(null);
 
   const isDrawingStage = heroStage === "drawing";
@@ -506,7 +523,7 @@ export function NeuronNetworkSection() {
 
   useEffect(() => {
     const updateViewport = () => {
-      setViewport({ w: window.innerWidth, h: window.innerHeight });
+      setViewport(readViewport());
     };
 
     updateViewport();
@@ -539,29 +556,6 @@ export function NeuronNetworkSection() {
   const isMobile = viewport.w > 0 && viewport.w < 640;
   const stacked = viewport.w < 1024; // copy above the card instead of beside it
 
-  const expandedCanvasSize = useMemo(() => {
-    if (!viewport.w) return 300;
-    return viewport.w < 640 ? clamp(viewport.w - 32 - 18, 200, 340) : 328;
-  }, [viewport.w]);
-  const floatingCanvasSize = isMobile ? 96 : 128;
-
-  const heroPad = isMobile ? 8 : 16;
-  const expandedCardWidth = expandedCanvasSize + heroPad * 2 + 2;
-  const expandedCardHeight = expandedCanvasSize + heroPad * 2 + 112;
-  const floatingCardWidth = floatingCanvasSize + 18;
-  const floatingCardHeight = floatingCanvasSize + 104;
-  const CHIP = 40;
-
-  // Chip: once past the hero (or on phones) the floating card collapses so it never covers content
-  const [chipOpen, setChipOpen] = useState(false);
-  const collapsed = isRevealedStage && !chipOpen && (heroOffscreen || isMobile);
-
-  // Content box of SectionWrapper-style container (max 1200, px 16/64/32)
-  const pad = viewport.w >= 1400 ? 32 : viewport.w >= 768 ? 64 : 16;
-  const boxW = Math.min(viewport.w, 1200);
-  const contentLeft = (viewport.w - boxW) / 2 + pad;
-  const contentW = boxW - pad * 2;
-
   const [copyBottom, setCopyBottom] = useState(0);
   const copyRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -573,6 +567,39 @@ export function NeuronNetworkSection() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // Phones: card spans the 16px gutters; canvas shrinks to keep the whole card (chrome ~90px) in the first screen
+  const mobileChrome = 90;
+  const expandedCanvasSize = useMemo(() => {
+    if (!viewport.w) return 300;
+    return viewport.w < 640
+      ? clamp(Math.min(viewport.w - 34, viewport.h - copyBottom - 16 - mobileChrome - 24 - viewport.sb), 200, 340)
+      : 328;
+  }, [viewport.w, viewport.h, viewport.sb, copyBottom]);
+  const floatingCanvasSize = isMobile ? 140 : 128;
+
+  const heroPad = isMobile ? 0 : 16;
+  const expandedCardWidth = isMobile ? viewport.w - 32 : expandedCanvasSize + heroPad * 2 + 2;
+  const expandedCardHeight = expandedCanvasSize + heroPad * 2 + (isMobile ? mobileChrome : 112);
+  const floatingCardWidth = floatingCanvasSize + 18;
+  const floatingCardHeight = floatingCanvasSize + 104;
+  const CHIP = isMobile ? 44 : 40;
+  const bottomGap = Math.max(16, viewport.sb) + 8; // keeps the chip/sheet above Safari's toolbar zone
+
+  // Chip: once past the hero (or on phones) the floating card collapses so it never covers content
+  const [chipOpen, setChipOpen] = useState(false);
+  const collapsed = isRevealedStage && !chipOpen && (heroOffscreen || isMobile);
+
+  // Content box of SectionWrapper-style container (max 1200, px 16/64/32)
+  const pad = viewport.w >= 1400 ? 32 : viewport.w >= 768 ? 64 : 16;
+  const boxW = Math.min(viewport.w, 1200);
+  const contentLeft = (viewport.w - boxW) / 2 + pad;
+  const contentW = boxW - pad * 2;
+
+  const { scrollY } = useScroll();
+  const followScrollRef = useRef(false);
+  useEffect(() => { followScrollRef.current = isDrawingStage && stacked; }, [isDrawingStage, stacked]);
+  const heroY = useTransform(scrollY, (v) => (followScrollRef.current ? -v : 0));
 
   const stageHeight = viewport.h
     ? stacked
@@ -588,18 +615,21 @@ export function NeuronNetworkSection() {
   const expandedY = !viewport.h
     ? 120
     : stacked
-      ? copyBottom + 28
+      ? copyBottom + (isMobile ? 16 : 28)
       : Math.max(72, (viewport.h - expandedCardHeight) / 2);
 
   const maxFloatingX = Math.max(12, viewport.w - floatingCardWidth - 12);
   const maxFloatingY = Math.max(12, viewport.h - floatingCardHeight - 12);
 
-  // Top-right on desktop (the index rail owns the left gutter); chip bottom-right on phones
+  // Bottom-left on desktop (keeps the output column clear); bottom-right on phones
   const defaultFloatingPos = useMemo(
-    () => ({ x: Math.max(12, viewport.w - floatingCardWidth - 16), y: isMobile ? Math.max(12, viewport.h - floatingCardHeight - 72) : 64 }),
-    [viewport.w, viewport.h, floatingCardWidth, floatingCardHeight, isMobile]
+    () => ({
+      x: isMobile ? Math.max(12, viewport.w - floatingCardWidth - 16) : Math.max(12, contentLeft),
+      y: Math.max(64, viewport.h - floatingCardHeight - bottomGap),
+    }),
+    [viewport.w, viewport.h, floatingCardWidth, floatingCardHeight, isMobile, bottomGap, contentLeft]
   );
-  const chipPos = { x: Math.max(12, viewport.w - CHIP - 16), y: Math.max(12, viewport.h - CHIP - 20) };
+  const chipPos = { x: Math.max(12, viewport.w - CHIP - 16), y: Math.max(12, viewport.h - CHIP - bottomGap) };
 
   const floatingPos = customFloatingPos
     ? {
@@ -608,11 +638,14 @@ export function NeuronNetworkSection() {
       }
     : defaultFloatingPos;
 
+  // Delay the shrink so multi-stroke glyphs (A, 4, i) can be finished in place
+  const shrinkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleFirstDraw = useCallback(() => {
-    if (isDrawingStage) {
-      setHeroStage("shrinking");
-    }
+    if (!isDrawingStage) return;
+    if (shrinkTimer.current) clearTimeout(shrinkTimer.current);
+    shrinkTimer.current = setTimeout(() => setHeroStage("shrinking"), 700);
   }, [isDrawingStage, setHeroStage]);
+  useEffect(() => () => { if (shrinkTimer.current) clearTimeout(shrinkTimer.current); }, []);
 
   const handleDragEnd = useCallback(
     (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -684,7 +717,7 @@ export function NeuronNetworkSection() {
     const measure = () => {
       if (containerRef.current) {
         const top = containerRef.current.getBoundingClientRect().top + window.scrollY;
-        const h = Math.max(400, window.innerHeight - top - 48);
+        const h = Math.max(400, readViewport().h - top - (readViewport().w < 640 ? 64 : 48));
         containerRef.current.style.height = `${h}px`;
       }
       if (canvasContainerRef.current) {
@@ -738,6 +771,11 @@ export function NeuronNetworkSection() {
   const onClickLayer = useCallback((li: number, ni: number | null) => {
     setInspectedLayerIdx(li);
     setInspectedNeuronIdx(ni);
+    // touch: the emulated mouse-move leaves the tooltip over the sheet
+    hoveredNeuronRef.current = null;
+    setHoveredNeuron(null);
+    hoveredLayerRef.current = null;
+    setHoveredLayer(null);
   }, []);
 
   const getActivation = useCallback(
@@ -752,7 +790,7 @@ export function NeuronNetworkSection() {
   return (
     <motion.section
       id="neuron-network"
-      className="relative overflow-hidden px-1 sm:px-3 md:px-5"
+      className="relative select-none overflow-hidden px-0 sm:px-3 md:px-5"
       initial={false}
       animate={{
         minHeight: isDrawingStage ? stageHeight : 0,
@@ -774,7 +812,7 @@ export function NeuronNetworkSection() {
         animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -12 }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         aria-hidden={!isDrawingStage}
-        className={`absolute inset-x-0 top-0 z-10 ${stacked ? "pt-[88px]" : "flex items-center"} ${isDrawingStage ? "" : "pointer-events-none"}`}
+        className={`absolute inset-x-0 top-0 z-10 ${stacked ? "pt-[72px] sm:pt-[88px]" : "flex items-center"} ${isDrawingStage ? "" : "pointer-events-none"}`}
         style={stacked ? undefined : { height: stageHeight }}
       >
         <div className="mx-auto w-full max-w-[1200px] px-4 md:px-16 min-[1400px]:px-8">
@@ -870,7 +908,7 @@ export function NeuronNetworkSection() {
 
       {/* FIG. 1 caption under the network */}
       <p
-        className={`px-3 pt-3 font-mono text-[11px] leading-[1.5] tracking-[0.04em] text-ink-3 transition-opacity duration-700 md:text-center ${isRevealedStage ? "opacity-100" : "opacity-0"}`}
+        className={`select-none px-4 pt-3 font-mono text-[11px] leading-[1.5] tracking-[0.04em] text-ink-3 transition-opacity duration-700 md:px-3 md:text-center ${isRevealedStage ? "opacity-100" : "opacity-0"}`}
       >
         <b className="font-medium text-phosphor">FIG. 1</b>
         {" — "}
@@ -878,8 +916,15 @@ export function NeuronNetworkSection() {
         {isMobile ? "Tap a neuron to inspect." : <>13 layers, 146-way output. Hover or tap a neuron to inspect.</>}
       </p>
 
+      {/* Phone chip sheet: tap outside to collapse */}
+      {isMobile && isRevealedStage && chipOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => setChipOpen(false)} aria-hidden />
+      )}
+
+      {/* Outer layer pins to the viewport; in the drawing stage on stacked layouts it scrolls with the hero copy */}
+      <motion.div style={{ y: heroY }} className="fixed left-0 top-0 z-50">
       <motion.div
-        drag={isRevealedStage && !collapsed}
+        drag={isRevealedStage && !collapsed && !isMobile}
         dragControls={dragControls}
         dragListener={false}
         dragElastic={0.08}
@@ -895,17 +940,17 @@ export function NeuronNetworkSection() {
               ? { x: floatingPos.x, y: floatingPos.y, width: floatingCardWidth }
               : { x: expandedX, y: expandedY, width: expandedCardWidth }),
           // hide the big hero card once scrolled past the hero before first stroke
-          opacity: isDrawingStage && heroOffscreen ? 0 : 1,
+          opacity: isDrawingStage && heroOffscreen ? 0 : collapsed ? 0.6 : 1,
           pointerEvents: isDrawingStage && heroOffscreen ? "none" : "auto",
         }}
         transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.6 }}
-        className="fixed left-0 top-0 z-50"
+        className="absolute left-0 top-0"
       >
         {collapsed && (
           <button
             type="button"
             onClick={() => setChipOpen(true)}
-            className="relative flex size-10 items-center justify-center rounded-[4px] border border-rule-strong bg-bg-raised after:absolute after:-inset-1"
+            className="relative flex size-10 select-none items-center justify-center rounded-[4px] border border-rule-strong bg-bg-raised max-sm:size-11"
             aria-label="Open drawing canvas"
           >
             <span className="font-serif text-xl leading-none text-annotation">{topChar ?? "?"}</span>
@@ -916,7 +961,7 @@ export function NeuronNetworkSection() {
           className={`plate-marks border ${collapsed ? "hidden" : ""} ${
             shouldUseFloatingLayout
               ? "rounded-[4px] border-rule-strong bg-bg-raised p-2"
-              : "well rounded-[4px] border-rule-strong p-2 sm:p-4"
+              : "well rounded-[4px] border-rule-strong max-sm:border-0 max-sm:bg-transparent max-sm:p-0 max-sm:shadow-none sm:p-4"
           }`}
           style={{ "--pm-c": "var(--phosphor)" } as React.CSSProperties}
         >
@@ -936,7 +981,7 @@ export function NeuronNetworkSection() {
                 <span className="font-mono text-[11px] tracking-[0.08em] text-ink-2">SPECIMEN</span>
               </button>
               {(heroOffscreen || isMobile) && (
-                <button type="button" onClick={() => setChipOpen(false)} className="text-btn relative px-1 after:absolute after:-inset-2" aria-label="Collapse canvas">
+                <button type="button" onClick={() => setChipOpen(false)} className="text-btn -my-3 inline-flex size-11 items-center justify-center" aria-label="Collapse canvas">
                   –
                 </button>
               )}
@@ -963,6 +1008,7 @@ export function NeuronNetworkSection() {
             </p>
           )}
         </div>
+      </motion.div>
       </motion.div>
     </motion.section>
   );

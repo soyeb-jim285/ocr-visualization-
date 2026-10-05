@@ -60,18 +60,18 @@ export function HeroHeader() {
     <div className="flex max-w-[44rem] flex-col items-start">
       <motion.p {...rise(0)} className="flex items-center gap-2 font-mono text-[11px] tracking-[0.08em] text-ink-3">
         <span className="inline-block size-1.5 shrink-0 rounded-full bg-annotation" aria-hidden />
-        {modelLoaded ? "MODEL EMNIST-CNN · 13 LAYERS · 146 CLASSES" : "LOADING WEIGHTS"}
+        {modelLoaded ? "MODEL COMBINED-CNN v2 · 13 LAYERS · 146 CLASSES" : "LOADING WEIGHTS"}
       </motion.p>
 
       <motion.h1
         {...rise(0.08)}
-        className="mt-6 text-balance font-serif text-[clamp(2.4rem,11vw,3.25rem)] font-light leading-[0.98] tracking-[-0.02em] text-ink/90 sm:text-[clamp(2.6rem,6.2vw,5.25rem)]"
+        className="mt-3 text-balance font-serif text-[clamp(1.9rem,8.5vw,2.4rem)] font-light leading-[1.02] tracking-[-0.02em] text-ink/90 sm:mt-6 sm:text-[clamp(2.6rem,6.2vw,5.25rem)] sm:leading-[0.98]"
       >
         Watch a network <em className="italic text-ink">read</em> your handwriting.
       </motion.h1>
 
-      <motion.p {...rise(0.18)} className="lead mt-6 max-w-[62ch] font-serif text-[1.125rem] leading-[1.55] text-ink-2 sm:text-[1.25rem]">
-        Draw a character. Thirteen layers of arithmetic will turn it into a guess, and you can inspect every step.
+      <motion.p {...rise(0.18)} className="lead mt-3 max-w-[62ch] font-serif text-base leading-[1.45] text-ink-2 sm:mt-6 sm:text-[1.25rem] sm:leading-[1.55]">
+        Draw a character. Thirteen layers of arithmetic turn it into a guess<span className="hidden sm:inline">, and you can inspect every step</span>.
       </motion.p>
 
       <motion.div {...rise(0.28)} className="mt-8 hidden sm:block">

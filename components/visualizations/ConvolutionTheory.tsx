@@ -24,11 +24,8 @@ function neutralColor(): [number, number, number] {
 
 /** Smart number format: scientific notation for tiny values, fixed otherwise */
 function smartFormat(v: number): string {
-  if (v === 0) return "0";
-  const abs = Math.abs(v);
-  if (abs >= 0.01) return v.toFixed(2);
-  if (abs < 1e-6) return "≈0";
-  return v.toExponential(0); // "5e-3" not "5.0e-3"
+  const s = v.toFixed(2);
+  return s === "-0.00" ? "0.00" : s;
 }
 
 /** Extract a 3x3 patch from the input tensor with padding=1 */
@@ -72,9 +69,9 @@ function fmtLegend(v: number, range: number) {
 /** Viridis color bar: min-max normalization */
 function ViridisLegend({ min, max }: { min: number; max: number }) {
   return (
-    <div className="flex flex-col items-start gap-0.5">
+    <div className="flex flex-col items-start gap-0.5 self-stretch">
       <span className="font-mono text-[10px] text-ink-3">{fmtLegend(max, max - min)}</span>
-      <div className="flex flex-col" style={{ width: 6, height: 164 }}>
+      <div className="flex min-h-0 flex-1 flex-col" style={{ width: 6, minHeight: 120 }}>
         {Array.from({ length: 32 }, (_, i) => {
           const t = 1 - i / 31; // 1 at top, 0 at bottom
           const [r, g, b] = viridis(t);
@@ -316,14 +313,14 @@ export function ConvolutionTheory() {
 
   return (
     <div className="flex flex-col gap-16">
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-12 lg:gap-x-6">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-12 lg:gap-x-6">
         {/* Left: theory */}
         <motion.div {...reveal()} className="min-w-0 space-y-6 lg:col-span-5">
           <p className="prose-body">
             A convolution slides a small learned filter, called a <em>kernel</em>, across every
             position of the input image. At each position it computes the dot product between the
             kernel weights and the overlapping image patch, producing a single output value. Our
-            network uses 64 different 3&times;3 kernels, and each one learns to detect a different
+            network uses 32 different 3&times;3 kernels, and each one learns to detect a different
             pattern like edges, corners, or curves.
           </p>
 
@@ -346,7 +343,7 @@ export function ConvolutionTheory() {
                 <dt className="text-ink">
                   <Latex math={sym} />
                 </dt>
-                <dd className="font-mono text-[11px] text-ink-3">{desc}</dd>
+                <dd className="font-mono text-xs text-ink-3">{desc}</dd>
               </div>
             ))}
           </dl>
@@ -354,86 +351,85 @@ export function ConvolutionTheory() {
           <p className="callout [overflow-wrap:anywhere]">
             <span className="tag">NOTE</span>
             With <Latex math="\text{padding}=1" /> the kernel centers on every pixel, edges
-            included, so the spatial size is preserved. Raw output is shown here; ReLU comes next.
+            included, so the spatial size is preserved. Conv output (BatchNorm folded into the weights) is shown here; ReLU comes next.
           </p>
 
           <p className="text-sm leading-[1.65] text-ink-3">
-            <Latex math="(1, 28, 28) \xrightarrow{64\text{ filters}} (64, 28, 28)" />. Total
+            <Latex math="(1, 28, 28) \xrightarrow{32\text{ filters}} (32, 28, 28)" />. Total
             parameters:{" "}
             <span className="inline-block max-w-full overflow-x-auto align-bottom">
-              <Latex math="64 \times (3 \times 3 + 1) = 640" />
+              <Latex math="32 \times (3 \times 3 + 1) = 320" />
             </span>
             .
           </p>
         </motion.div>
 
         {/* Right: walkthrough figure */}
-        <motion.figure {...reveal(0.16)} className="figure m-0 min-w-0 lg:col-span-7">
+        <motion.figure {...reveal(0.16)} className="figure m-0 min-w-0 max-lg:order-first lg:col-span-7">
           {hasData ? (
-            <div className="space-y-8">
-              <div className="flex flex-col items-start gap-4 sm:flex-row sm:gap-5">
-                <div className="flex flex-col gap-2">
-                  <span className="font-mono text-[11px] text-ink-2">
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-start sm:gap-5">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-none">
+                  <span className="font-mono text-xs text-ink-2">
                     INPUT <span className="text-ink-3">28&times;28</span>
                   </span>
-                  <div className="well plate-marks">
+                  <div className="well plate-marks w-fit max-w-full">
                     <canvas
                       ref={inputCanvasRef}
                       width={CANVAS}
                       height={CANVAS}
                       className="block cursor-crosshair"
-                      style={{ width: 196, height: 196, imageRendering: "pixelated" }}
+                      style={{ width: "min(360px, 34svh, calc(100vw - 2rem))", height: "auto", aspectRatio: "1", imageRendering: "pixelated" }}
                       onClick={handleCanvasClick}
                     />
                   </div>
-                  <span className="font-mono text-[11px] text-ink-3">3&times;3 patch</span>
+                  <span className="font-mono text-xs text-ink-3">3&times;3 patch</span>
                 </div>
 
-                <div className="self-center text-ink-3 sm:pt-6">
-                  <span className="hidden sm:inline"><Latex math="\longrightarrow" /></span>
-                  <span className="sm:hidden"><Latex math="\downarrow" /></span>
+                <div className="self-center text-ink-3 sm:pt-6 max-sm:rotate-90">
+                  <Latex math="\longrightarrow" />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <span className="font-mono text-[11px] text-ink-2">
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-none">
+                  <span className="font-mono text-xs text-ink-2">
                     FEATURE MAP {String(selectedFilter + 1).padStart(2, "0")}{" "}
                     <span className="text-ink-3">28&times;28</span>
                   </span>
-                  <div className="flex items-start gap-2.5">
+                  <div className="flex items-stretch gap-2.5">
                     {outputMap ? (
-                      <div className="well plate-marks">
+                      <div className="well plate-marks min-w-0 flex-1 sm:flex-none">
                         <canvas
                           ref={outputCanvasRef}
                           width={CANVAS}
                           height={CANVAS}
                           className="block cursor-crosshair"
-                          style={{ width: 196, height: 196, imageRendering: "pixelated" }}
+                          style={{ width: "min(360px, 34svh, calc(100vw - 4.5rem))", height: "auto", aspectRatio: "1", imageRendering: "pixelated" }}
                           onClick={handleCanvasClick}
                         />
                       </div>
                     ) : (
-                      <div className="viz-empty-state" style={{ width: 196, height: 196 }}>
+                      <div className="viz-empty-state min-h-[240px] w-full sm:w-[196px]">
                         No data
                       </div>
                     )}
                     {outputMap && <ViridisLegend min={outputMinMax.min} max={outputMinMax.max} />}
                   </div>
-                  <span className="font-mono text-[11px] text-ink-3">
+                  <span className="font-mono text-xs text-ink-3">
                     output [{kernelPos.row}, {kernelPos.col}]
                   </span>
                 </div>
               </div>
 
               {/* Inner workings */}
-              <div className="border-t border-rule-faint pt-5">
-                <p className="mb-4 font-mono text-[11px] tracking-[0.04em] text-ink-3">
+              <div className="border-t border-rule-faint pt-5 max-sm:order-1">
+                <p className="mb-4 font-mono text-xs tracking-[0.04em] text-ink-3">
                   <span className="text-sig">INNER WORKINGS</span> at [{kernelPos.row}, {kernelPos.col}], filter {selectedFilter + 1}
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-4 sm:justify-start">
+                <div className="-mx-4 flex flex-nowrap items-center gap-2.5 overflow-x-auto px-4 pb-2 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-24px),transparent)] [&>*]:shrink-0 sm:mx-0 sm:flex-wrap sm:gap-y-4 sm:overflow-visible sm:px-0">
                   <PatchGrid
                     data={patch!}
                     colorFn={grayscaleColor}
-                    cellSize={40}
+                    cellSize={36}
                     showValues
                     label="Input patch"
                   />
@@ -441,7 +437,7 @@ export function ConvolutionTheory() {
                   <PatchGrid
                     data={kernel}
                     colorFn={neutralColor}
-                    cellSize={40}
+                    cellSize={36}
                     showValues
                     valueFormat={smartFormat}
                     label={`Kernel ${selectedFilter + 1}`}
@@ -450,19 +446,19 @@ export function ConvolutionTheory() {
                   <PatchGrid
                     data={products!}
                     colorFn={neutralColor}
-                    cellSize={40}
+                    cellSize={36}
                     showValues
                     valueFormat={smartFormat}
                     label="Products"
                   />
                   <div className="flex flex-col items-center gap-0.5 text-ink-3">
-                    <span className="text-[11px]"><Latex math="\scriptstyle\sum + b" /></span>
+                    <span className="text-xs"><Latex math="\scriptstyle\sum + b" /></span>
                     <Latex math="\longrightarrow" />
                   </div>
                   <PatchGrid
                     data={[[rawConvValue ?? 0]]}
                     colorFn={outputCellColorFn}
-                    cellSize={40}
+                    cellSize={36}
                     showValues
                     valueFormat={smartFormat}
                     label="Output"
@@ -482,8 +478,8 @@ export function ConvolutionTheory() {
               </div>
 
               {/* Controls */}
-              <div className="flex flex-wrap items-center gap-2.5">
-                <button onClick={() => setIsPlaying(!isPlaying)} className="btn-primary">
+              <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-2.5">
+                <button onClick={() => setIsPlaying(!isPlaying)} className="btn-primary w-full sm:w-auto">
                   {isPlaying ? (
                     <>
                       <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1" width="4" height="12" /><rect x="8" y="1" width="4" height="12" /></svg>
@@ -496,26 +492,26 @@ export function ConvolutionTheory() {
                     </>
                   )}
                 </button>
-                <button onClick={step} className="btn-ghost">Step</button>
+                <button onClick={step} className="btn-ghost w-full sm:w-auto">Step</button>
                 <button
                   onClick={() => {
                     setKernelPos({ row: 0, col: 0 });
                     setIsPlaying(false);
                   }}
-                  className="btn-ghost"
+                  className="btn-ghost w-full sm:w-auto"
                 >
                   Reset
                 </button>
-                <span className="readout ml-auto min-w-0 shrink">
+                <span className="readout col-span-3 min-w-0 shrink text-center sm:col-span-1 sm:ml-auto">
                   [{kernelPos.row}, {kernelPos.col}]
                 </span>
               </div>
             </div>
           ) : (
-            <div className="viz-empty-state">Draw something to light this up</div>
+            <div className="viz-empty-state min-h-[240px]">Draw something to light this up</div>
           )}
           <figcaption className="figcap [overflow-wrap:anywhere]">
-            <b>FIG. 2.1</b> Click either canvas to move the kernel. Cyan marks the 3&times;3 patch,
+            <b>FIG. 2.1</b> Tap either canvas to move the kernel. Cyan marks the 3&times;3 patch,
             orange the output pixel it produces.
           </figcaption>
         </motion.figure>
@@ -524,32 +520,32 @@ export function ConvolutionTheory() {
       {/* Filter selection */}
       {hasData && (
         <motion.figure {...reveal()} className="figure m-0">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-2">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(48px,1fr))] gap-x-2 gap-y-3">
             {conv1Maps
               ? conv1Maps.map((fm, i) => (
                   <ActivationHeatmap
                     key={i}
                     data={fm}
-                    size={56}
+                    size={48}
                     label={`${i + 1}`}
                     onClick={() => setSelectedFilter(i)}
                     selected={i === selectedFilter}
                   />
                 ))
-              : Array.from({ length: 64 }, (_, i) => (
+              : Array.from({ length: 32 }, (_, i) => (
                   <div
                     key={i}
                     className={`flex flex-col items-center gap-1 ${
                       i === selectedFilter ? "opacity-100" : "opacity-40"
                     }`}
                   >
-                    <div className="tile" style={{ width: 56, height: 56 }} />
-                    <span className="font-mono text-[10px] text-ink-3">{i + 1}</span>
+                    <div className="tile" style={{ width: 48, height: 48 }} />
+                    <span className="font-mono text-xs text-ink-3">{i + 1}</span>
                   </div>
                 ))}
           </div>
           <figcaption className="figcap">
-            <b>FIG. 2.2</b> All 64 filters applied to your drawing. Select a feature map to inspect
+            <b>FIG. 2.2</b> All 32 filters applied to your drawing. Select a feature map to inspect
             its kernel above.
           </figcaption>
         </motion.figure>

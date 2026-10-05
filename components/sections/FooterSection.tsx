@@ -7,7 +7,7 @@ export function FooterSection() {
   return (
     <footer className="relative border-t border-rule">
       <div className="mx-auto max-w-[1200px] px-4 md:px-16 min-[1400px]:px-8">
-        <div className="grid gap-10 py-24 md:grid-cols-12 md:gap-x-6">
+        <div className="grid gap-10 py-14 md:grid-cols-12 md:py-24 md:gap-x-6">
           <div className="md:col-span-5">
             <p className="font-serif text-3xl text-ink">Neural Network X-Ray</p>
             <p className="caption mt-3">
@@ -40,7 +40,7 @@ export function FooterSection() {
                 </a>
               </li>
             </ul>
-            <p className="caption mt-4">146 classes · ~980K images · 75 epochs</p>
+            <p className="caption mt-4">146 classes · 40 epochs</p>
           </div>
 
           <ul className="flex gap-6 md:col-span-3 md:flex-col md:gap-2">
@@ -57,13 +57,13 @@ export function FooterSection() {
         <p className="caption pb-8">
           Next.js · React · ONNX Runtime Web · Framer Motion · Tailwind
         </p>
-        <p className="pb-16 font-serif text-[clamp(1.5rem,3vw,2rem)] italic text-ink-3">
+        <p className="pb-10 font-serif sm:pb-16 text-[clamp(1.5rem,3vw,2rem)] italic text-ink-3">
           Every layer, in the open.
         </p>
       </div>
 
       <div className="border-t border-rule">
-        <p className="caption mx-auto max-w-[1200px] px-4 py-4 md:px-16 min-[1400px]:px-8">
+        <p className="caption mx-auto max-w-[1200px] px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-16 min-[1400px]:px-8">
           © soyeb-jim285
         </p>
       </div>

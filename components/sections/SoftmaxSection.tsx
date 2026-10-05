@@ -64,7 +64,7 @@ function EntryTip({
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="rounded-[3px] border border-rule-strong bg-bg-raised px-2 py-1 font-mono text-[11px] text-ink">
+    <div className="pointer-events-none rounded-[3px] border border-rule-strong bg-bg-raised px-2 py-1 font-mono text-[11px] text-ink">
       <p className="mb-0.5 font-serif text-base text-annotation">{d.label}</p>
       <p>
         <span className="text-ink-3">logit </span>
@@ -102,7 +102,7 @@ function SoftmaxChart({
             <XAxis dataKey="label" hide />
             <YAxis tick={AXIS_TICK} tickLine={false} axisLine={{ stroke: RULE }} width={34} />
             <ReferenceLine y={0} stroke={RULE_STRONG} strokeDasharray="4 3" />
-            <ChartTooltip cursor={{ fill: RULE }} content={<EntryTip />} />
+            <ChartTooltip allowEscapeViewBox={{ x: false, y: true }} position={{ y: 0 }} cursor={{ fill: RULE }} content={<EntryTip />} />
             <Bar dataKey="logit" radius={[1, 1, 0, 0]} isAnimationActive={false}>
               {entries.map((e) => (
                 <Cell
@@ -123,9 +123,9 @@ function SoftmaxChart({
 
       {/* Transform */}
       <div className="flex items-center gap-4 py-2 text-ink-2">
-        <span className="h-px flex-1 bg-rule" />
-        <Latex math="\downarrow\;\sigma(\mathbf{z})_i = \frac{e^{z_i}}{\sum e^{z_j}}" />
-        <span className="h-px flex-1 bg-rule" />
+        <span className="h-px flex-1 bg-rule max-sm:hidden" />
+        <span className="min-w-0 overflow-x-auto"><Latex math="\downarrow\;\sigma(\mathbf{z})_i = \frac{e^{z_i}}{\sum e^{z_j}}" /></span>
+        <span className="h-px flex-1 bg-rule max-sm:hidden" />
       </div>
 
       {/* Probability chart */}
@@ -146,7 +146,7 @@ function SoftmaxChart({
               width={34}
               tickFormatter={(v: number) => `${(v * 100).toFixed(0)}%`}
             />
-            <ChartTooltip cursor={{ fill: RULE }} content={<EntryTip />} />
+            <ChartTooltip allowEscapeViewBox={{ x: false, y: true }} position={{ y: 0 }} cursor={{ fill: RULE }} content={<EntryTip />} />
             <Bar dataKey="prob" radius={[1, 1, 0, 0]} isAnimationActive={false}>
               {entries.map((e) => (
                 <Cell
@@ -187,13 +187,13 @@ function Verdict({
   const reveal = useReveal(0.1);
   const pct = confidence * 100;
   return (
-    <motion.div className="figure mt-16 md:mt-24" {...reveal}>
+    <motion.div className="figure mt-12 md:mt-24" {...reveal}>
       <p className="eyebrow mb-6">VERDICT</p>
       <div className="grid items-center gap-x-10 gap-y-8 md:grid-cols-12">
         <div className="flex items-end gap-6 md:col-span-5">
           <span
             key={letter}
-            className="font-serif text-[clamp(7rem,18vw,13rem)] font-light leading-[0.8] text-annotation"
+            className="font-serif text-[clamp(5.5rem,30vw,13rem)] font-light leading-[0.8] text-annotation"
             style={{ textShadow: "0 0 60px rgba(255,107,74,0.35)" }}
             aria-label={`Predicted character ${letter}`}
           >
@@ -217,7 +217,7 @@ function Verdict({
           </div>
 
           {runnersUp.length > 0 && (
-            <ul className="mt-6 flex flex-wrap gap-x-8 gap-y-2">
+            <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 sm:gap-x-8">
               {runnersUp.map((e, i) => (
                 <li key={e.idx} className="flex items-baseline gap-2">
                   <span className="caption">#{i + 2}</span>
@@ -230,7 +230,7 @@ function Verdict({
         </div>
       </div>
 
-      <dl className="mt-10 grid grid-cols-2 gap-4 border-t border-rule pt-4 sm:grid-cols-3">
+      <dl className="mt-10 grid grid-cols-3 gap-3 border-t border-rule pt-4 sm:gap-4">
         {[
           { v: "131", l: "valid classes" },
           { v: sum.toFixed(3), l: "probabilities sum" },
@@ -342,16 +342,16 @@ export function SoftmaxSection() {
               <p className="caption mb-2">RAW LOGITS · BEFORE SOFTMAX</p>
               <div className="viz-empty-state plate-marks h-[180px]">Draw something to light this up</div>
               <div className="flex items-center gap-4 py-2 text-ink-2">
-                <span className="h-px flex-1 bg-rule" />
-                <Latex math="\downarrow\;\sigma(\mathbf{z})_i = \frac{e^{z_i}}{\sum e^{z_j}}" />
-                <span className="h-px flex-1 bg-rule" />
+                <span className="h-px flex-1 bg-rule max-sm:hidden" />
+                <span className="min-w-0 overflow-x-auto"><Latex math="\downarrow\;\sigma(\mathbf{z})_i = \frac{e^{z_i}}{\sum e^{z_j}}" /></span>
+                <span className="h-px flex-1 bg-rule max-sm:hidden" />
               </div>
               <p className="caption mb-2">PROBABILITIES · AFTER SOFTMAX</p>
               <div className="viz-empty-state plate-marks h-[180px]" aria-hidden="true" />
             </div>
           )}
           <p className="figcap">
-            <b>FIG. 8.1</b> Classes sorted by logit. The coral bar is the predicted class; hover for exact values.
+            <b>FIG. 8.1</b> Classes sorted by logit. The coral bar is the predicted class; hover or touch-drag for exact values.
           </p>
         </motion.div>
       </div>

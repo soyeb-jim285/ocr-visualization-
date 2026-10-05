@@ -113,7 +113,7 @@ export function Header() {
       </nav>
 
       {/* Compact mobile section navigator */}
-      <div className="fixed inset-x-4 top-3 z-40 flex h-11 items-center justify-between rounded-[4px] border border-rule bg-bg-raised md:hidden">
+      <div className="fixed inset-x-4 top-[max(12px,env(safe-area-inset-top))] z-40 flex h-11 items-center justify-between rounded-[4px] border border-rule bg-bg-raised/90 backdrop-blur-md md:hidden">
         <button
           type="button"
           onClick={() => scrollToSection(Math.max(0, safeActiveSection - 1))}
@@ -127,7 +127,7 @@ export function Header() {
         <button
           type="button"
           onClick={() => scrollToSection(safeActiveSection)}
-          className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink"
+          className="h-full flex-1 font-mono text-[11px] uppercase tracking-[0.08em] text-ink"
           aria-label={`Current section: ${activeLabel}`}
         >
           {pad(safeActiveSection + 1)}/{SECTION_LABELS.length} · {activeLabel}

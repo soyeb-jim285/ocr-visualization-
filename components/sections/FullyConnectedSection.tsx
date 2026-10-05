@@ -11,10 +11,10 @@ import { BG_INSET, INK, SIG } from "@/lib/theme";
 
 /* ── Constants ───────────────────────────────────────────────────── */
 
-const GRID_COLS = 32; // 32×16 = 512 neurons
+const GRID_COLS = 16; // 16×16 = 256 neurons
 const GRID_ROWS = 16;
 const CELL = 16; // px per cell (canvas scales to container width)
-const GRID_W = GRID_COLS * CELL; // 512px
+const GRID_W = GRID_COLS * CELL; // 256px
 const GRID_H = GRID_ROWS * CELL; // 256px
 const STRIP_W = 512;
 const STRIP_H = 20;
@@ -76,12 +76,12 @@ function InputStrip({ pool2Maps }: { pool2Maps: number[][][] }) {
       height={STRIP_H}
       className="block w-full"
       style={{ aspectRatio: `${STRIP_W} / ${STRIP_H}`, imageRendering: "pixelated" }}
-      aria-label="Flattened input vector of 12,544 values"
+      aria-label="Flattened input vector of 6,272 values"
     />
   );
 }
 
-/* ── 32×16 neuron activation grid ────────────────────────────────── */
+/* ── 16×16 neuron activation grid ────────────────────────────────── */
 
 function NeuronGrid({ activations }: { activations: number[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -147,14 +147,14 @@ function NeuronGrid({ activations }: { activations: number[] }) {
     }
   }, [activations, min, max, hover, topNeurons]);
 
-  const handleMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const col = Math.min(GRID_COLS - 1, Math.max(0, Math.floor(((e.clientX - rect.left) / rect.width) * GRID_COLS)));
     const row = Math.min(GRID_ROWS - 1, Math.max(0, Math.floor(((e.clientY - rect.top) / rect.height) * GRID_ROWS)));
     setHover({ idx: row * GRID_COLS + col, row, col });
   }, []);
 
-  const sparsity = ((1 - active / 512) * 100).toFixed(1);
+  const sparsity = ((1 - active / 256) * 100).toFixed(1);
 
   return (
     <div className="flex flex-col gap-4">
@@ -162,11 +162,12 @@ function NeuronGrid({ activations }: { activations: number[] }) {
         ref={canvasRef}
         width={GRID_W}
         height={GRID_H}
-        className="block w-full cursor-crosshair"
+        className="block w-full cursor-crosshair touch-pan-y"
         style={{ aspectRatio: `${GRID_W} / ${GRID_H}`, imageRendering: "pixelated" }}
-        onMouseMove={handleMove}
-        onMouseLeave={() => setHover(null)}
-        aria-label="Hidden layer activations, 512 neurons"
+        onPointerMove={handleMove}
+        onPointerDown={handleMove}
+        onPointerLeave={(e) => e.pointerType === "mouse" && setHover(null)}
+        aria-label="Hidden layer activations, 256 neurons"
       />
 
       {/* Hover readout */}
@@ -179,7 +180,10 @@ function NeuronGrid({ activations }: { activations: number[] }) {
             {activations[hover.idx] <= 0 && <span className="text-ink-3"> · off</span>}
           </>
         ) : (
-          <span className="text-ink-2">Hover a cell to inspect a neuron</span>
+          <span className="text-ink-2">
+            <span className="[@media(hover:hover)]:hidden">Tap a cell to inspect a neuron</span>
+            <span className="hidden [@media(hover:hover)]:inline">Hover a cell to inspect a neuron</span>
+          </span>
         )}
       </div>
 
@@ -188,10 +192,10 @@ function NeuronGrid({ activations }: { activations: number[] }) {
         {[
           { v: String(active), l: "neurons firing", c: "text-sig" },
           { v: `${sparsity}%`, l: "zeroed by ReLU", c: "text-ink" },
-          { v: "6.4M", l: "parameters", c: "text-ink" },
+          { v: "1.6M", l: "dense params", c: "text-ink" },
         ].map((s) => (
           <div key={s.l}>
-            <dd className={`font-serif text-3xl font-light leading-none tabular-nums sm:text-4xl ${s.c}`}>{s.v}</dd>
+            <dd className={`font-serif text-2xl font-light leading-none tabular-nums sm:text-4xl ${s.c}`}>{s.v}</dd>
             <dt className="caption mt-2">{s.l}</dt>
           </div>
         ))}
@@ -200,9 +204,9 @@ function NeuronGrid({ activations }: { activations: number[] }) {
       {/* Top neurons */}
       <div>
         <p className="caption mb-2">TOP 5</p>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-5 gap-1 text-[11px] sm:gap-2 sm:text-[inherit]">
           {topNeurons.map(({ v, i }, rank) => (
-            <div key={i} className={`readout ${rank === 0 ? "text-sig" : "text-ink-2"}`}>
+            <div key={i} className={`readout min-w-0 truncate ${rank === 0 ? "text-sig" : "text-ink-2"}`}>
               <div>#{i}</div>
               <div className="text-ink-3">{v.toFixed(2)}</div>
             </div>
@@ -228,9 +232,9 @@ export function FullyConnectedSection() {
     <SectionWrapper id="fully-connected" sig="dense" mirror>
       <SectionHeader
         step={7}
-        tag="Dense · 12,544 → 512"
+        tag="Dense · 6,272 → 256"
         title="Making Decisions: Dense Layers"
-        subtitle="The spatial features are flattened into a single vector of 12,544 values, then compressed to 512 neurons. Each neuron is connected to every input — it sees the entire character at once. The network is now making decisions about what character this is."
+        subtitle="The spatial features are flattened into a single vector of 6,272 values, then compressed to 256 neurons. Each neuron is connected to every input — it sees the entire character at once. The network is now making decisions about what character this is."
       />
 
       <div className="grid gap-x-6 gap-y-14 lg:grid-cols-12">
@@ -238,7 +242,7 @@ export function FullyConnectedSection() {
         <motion.div className="figure order-2 lg:col-span-7 lg:order-1" {...figReveal}>
           <p className="caption mb-2 flex items-baseline justify-between gap-4">
             <span>FLATTENED INPUT</span>
-            <span>12,544 values</span>
+            <span>6,272 values</span>
           </p>
           <div className="well plate-marks p-1.5">
             {hasData ? (
@@ -255,8 +259,8 @@ export function FullyConnectedSection() {
           </div>
 
           <p className="caption mb-2 flex items-baseline justify-between gap-4">
-            <span>HIDDEN LAYER · 512 NEURONS</span>
-            <span>32×16</span>
+            <span>HIDDEN LAYER · 256 NEURONS</span>
+            <span>16×16</span>
           </p>
           <div className="well plate-marks p-1.5">
             {hasData ? (
@@ -276,10 +280,10 @@ export function FullyConnectedSection() {
         <motion.div className="order-1 space-y-6 lg:col-span-5 lg:order-2" {...textReveal}>
           <p className="prose-body">
             Convolutional layers extract <em>where</em> features are. Dense
-            layers decide <em>what</em> they mean. First, the 256 feature maps
-            of size 7&times;7 are flattened into a single vector of 12,544
-            values. Then a fully-connected layer maps this to 512 neurons —
-            every output is a weighted sum of all 12,544 inputs plus a bias,
+            layers decide <em>what</em> they mean. First, the 128 feature maps
+            of size 7&times;7 are flattened into a single vector of 6,272
+            values. Then a fully-connected layer maps this to 256 neurons —
+            every output is a weighted sum of all 6,272 inputs plus a bias,
             followed by ReLU.
           </p>
 
@@ -292,22 +296,22 @@ export function FullyConnectedSection() {
           </div>
 
           <ul className="caption space-y-1.5">
-            <li><Latex math="\mathbf{x}" /> — flattened input (12,544)</li>
+            <li><Latex math="\mathbf{x}" /> — flattened input (6,272)</li>
             <li><Latex math="W" /> — weight matrix</li>
             <li><Latex math="\mathbf{b}" /> — bias vector</li>
-            <li><Latex math="\mathbf{h}" /> — hidden activations (512)</li>
+            <li><Latex math="\mathbf{h}" /> — hidden activations (256)</li>
           </ul>
 
           <p className="prose-body text-[0.9375rem] text-ink-3">
             The weight matrix <Latex math="W" /> has shape{" "}
-            <Latex math="512 \times 12{,}544" />, giving{" "}
-            <Latex math="512 \times 12{,}544 + 512 = 6{,}423{,}040" /> learnable
+            <Latex math="256 \times 6{,}272" />, giving{" "}
+            <Latex math="256 \times 6{,}272 + 256 = 1{,}605{,}888" /> learnable
             parameters — far more than all convolutional layers combined. This
             is where most of the model&apos;s capacity lives. After ReLU,
             many neurons are zeroed out — the network has learned which
             abstract features matter for each character. A second dense layer
-            then maps the 512 hidden units to the 146 output logits:{" "}
-            <Latex math="(512) \xrightarrow{W_2} (146)" />.
+            then maps the 256 hidden units to the 146 output logits:{" "}
+            <Latex math="(256) \xrightarrow{W_2} (146)" />.
           </p>
         </motion.div>
       </div>

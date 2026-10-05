@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode, type CSSProperties } from "react";
+import { useEffect, useState, type ReactNode, type CSSProperties } from "react";
 import {
   motion,
   AnimatePresence,
@@ -50,6 +50,14 @@ export function FeatureMapGrid({
 }: FeatureMapGridProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const smCols = columnsSm ?? columns;
+  const reduce = useReducedMotion();
+
+  useEffect(() => {
+    if (expandedIdx === null) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setExpandedIdx(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expandedIdx]);
 
   if (!featureMaps || featureMaps.length === 0) {
     return (
@@ -82,15 +90,24 @@ export function FeatureMapGrid({
       </div>
 
       {/* Expanded view */}
+      {/* <sm: fixed bottom sheet (visible without scrolling); sm+: inline */}
       <AnimatePresence>
         {expandedMap && expandedIdx !== null && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="overflow-hidden"
-          >
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+              onClick={() => setExpandedIdx(null)}
+              aria-hidden
+            />
+            <motion.div
+              initial={{ opacity: 0, y: reduce ? 0 : 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: reduce ? 0 : 16 }}
+              transition={{ duration: reduce ? 0 : 0.25, ease: [0.16, 1, 0.3, 1] }}
+              role="dialog"
+              aria-label={`${layerName} map ${expandedIdx + 1}`}
+              className="fixed inset-x-0 bottom-0 z-50 max-h-[80dvh] overflow-y-auto border-t border-rule bg-bg-lift p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:static sm:z-auto sm:max-h-none sm:overflow-visible sm:border-0 sm:bg-transparent sm:p-0"
+            >
             <div className="figure mx-auto flex max-w-sm flex-col items-center gap-3">
               <div className="well plate-marks p-2">
                 <ActivationHeatmap data={expandedMap} size={220} />
@@ -101,11 +118,12 @@ export function FeatureMapGrid({
                 </b>{" "}
                 {expandedMap.length}×{expandedMap[0]?.length ?? 0}
               </p>
-              <button onClick={() => setExpandedIdx(null)} className="text-btn">
+              <button onClick={() => setExpandedIdx(null)} className="text-btn min-h-11 min-w-11 px-4">
                 Close
               </button>
             </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

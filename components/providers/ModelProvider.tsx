@@ -23,7 +23,7 @@ export function ModelProvider({ children }: { children: React.ReactNode }) {
         <div role="alert" className="mx-auto max-w-md p-4 text-center">
           <p className="font-serif text-xl text-ink">Failed to load model</p>
           <p className="text-sm text-ink-3">
-            {error}. Make sure the model files exist in public/models/emnist-cnn/.
+            {error}. Make sure the model files exist in public/models/combined-cnn/.
           </p>
         </div>
       )}

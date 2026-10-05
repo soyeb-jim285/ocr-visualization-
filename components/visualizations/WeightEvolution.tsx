@@ -13,7 +13,6 @@ interface WeightEvolutionProps {
   snapshots: WeightSnapshots | null;
 }
 
-const EPOCHS = [0, 1, 2, 5, 10, 15, 20, 25, 30, 40, 50, 60, 74];
 const LAYERS = ["conv1", "conv2", "conv3", "dense1"];
 const HIST_BINS = 50;
 
@@ -99,7 +98,7 @@ function KernelGrid({
   shape: number[];
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const numFilters = Math.min(64, weights.length / 9);
+  const numFilters = Math.min(32, weights.length / 9);
   const kSize = 3;
   const cellPx = 12;
   const gap = 2;
@@ -148,11 +147,12 @@ function KernelGrid({
       <span className="caption">
         Conv1 kernels · blue = negative, red = positive
       </span>
-      <div className="well w-fit max-w-full overflow-x-auto p-2 scrollbar-none">
+      <div className="well w-full sm:w-fit max-w-full overflow-x-auto p-2 scrollbar-none">
         <canvas
           ref={canvasRef}
           width={totalW}
           height={totalH}
+          className="h-auto w-full sm:w-auto"
           style={{ imageRendering: "pixelated" }}
         />
       </div>
@@ -167,7 +167,7 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
   const availableEpochs = useMemo(
     () =>
       snapshots
-        ? EPOCHS.filter((e) => snapshots[String(e)] !== undefined)
+        ? Object.keys(snapshots).map(Number).sort((a, b) => a - b)
         : [],
     [snapshots]
   );
@@ -195,7 +195,7 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
 
   if (!snapshots) {
     return (
-      <div className="viz-empty-state flex h-48 items-center justify-center">
+      <div className="viz-empty-state flex min-h-[420px] items-center justify-center" aria-busy="true">
         <p>Weight snapshots not loaded</p>
       </div>
     );
@@ -224,16 +224,17 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
         {/* Epoch scrubber */}
         <div className="flex w-full flex-col gap-2 md:max-w-lg">
           <div className="flex w-full justify-between font-mono text-[11px] text-ink-3">
-            <span>EPOCH 0 · random</span>
-            <span>EPOCH 74 · trained</span>
+            <span>EPOCH 0 · after 1 epoch</span>
+            <span>EPOCH {availableEpochs[availableEpochs.length - 1]} · trained</span>
           </div>
-          <div className="flex w-full gap-1" role="group" aria-label="Epoch">
+          <div className="flex gap-1 sm:w-full max-sm:w-[calc(100%+2rem)] max-sm:-mx-4 max-sm:snap-x max-sm:scroll-px-4 max-sm:overflow-x-auto max-sm:px-4 max-sm:pb-1 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-24px),transparent)] scrollbar-none" role="group" aria-label="Epoch">
             {availableEpochs.map((epoch) => (
               <button
                 key={epoch}
+                ref={(el) => { if (el && selectedEpoch === epoch && el.parentElement && el.parentElement.scrollWidth > el.parentElement.clientWidth) el.scrollIntoView({ block: "nearest", inline: "center" }); }}
                 onClick={() => setSelectedEpoch(epoch)}
                 data-selected={selectedEpoch === epoch}
-                className="chip !min-w-0 flex-1 !px-0 justify-center !text-[10.5px] sm:!text-[11px] max-sm:!min-h-11"
+                className="chip !min-w-0 flex-1 !px-0 justify-center !text-[10.5px] sm:!text-[11px] max-sm:!min-h-11 max-sm:!min-w-11 max-sm:shrink-0 max-sm:snap-start"
               >
                 {epoch}
               </button>
@@ -254,10 +255,10 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="flex flex-col gap-1 border-rule px-1 py-4 odd:border-r md:border-r md:px-5 md:first:pl-1 md:last:border-r-0"
+                className="flex flex-col gap-1 border-rule px-2 py-4 odd:border-r odd:pl-0 even:pl-4 md:border-r md:px-5 md:first:pl-1 md:last:border-r-0"
               >
                 <dt className="caption">{stat.label}</dt>
-                <dd className="m-0 font-mono text-xl tabular-nums text-sig">
+                <dd className="m-0 font-mono text-lg tabular-nums text-sig sm:text-xl">
                   {stat.value.toFixed(4)}
                 </dd>
               </div>
@@ -286,7 +287,7 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
                       tick={{ fill: "#8896a3", fontSize: 11 }}
                       tickLine={false}
                       axisLine={{ stroke: "rgba(170,205,225,0.14)" }}
-                      tickCount={5}
+                      ticks={[-globalMaxAbs, -globalMaxAbs / 2, 0, globalMaxAbs / 2, globalMaxAbs]}
                       tickFormatter={(v: number) => v.toFixed(2)}
                     />
                     <YAxis hide />
@@ -296,6 +297,7 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
                       strokeDasharray="4 4"
                     />
                     <ChartTooltip
+                      wrapperStyle={{ pointerEvents: "none" }}
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null;
                         const d = payload[0].payload as {
@@ -341,7 +343,7 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
       <p className="callout">
         <span className="tag">NOTE</span>
         {selectedEpoch === 0
-          ? "At epoch 0, weights are random — the network has no idea what it's looking at."
+          ? "After one epoch the weights are still rough — the network is only starting to find edges and strokes."
           : selectedEpoch < 10
             ? "Early epochs — the weights are starting to organize into meaningful patterns."
             : "The weights have converged into structured filters that detect specific features."}

@@ -32,16 +32,16 @@ const INPUT_DISPLAY = 20;
 
 const LAYERS_RAW: Omit<NeuronLayerDef, "displayNeurons">[] = [
   { name: "input", displayName: "Input", type: "input", totalNeurons: 784, color: SIG.input, rgb: parseHex(SIG.input), description: "28×28 pixels" },
-  { name: "conv1", displayName: "Conv1", type: "conv", totalNeurons: 64, color: SIG.conv1, rgb: parseHex(SIG.conv1), description: "64 channels (3×3)" },
-  { name: "relu1", displayName: "ReLU1", type: "relu", totalNeurons: 64, color: SIG.relu, rgb: parseHex(SIG.relu), description: "64 channels" },
-  { name: "conv2", displayName: "Conv2", type: "conv", totalNeurons: 128, color: SIG.conv2, rgb: parseHex(SIG.conv2), description: "128 channels (3×3)" },
-  { name: "relu2", displayName: "ReLU2", type: "relu", totalNeurons: 128, color: SIG.relu, rgb: parseHex(SIG.relu), description: "128 channels" },
-  { name: "pool1", displayName: "Pool1", type: "pool", totalNeurons: 128, color: SIG.pool, rgb: parseHex(SIG.pool), description: "128 ch → 14×14" },
-  { name: "conv3", displayName: "Conv3", type: "conv", totalNeurons: 256, color: SIG.conv3, rgb: parseHex(SIG.conv3), description: "256 channels (3×3)" },
-  { name: "relu3", displayName: "ReLU3", type: "relu", totalNeurons: 256, color: SIG.conv3, rgb: parseHex(SIG.conv3), description: "256 channels" },
-  { name: "pool2", displayName: "Pool2", type: "pool", totalNeurons: 256, color: SIG.pool, rgb: parseHex(SIG.pool), description: "256 ch → 7×7" },
-  { name: "dense1", displayName: "Dense", type: "dense", totalNeurons: 512, color: SIG.dense, rgb: parseHex(SIG.dense), description: "512 neurons" },
-  { name: "relu4", displayName: "ReLU4", type: "relu", totalNeurons: 512, color: SIG.dense, rgb: parseHex(SIG.dense), description: "512 neurons" },
+  { name: "conv1", displayName: "Conv1", type: "conv", totalNeurons: 32, color: SIG.conv1, rgb: parseHex(SIG.conv1), description: "32 channels (3×3)" },
+  { name: "relu1", displayName: "ReLU1", type: "relu", totalNeurons: 32, color: SIG.relu, rgb: parseHex(SIG.relu), description: "32 channels" },
+  { name: "conv2", displayName: "Conv2", type: "conv", totalNeurons: 64, color: SIG.conv2, rgb: parseHex(SIG.conv2), description: "64 channels (3×3)" },
+  { name: "relu2", displayName: "ReLU2", type: "relu", totalNeurons: 64, color: SIG.relu, rgb: parseHex(SIG.relu), description: "64 channels" },
+  { name: "pool1", displayName: "Pool1", type: "pool", totalNeurons: 64, color: SIG.pool, rgb: parseHex(SIG.pool), description: "64 ch → 14×14" },
+  { name: "conv3", displayName: "Conv3", type: "conv", totalNeurons: 128, color: SIG.conv3, rgb: parseHex(SIG.conv3), description: "128 channels (3×3)" },
+  { name: "relu3", displayName: "ReLU3", type: "relu", totalNeurons: 128, color: SIG.conv3, rgb: parseHex(SIG.conv3), description: "128 channels" },
+  { name: "pool2", displayName: "Pool2", type: "pool", totalNeurons: 128, color: SIG.pool, rgb: parseHex(SIG.pool), description: "128 ch → 7×7" },
+  { name: "dense1", displayName: "Dense", type: "dense", totalNeurons: 256, color: SIG.dense, rgb: parseHex(SIG.dense), description: "256 neurons" },
+  { name: "relu4", displayName: "ReLU4", type: "relu", totalNeurons: 256, color: SIG.dense, rgb: parseHex(SIG.dense), description: "256 neurons" },
   { name: "output", displayName: "Output", type: "output", totalNeurons: 131, color: SIG.out, rgb: parseHex(SIG.out), description: "Top predictions" },
 ];
 
@@ -172,7 +172,7 @@ export function computeLayout(w: number, h: number) {
 
   const marginL = w >= 768 ? 88 : Math.max(16, Math.min(24, w * 0.04)); // md+: clear the header index rail
   // Extra right margin for output-layer neuron labels drawn to the right of the last column
-  const marginR = Math.max(34, Math.min(55, w * 0.06));
+  const marginR = Math.max(w < 500 ? 42 : 34, Math.min(55, w * 0.06));
   // Bottom margin must fit layer-name labels (~38px below the last neuron)
   const marginY = Math.max(52, Math.min(72, h * 0.1));
   const marginX = marginL; // used by layerX[0]

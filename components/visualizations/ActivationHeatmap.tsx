@@ -78,8 +78,10 @@ export function ActivationHeatmap({
 
   return (
     <div
-      className={`group flex flex-col items-center gap-1 ${
-        interactive ? "cursor-pointer" : ""
+      className={`group flex max-w-full flex-col items-center gap-1 ${
+        interactive
+          ? "cursor-pointer touch-manipulation select-none [-webkit-tap-highlight-color:transparent] active:opacity-80"
+          : ""
       }`}
       onClick={onClick}
       role={interactive ? "button" : undefined}
@@ -103,7 +105,7 @@ export function ActivationHeatmap({
         }`}
         data-selected={selected ? "true" : undefined}
         data-dead={dead ? "true" : undefined}
-        style={{ width: size, height: size }}
+        style={{ width: size, maxWidth: "100%", aspectRatio: "1" }}
       >
         {visible && (
           <canvas
@@ -117,7 +119,7 @@ export function ActivationHeatmap({
       </div>
       {label && (
         <span
-          className={`font-mono text-[10px] leading-none transition-colors duration-150 ${
+          className={`font-mono mt-0.5 text-[11px] leading-none transition-colors duration-150 ${
             selected ? "text-sig" : "text-ink-3 group-hover:text-ink"
           }`}
         >

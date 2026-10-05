@@ -12,39 +12,39 @@ import { LazySection } from "@/components/ui/LazySection";
 
 const PixelViewSection = dynamic(() =>
   import("@/components/sections/PixelViewSection").then((m) => m.PixelViewSection),
-  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+  { loading: () => <div style={{ minHeight: "50svh" }} /> },
 );
 const ConvolutionSection = dynamic(() =>
   import("@/components/sections/ConvolutionSection").then((m) => m.ConvolutionSection),
-  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+  { loading: () => <div style={{ minHeight: "50svh" }} /> },
 );
 const ActivationSection = dynamic(() =>
   import("@/components/sections/ActivationSection").then((m) => m.ActivationSection),
-  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+  { loading: () => <div style={{ minHeight: "50svh" }} /> },
 );
 const SecondConvSection = dynamic(() =>
   import("@/components/sections/SecondConvSection").then((m) => m.SecondConvSection),
-  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+  { loading: () => <div style={{ minHeight: "50svh" }} /> },
 );
 const PoolingSection = dynamic(() =>
   import("@/components/sections/PoolingSection").then((m) => m.PoolingSection),
-  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+  { loading: () => <div style={{ minHeight: "50svh" }} /> },
 );
 const DeeperLayersSection = dynamic(() =>
   import("@/components/sections/DeeperLayersSection").then((m) => m.DeeperLayersSection),
-  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+  { loading: () => <div style={{ minHeight: "50svh" }} /> },
 );
 const FullyConnectedSection = dynamic(() =>
   import("@/components/sections/FullyConnectedSection").then((m) => m.FullyConnectedSection),
-  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+  { loading: () => <div style={{ minHeight: "50svh" }} /> },
 );
 const SoftmaxSection = dynamic(() =>
   import("@/components/sections/SoftmaxSection").then((m) => m.SoftmaxSection),
-  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+  { loading: () => <div style={{ minHeight: "50svh" }} /> },
 );
 const TrainingSection = dynamic(() =>
   import("@/components/sections/TrainingSection").then((m) => m.TrainingSection),
-  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+  { loading: () => <div style={{ minHeight: "50svh" }} /> },
 );
 
 export default function Home() {

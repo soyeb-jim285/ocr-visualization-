@@ -228,9 +228,9 @@ export function TrainingControls({
       )}
 
       {/* Actions */}
-      <div className="flex flex-wrap items-center gap-2 border-t border-rule pt-5">
+      <div className="flex flex-wrap items-center gap-2 border-t border-rule pt-5 max-sm:sticky max-sm:bottom-[max(0.75rem,env(safe-area-inset-bottom))] max-sm:z-20 max-sm:bg-bg/90 max-sm:pb-2 max-sm:backdrop-blur">
         {!isTraining ? (
-          <button type="button" onClick={onTrain} disabled={isBusy || hasErrors} className="btn-primary">
+          <button type="button" onClick={onTrain} disabled={isBusy || hasErrors} className="btn-primary max-sm:flex-1">
             {isBusy && (
               <span className="size-1.5 rounded-full bg-annotation motion-safe:animate-pulse" aria-hidden />
             )}

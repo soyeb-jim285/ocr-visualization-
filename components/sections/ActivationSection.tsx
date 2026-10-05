@@ -83,24 +83,24 @@ export function ActivationSection() {
   const beforeRelu = conv1Maps?.[selectedFilter];
   const afterRelu = relu1Maps?.[selectedFilter];
 
+  // BatchNorm is folded into the exported conv weights, so relu = max(0, conv) exactly.
   const stats = useMemo(() => {
-    if (!beforeRelu) return null;
-    const flat = beforeRelu.flat();
+    if (!afterRelu) return null;
+    const flat = afterRelu.flat();
     const total = flat.length;
-    const negCount = flat.filter((v) => v < 0).length;
+    const activeNeurons = flat.filter((v) => v > 0).length;
+    const negCount = total - activeNeurons;
     const negPercent = ((negCount / total) * 100).toFixed(1);
-    const afterFlat = afterRelu?.flat() ?? flat.map((v) => Math.max(0, v));
-    const activeNeurons = afterFlat.filter((v) => v > 0).length;
     return { negCount, negPercent, total, activeNeurons };
-  }, [beforeRelu, afterRelu]);
+  }, [afterRelu]);
 
-  const numFilters = conv1Maps?.length ?? 64;
+  const numFilters = conv1Maps?.length ?? 32;
 
   return (
     <SectionWrapper id="activation" sig="relu" mirror>
       <SectionHeader
         step={3}
-        tag="ReLU · 64 ch · 28×28"
+        tag="ReLU · 32 ch · 28×28"
         title="Amplifying Signals: ReLU Activation"
         subtitle="ReLU (Rectified Linear Unit) is deceptively simple: it keeps positive values unchanged and sets all negative values to zero. This non-linearity is what lets networks learn complex patterns."
       />
@@ -110,12 +110,12 @@ export function ActivationSection() {
         <motion.div {...reveal(0.16)} className="space-y-10 min-w-0 lg:order-1 lg:col-span-7">
           {/* ReLU curve */}
           <figure className="figure m-0">
-            <span className="mb-3 block font-mono text-[11px] text-ink-2">
+            <span className="mb-3 block font-mono text-xs text-ink-2">
               f(x) = max(0, x)
             </span>
             <div className="well plate-marks p-2">
-              <ChartContainer config={chartConfig} className="h-[220px] w-full">
-                <LineChart data={reluData} margin={{ top: 8, right: 12, bottom: 4, left: -8 }}>
+              <ChartContainer config={chartConfig} className="h-[200px] w-full touch-pan-y sm:h-[220px]">
+                <LineChart data={reluData} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(170,205,225,0.07)" />
                   <ReferenceArea x1={-3} x2={0} fill="rgba(255,107,74,0.05)" fillOpacity={1} />
                   <XAxis
@@ -136,7 +136,7 @@ export function ActivationSection() {
                   />
                   <ReferenceLine y={0} stroke="rgba(170,205,225,0.3)" />
                   <ReferenceLine x={0} stroke="rgba(170,205,225,0.3)" />
-                  <ChartTooltip content={<ReluTooltip />} />
+                  <ChartTooltip content={<ReluTooltip />} allowEscapeViewBox={{ x: false, y: false }} />
                   <Line
                     type="monotone"
                     dataKey="reference"
@@ -173,42 +173,42 @@ export function ActivationSection() {
 
           {/* Before -> After */}
           <figure className="figure m-0">
-            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-5 sm:justify-start sm:gap-6">
               <div className="flex flex-col gap-2">
-                <span className="font-mono text-[11px] text-annotation">BEFORE RELU</span>
+                <span className="font-mono text-xs text-annotation">BEFORE RELU</span>
                 <div className="well plate-marks">
                   {beforeRelu ? (
                     <ActivationHeatmap data={beforeRelu} size={132} />
                   ) : (
-                    <div className="viz-empty-state min-h-0 border-0 px-3 text-center text-sm" style={{ width: 132, height: 132 }}>
+                    <div className="viz-empty-state min-h-0 border-0 px-3 text-center text-xs sm:text-sm" style={{ width: 132, height: 132 }}>
                       Draw something to light this up
                     </div>
                   )}
                 </div>
-                <span className="font-mono text-[11px] text-ink-3">contains negatives</span>
+                <span className="font-mono text-xs text-ink-3">raw conv output</span>
               </div>
 
-              <div className="text-ink-3 sm:pt-0">
-                <Latex math="\xrightarrow{\max(0,\,x)}" className="hidden sm:block" />
-                <Latex math="\downarrow" className="sm:hidden" />
+              <div className="text-ink-3">
+                <Latex math="\xrightarrow{\max(0,\,x)}" className="max-sm:hidden" />
+                <Latex math="\rightarrow" className="sm:hidden" />
               </div>
 
               <div className="flex flex-col gap-2">
-                <span className="font-mono text-[11px] text-phosphor">AFTER RELU</span>
+                <span className="font-mono text-xs text-phosphor">AFTER RELU</span>
                 <div className="well plate-marks">
                   {afterRelu ? (
                     <ActivationHeatmap data={afterRelu} size={132} />
                   ) : (
-                    <div className="viz-empty-state min-h-0 border-0 px-3 text-center text-sm" style={{ width: 132, height: 132 }}>
+                    <div className="viz-empty-state min-h-0 border-0 px-3 text-center text-xs sm:text-sm" style={{ width: 132, height: 132 }}>
                       Draw something to light this up
                     </div>
                   )}
                 </div>
-                <span className="font-mono text-[11px] text-ink-3">negatives zeroed</span>
+                <span className="font-mono text-xs text-ink-3">negatives zeroed</span>
               </div>
 
               {stats && (
-                <dl className="grid grid-cols-3 gap-x-6 sm:ml-auto sm:grid-cols-1 sm:gap-y-3">
+                <dl className="grid w-full grid-cols-3 gap-x-4 sm:ml-auto sm:w-auto sm:grid-cols-1 sm:gap-y-3">
                   {[
                     [stats.negCount, "zeroed", "text-annotation"],
                     [`${stats.negPercent}%`, "sparsity", "text-ink-3"],
@@ -216,7 +216,7 @@ export function ActivationSection() {
                   ].map(([v, l, c]) => (
                     <div key={l as string}>
                       <dd className="font-mono text-xl tabular-nums text-ink">{v}</dd>
-                      <dt className={`font-mono text-[11px] ${c}`}>{l}</dt>
+                      <dt className={`font-mono text-xs ${c}`}>{l}</dt>
                     </div>
                   ))}
                 </dl>
@@ -248,15 +248,17 @@ export function ActivationSection() {
 
           <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-1.5 text-sm">
             <dt className="text-ink"><Latex math="x" /></dt>
-            <dd className="font-mono text-[11px] text-ink-3">pre-activation value (from conv)</dd>
+            <dd className="font-mono text-xs text-ink-3">pre-activation value (conv, BatchNorm folded in)</dd>
             <dt className="text-ink"><Latex math="\max(0, x)" /></dt>
-            <dd className="font-mono text-[11px] text-ink-3">output, always &ge; 0</dd>
+            <dd className="font-mono text-xs text-ink-3">output, always &ge; 0</dd>
           </dl>
 
           <p className="callout [overflow-wrap:anywhere]">
             <span className="tag">NOTE</span>
-            Typically 40&ndash;70% of values are zeroed, creating <em>sparse activations</em> that
-            help the network focus on the strongest detected features.
+            During training a <em>BatchNorm</em> layer normalizes each conv output; for inference
+            it is folded into the conv weights, so the map on the left is exactly what ReLU sees.
+            Zeroed values create <em>sparse activations</em> that help the network focus on the
+            strongest detected features.
           </p>
 
           <p className="text-sm leading-[1.65] text-ink-3">
@@ -264,20 +266,20 @@ export function ActivationSection() {
             <Latex math="\frac{\partial}{\partial x}\text{ReLU}(x) = \mathbf{1}_{x > 0}" />. It
             passes gradients through for positive inputs and blocks them for negative ones, avoiding
             the vanishing gradient problem of sigmoid and tanh. Applied element-wise, the shape is
-            preserved: <Latex math="(64, 28, 28) \xrightarrow{\text{ReLU}} (64, 28, 28)" />.
+            preserved: <Latex math="(32, 28, 28) \xrightarrow{\text{ReLU}} (32, 28, 28)" />.
           </p>
         </motion.div>
       </div>
 
       {/* Filter selection */}
       <motion.figure {...reveal()} className="figure m-0 mt-16">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-2">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(48px,1fr))] gap-x-2 gap-y-3">
           {relu1Maps
             ? relu1Maps.map((fm, i) => (
                 <ActivationHeatmap
                   key={i}
                   data={fm}
-                  size={56}
+                  size={48}
                   label={`${i + 1}`}
                   onClick={() => setSelectedFilter(i)}
                   selected={i === selectedFilter}
@@ -286,13 +288,17 @@ export function ActivationSection() {
             : Array.from({ length: numFilters }, (_, i) => (
                 <div
                   key={i}
-                  className={`flex flex-col items-center gap-1 ${
+                  className={`flex flex-col items-center gap-1 focus-visible:outline focus-visible:outline-1 focus-visible:outline-sig ${
                     i === selectedFilter ? "opacity-100" : "opacity-40"
                   }`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Filter ${i + 1}`}
                   onClick={() => setSelectedFilter(i)}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelectedFilter(i)}
                 >
-                  <div className="tile cursor-pointer" style={{ width: 56, height: 56 }} />
-                  <span className="font-mono text-[10px] text-ink-3">{i + 1}</span>
+                  <div className="tile cursor-pointer" style={{ width: 48, height: 48 }} />
+                  <span className="font-mono text-xs text-ink-3">{i + 1}</span>
                 </div>
               ))}
         </div>

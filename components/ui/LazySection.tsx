@@ -20,7 +20,7 @@ interface LazySectionProps {
 export function LazySection({
   children,
   id,
-  fallbackHeight = "50vh",
+  fallbackHeight = "50svh",
   rootMargin = "300px",
 }: LazySectionProps) {
   const ref = useRef<HTMLDivElement>(null);

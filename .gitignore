@@ -49,3 +49,5 @@ next-env.d.ts
 # archives
 *.zip
 .playwright-mcp/
+/public/models/v2/
+.next-dev.log

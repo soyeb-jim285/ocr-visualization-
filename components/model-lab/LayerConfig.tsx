@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 
 /** Shared chip styling for ToggleGroupItems (overrides base toggle look). */
 export const CHIP =
-  "chip h-auto min-h-8 min-w-0 shrink justify-center rounded-[2px] border border-rule bg-transparent px-2.5 py-1 font-mono text-[11px] font-normal text-ink-2 hover:bg-transparent hover:text-ink data-[state=on]:bg-[color-mix(in_oklab,var(--sig)_14%,transparent)] data-[state=on]:text-ink";
+  "chip h-auto min-h-8 min-w-0 pointer-coarse:min-w-11 shrink justify-center rounded-[2px] border border-rule bg-transparent px-2.5 py-1 font-mono text-[11px] font-normal text-ink-2 hover:bg-transparent hover:text-ink data-[state=on]:bg-[color-mix(in_oklab,var(--sig)_14%,transparent)] data-[state=on]:text-ink";
 
 export function Field({
   label,

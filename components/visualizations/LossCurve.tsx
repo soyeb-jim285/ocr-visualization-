@@ -99,14 +99,14 @@ export function LossCurve({ history }: LossCurveProps) {
 
   if (!history) {
     return (
-      <div className="viz-empty-state h-64 w-full">
+      <div className="viz-empty-state min-h-[320px] w-full sm:min-h-[360px]">
         <p>Training data not loaded</p>
       </div>
     );
   }
 
   const last = data[data.length - 1];
-  const margin = { top: 12, right: 12, bottom: 24, left: 4 };
+  const margin = { top: 12, right: 8, bottom: 24, left: 4 };
   const xAxis = (
     <XAxis
       dataKey="epoch"
@@ -143,24 +143,25 @@ export function LossCurve({ history }: LossCurveProps) {
           </button>
         </div>
         {last && (
-          <p className="font-mono text-[11px] text-ink-3">
-            FINAL · loss <span className="text-ink">{last.valLoss.toFixed(3)}</span> · acc{" "}
-            <span className="text-ink">{last.valAcc.toFixed(1)}%</span> (val)
+          <p className="w-full font-mono text-[11px] text-ink-3 sm:w-auto">
+            FINAL · val loss <span className="text-ink">{last.valLoss.toFixed(3)}</span> · acc{" "}
+            <span className="text-ink">{last.valAcc.toFixed(1)}%</span>
           </p>
         )}
       </div>
 
+      {!showLoss && !showAcc && <div className="viz-empty-state h-24">Pick a series</div>}
       <div className="grid gap-4 md:grid-cols-2">
         {showLoss && (
-          <div className="well flex min-w-0 flex-col gap-2 p-4">
+          <div className="well flex min-w-0 flex-col gap-2 p-3 sm:p-4">
             <div className="flex items-baseline justify-between">
               <span className="eyebrow" style={{ color: LOSS_C }}>Loss</span>
               <Legend color={LOSS_C} />
             </div>
-            <div className="overflow-x-auto scrollbar-none">
+            <div>
               <ChartContainer
                 config={lossConfig}
-                className="h-[230px] w-full min-w-[320px] sm:h-[280px]"
+                className="h-[230px] w-full min-w-0 sm:h-[280px]"
               >
                 <LineChart data={data} margin={margin}>
                   <CartesianGrid strokeDasharray="2 4" stroke={GRID} />
@@ -172,6 +173,7 @@ export function LossCurve({ history }: LossCurveProps) {
                     width={40}
                   />
                   <ChartTooltip
+                    wrapperStyle={{ pointerEvents: "none" }}
                     cursor={{ stroke: "rgba(170,205,225,0.3)" }}
                     content={(p) => (
                       <Tip
@@ -205,15 +207,15 @@ export function LossCurve({ history }: LossCurveProps) {
         )}
 
         {showAcc && (
-          <div className="well flex min-w-0 flex-col gap-2 p-4">
+          <div className="well flex min-w-0 flex-col gap-2 p-3 sm:p-4">
             <div className="flex items-baseline justify-between">
               <span className="eyebrow" style={{ color: ACC_C }}>Accuracy</span>
               <Legend color={ACC_C} />
             </div>
-            <div className="overflow-x-auto scrollbar-none">
+            <div>
               <ChartContainer
                 config={accConfig}
-                className="h-[230px] w-full min-w-[320px] sm:h-[280px]"
+                className="h-[230px] w-full min-w-0 sm:h-[280px]"
               >
                 <LineChart data={data} margin={margin}>
                   <CartesianGrid strokeDasharray="2 4" stroke={GRID} />
@@ -226,10 +228,13 @@ export function LossCurve({ history }: LossCurveProps) {
                     tick={tick}
                     tickLine={false}
                     axisLine={{ stroke: AXIS_LINE }}
+                    ticks={[70, 80, 90, 100]}
+                    allowDataOverflow
                     tickFormatter={(v: number) => `${v}%`}
                     width={44}
                   />
                   <ChartTooltip
+                    wrapperStyle={{ pointerEvents: "none" }}
                     cursor={{ stroke: "rgba(170,205,225,0.3)" }}
                     content={(p) => (
                       <Tip

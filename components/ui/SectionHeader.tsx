@@ -8,7 +8,7 @@ interface SectionHeaderProps {
   subtitle: string;
   /** Plate number, shown as PLATE 04 */
   step?: number;
-  /** Mono margin note, e.g. "Conv2 · 128 ch · 14×14" */
+  /** Mono margin note, e.g. "Conv2 · 64 ch · 28×28" */
   tag?: string;
   /** Optional extra content rendered under the lead (inside the header block) */
   figure?: ReactNode;
@@ -49,10 +49,10 @@ export function SectionHeader({
   );
 
   return (
-    <header className="mb-12 grid grid-cols-12 gap-x-6 md:mb-16">
+    <header className="mb-8 grid grid-cols-12 gap-x-6 md:mb-16">
       {/* Mobile: one mono line above the title */}
       {(plateNo || tag) && (
-        <motion.p {...reveal()} className="eyebrow col-span-12 mb-4 md:hidden">
+        <motion.p {...reveal()} className="eyebrow col-span-12 mb-3 md:hidden">
           {plateNo}
           {plateNo && tag && <span className="text-ink-3"> · {tag}</span>}
         </motion.p>
@@ -81,11 +81,11 @@ export function SectionHeader({
       >
         <motion.h2
           {...reveal(0.04)}
-          className="text-balance font-serif text-[clamp(2rem,3.8vw,3.25rem)] font-normal leading-[1.05] tracking-[-0.015em] text-ink"
+          className="text-balance font-serif text-[clamp(1.75rem,6.5vw,2rem)] md:text-[clamp(2rem,3.8vw,3.25rem)] font-normal leading-[1.05] tracking-[-0.015em] text-ink"
         >
           {title}
         </motion.h2>
-        <motion.p {...reveal(0.12)} className="lead mt-6">
+        <motion.p {...reveal(0.12)} className="lead mt-4 md:mt-6">
           {subtitle}
         </motion.p>
         {figure && <div className="mt-8">{figure}</div>}

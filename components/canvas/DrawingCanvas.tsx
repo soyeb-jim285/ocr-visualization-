@@ -107,16 +107,16 @@ export function DrawingCanvas({
   }, [stopDrawing]);
 
   return (
-    <div className={`flex flex-col ${isHero ? "gap-3" : "items-center gap-1"}`}>
+    <div className={`flex flex-col ${isHero ? "gap-2 sm:gap-3" : "items-center gap-1"}`}>
       {isHero && (
         <div className="flex items-baseline justify-between font-mono text-[10.5px] tracking-[0.06em] text-ink-3">
           <span>FIG. 0 · SPECIMEN</span>
-          <span>280 × 280 → 28 × 28</span>
+          <span className="hidden min-[420px]:inline">280 × 280 → 28 × 28</span>
         </div>
       )}
       <div
         style={pressed && isHero ? { boxShadow: "0 0 0 1px rgba(143,227,255,0.35), 0 0 28px rgba(143,227,255,0.14)" } : undefined}
-        className={`relative overflow-hidden bg-black ${
+        className={`relative self-center overflow-hidden bg-black ${
           isHero ? "rounded-[2px] border border-rule transition-shadow duration-200" : "rounded-[2px] border border-rule-strong"
         }`}
       >
@@ -125,20 +125,23 @@ export function DrawingCanvas({
           ref={canvasRef}
           width={INTERNAL_SIZE}
           height={INTERNAL_SIZE}
-          className="block cursor-crosshair touch-none"
+          className="block cursor-crosshair touch-none select-none [-webkit-touch-callout:none]"
           style={{
             width: canvasSize,
             height: canvasSize,
             imageRendering: "auto",
           }}
           onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture(e.pointerId);
+            try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
             setPressed(true);
             startDrawing(e.nativeEvent);
           }}
-          onPointerMove={(e) => draw(e.nativeEvent)}
+          onPointerMove={(e) => {
+            for (const ev of e.nativeEvent.getCoalescedEvents?.() ?? [e.nativeEvent]) draw(ev);
+          }}
           onPointerUp={endStroke}
           onPointerCancel={endStroke}
+          onLostPointerCapture={endStroke}
           aria-label="Drawing canvas for character input"
         />
 
@@ -184,7 +187,7 @@ export function DrawingCanvas({
             </div>
             <ImageUploader />
           </div>
-          <p className="font-mono text-[11px] tracking-[0.04em] text-ink-3">
+          <p className="hidden font-mono text-[11px] tracking-[0.04em] text-ink-3 sm:block">
             A–Z &middot; a–z &middot; 0–9 &middot; ক–হ &middot; compound characters
           </p>
         </>

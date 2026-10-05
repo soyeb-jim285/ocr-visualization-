@@ -79,11 +79,11 @@ function SortableConvLayer({
       value={layer.id}
       className="rounded-[3px] border border-rule bg-bg-inset transition-colors data-[state=open]:border-rule-strong"
     >
-      <div className="flex min-h-11 items-center gap-2 px-2">
+      <div className="flex min-h-11 items-center gap-1 px-2">
         <button
           type="button"
           aria-label={`Reorder layer ${index + 1}`}
-          className="flex size-7 shrink-0 cursor-grab touch-none items-center justify-center text-ink-4 transition-colors hover:text-ink-2 active:cursor-grabbing"
+          className="flex size-7 pointer-coarse:size-11 shrink-0 cursor-grab touch-none items-center justify-center text-ink-4 transition-colors hover:text-ink-2 active:cursor-grabbing"
           {...attributes}
           {...listeners}
         >
@@ -94,7 +94,7 @@ function SortableConvLayer({
           {String(index + 1).padStart(2, "0")}
         </span>
 
-        <AccordionPrimitive.Trigger className="flex min-h-9 flex-1 items-center gap-1.5 text-left font-mono text-[11px] text-ink-2 transition-colors hover:text-ink [&[data-state=open]>svg]:rotate-90">
+        <AccordionPrimitive.Trigger className="flex min-h-9 pointer-coarse:min-h-11 flex-1 items-center gap-1.5 text-left font-mono text-[11px] text-ink-2 transition-colors hover:text-ink [&[data-state=open]>svg]:rotate-90">
           <ChevronRight
             size={12}
             className="shrink-0 text-ink-3 transition-transform duration-200"
@@ -108,7 +108,7 @@ function SortableConvLayer({
           aria-label={`Remove layer ${index + 1}`}
           onClick={() => removeConvLayer(layer.id)}
           disabled={total <= 1}
-          className="text-ink-3 hover:bg-transparent hover:text-annotation"
+          className="text-ink-3 hover:bg-transparent hover:text-annotation pointer-coarse:size-11"
         >
           <Trash2 size={14} />
         </Button>
@@ -269,7 +269,7 @@ export function ArchitectureBuilder() {
               value={dense.activation}
               onValueChange={(v) => v && setDenseConfig({ activation: v as Activation })}
               spacing={1}
-              className="flex flex-wrap gap-1"
+              className="flex flex-wrap gap-1.5"
             >
               {ACTIVATION_OPTIONS.map((act) => (
                 <ToggleGroupItem key={act} value={act} className={CHIP}>

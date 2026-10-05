@@ -155,7 +155,7 @@ function PoolingViz({
 
   // Mouse handlers
   const handleBeforeMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
       const rect = e.currentTarget.getBoundingClientRect();
       const col = Math.min(
         AFTER_GRID - 1,
@@ -175,7 +175,7 @@ function PoolingViz({
   );
 
   const handleAfterMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
       const rect = e.currentTarget.getBoundingClientRect();
       const col = Math.min(
         AFTER_GRID - 1,
@@ -196,7 +196,11 @@ function PoolingViz({
     []
   );
 
-  const clearHover = useCallback(() => setHoverPool(null), []);
+  // touch keeps the highlight after the finger lifts
+  const clearHover = useCallback(
+    (e: React.PointerEvent) => e.pointerType !== "touch" && setHoverPool(null),
+    [],
+  );
 
   // Display values for the 4-cell grid
   const displayValues = poolValues ?? [0.3, 0.7, 0.1, 0.9];
@@ -204,7 +208,7 @@ function PoolingViz({
   const isLive = !!poolValues;
 
   return (
-    <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
+    <div className="flex flex-wrap items-center justify-center gap-4 sm:flex-nowrap sm:gap-6">
       {/* Before pooling */}
       <div className="flex flex-col items-center gap-2">
         <span className="font-mono text-[11px] tracking-[0.08em] text-sig">BEFORE</span>
@@ -213,13 +217,14 @@ function PoolingViz({
             ref={beforeRef}
             width={CANVAS_SIZE}
             height={CANVAS_SIZE}
-            className="block cursor-crosshair"
-            style={{ width: CANVAS_SIZE, height: CANVAS_SIZE, imageRendering: "pixelated" }}
-            onMouseMove={handleBeforeMove}
-            onMouseLeave={clearHover}
+            className="block cursor-crosshair touch-pan-y"
+            style={{ width: "min(140px, 38vw)", height: "min(140px, 38vw)", imageRendering: "pixelated" }}
+            onPointerMove={handleBeforeMove}
+            onPointerDown={handleBeforeMove}
+            onPointerLeave={clearHover}
           />
         </div>
-        <span className="caption min-h-[1.5em]">
+        <span className="caption min-h-[3em] whitespace-nowrap sm:min-h-[1.5em]">
           {BEFORE_GRID}&times;{BEFORE_GRID}
           {hoverPool && (
             <span className="text-phosphor">
@@ -232,7 +237,7 @@ function PoolingViz({
       </div>
 
       {/* 2×2 pool grid with live values */}
-      <div className="flex flex-col items-center gap-2">
+      <div className="order-last flex basis-full flex-col items-center gap-2 sm:order-none sm:basis-auto">
         <div
           className={`grid grid-cols-2 gap-px border p-1 transition-colors duration-150 ${
             isLive ? "border-phosphor/60" : "border-rule"
@@ -241,7 +246,7 @@ function PoolingViz({
           {displayValues.map((v, i) => (
             <div
               key={i}
-              className={`flex h-8 w-9 items-center justify-center font-mono text-[11px] transition-colors duration-150 ${
+              className={`flex h-10 w-12 items-center justify-center font-mono text-xs transition-colors duration-150 ${
                 i === displayMaxIdx
                   ? "bg-sig font-medium text-bg"
                   : "bg-bg-lift text-ink-3"
@@ -255,7 +260,7 @@ function PoolingViz({
           math="\xrightarrow{\max}"
           className="hidden text-ink-3 sm:block"
         />
-        <Latex math="\downarrow" className="text-ink-3 sm:hidden" />
+        <Latex math="\uparrow" className="text-ink-3 sm:hidden" />
       </div>
 
       {/* After pooling */}
@@ -266,13 +271,14 @@ function PoolingViz({
             ref={afterRef}
             width={CANVAS_SIZE}
             height={CANVAS_SIZE}
-            className="block cursor-crosshair"
-            style={{ width: CANVAS_SIZE, height: CANVAS_SIZE, imageRendering: "pixelated" }}
-            onMouseMove={handleAfterMove}
-            onMouseLeave={clearHover}
+            className="block cursor-crosshair touch-pan-y"
+            style={{ width: "min(140px, 38vw)", height: "min(140px, 38vw)", imageRendering: "pixelated" }}
+            onPointerMove={handleAfterMove}
+            onPointerDown={handleAfterMove}
+            onPointerLeave={clearHover}
           />
         </div>
-        <span className="caption min-h-[1.5em]">
+        <span className="caption min-h-[3em] whitespace-nowrap sm:min-h-[1.5em]">
           {AFTER_GRID}&times;{AFTER_GRID}
           {hoverPool && (
             <span className="text-annotation">
@@ -303,7 +309,16 @@ export function PoolingSection() {
     return best;
   }, [liveMaps]);
   const selectedFilter = picked && picked.maps === liveMaps ? picked.i : bestFilter;
-  const setSelectedFilter = (i: number) => setPicked({ maps: liveMaps, i });
+  const previewRef = useRef<HTMLDivElement>(null);
+  const setSelectedFilter = (i: number) => {
+    setPicked({ maps: liveMaps, i });
+    // phones: preview sits a screen above the picker, so bring it into view
+    if (window.matchMedia("(max-width: 639px)").matches)
+      previewRef.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "center",
+      });
+  };
 
   // Before pooling (relu2 = 28x28x64) and after pooling (pool1 = 14x14x64)
   const relu2Maps = layerActivations["relu2"] as number[][][] | undefined;
@@ -312,7 +327,7 @@ export function PoolingSection() {
   const beforePool = relu2Maps?.[selectedFilter];
   const afterPool = pool1Maps?.[selectedFilter];
 
-  const numFilters = relu2Maps?.length ?? 128;
+  const numFilters = relu2Maps?.length ?? 64;
   const hasData = !!beforePool;
 
   const stats = useMemo(() => {
@@ -372,16 +387,16 @@ export function PoolingSection() {
 
         {/* Right: interactive visualization */}
         <Reveal delay={0.16} className="min-w-0 lg:col-span-9 lg:col-start-4">
-          <div className="figure">
-            <div className="flex justify-center overflow-x-auto pb-1">
+          <div className="figure" ref={previewRef}>
+            <div className="flex justify-center pb-1 sm:overflow-x-auto">
               {hasData && afterPool ? (
                 <PoolingViz beforeData={beforePool} afterData={afterPool} />
               ) : (
-                <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
+                <div className="grid grid-cols-2 justify-items-center gap-4 sm:flex sm:gap-6">
                   {[["BEFORE", "28×28"], ["AFTER", "14×14"]].map(([t, d]) => (
                     <div key={t} className="flex flex-col items-center gap-2">
                       <span className="font-mono text-[11px] tracking-[0.08em] text-sig">{t}</span>
-                      <div className="viz-empty-state !min-h-0 text-center text-xs" style={{ width: 152, height: 152 }}>
+                      <div className="viz-empty-state aspect-square !min-h-0 w-[min(152px,40vw)] text-center text-xs sm:w-[152px]">
                         <span className="px-3 font-serif italic">Draw something to light this up</span>
                       </div>
                       <span className="caption">{d}</span>
@@ -422,7 +437,7 @@ export function PoolingSection() {
           </p>
           <p className="caption">Select a filter to inspect it above.</p>
         </div>
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] justify-items-center gap-x-2 gap-y-3">
+        <div className="grid grid-cols-6 justify-items-center gap-x-2 gap-y-3 sm:grid-cols-[repeat(auto-fill,minmax(56px,1fr))]">
           {pool1Maps
             ? pool1Maps.map((fm, i) => (
                 <ActivationHeatmap
@@ -437,12 +452,12 @@ export function PoolingSection() {
             : Array.from({ length: numFilters }, (_, i) => (
                 <div
                   key={i}
-                  className={`tile cursor-pointer border border-rule bg-bg-inset ${
+                  aria-hidden
+                  className={`tile border border-rule bg-bg-inset ${
                     i === selectedFilter ? "opacity-100" : "opacity-50"
                   }`}
                   data-selected={i === selectedFilter ? "true" : undefined}
-                  style={{ width: 56, height: 56 }}
-                  onClick={() => setSelectedFilter(i)}
+                  style={{ width: 56, maxWidth: "100%", aspectRatio: "1" }}
                 />
               ))}
         </div>

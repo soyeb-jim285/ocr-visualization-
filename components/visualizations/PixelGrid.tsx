@@ -169,7 +169,7 @@ export function PixelGrid() {
 
   // --- Hover handlers (both canvases set the same state) ---
   const resolveCell = useCallback(
-    (canvasWidth: number, nativeSize: number, e: React.MouseEvent<HTMLCanvasElement>) => {
+    (canvasWidth: number, nativeSize: number, e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!inputTensor) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * nativeSize;
@@ -188,11 +188,11 @@ export function PixelGrid() {
   );
 
   const handleSourceHover = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => resolveCell(SRC_SIZE, SRC_SIZE, e),
+    (e: React.PointerEvent<HTMLCanvasElement>) => resolveCell(SRC_SIZE, SRC_SIZE, e),
     [resolveCell]
   );
   const handleOutputHover = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) =>
+    (e: React.PointerEvent<HTMLCanvasElement>) =>
       resolveCell(OUTPUT_CANVAS, OUTPUT_CANVAS, e),
     [resolveCell]
   );
@@ -209,11 +209,11 @@ export function PixelGrid() {
   );
 
   return (
-    <figure className="figure m-0 pb-16 sm:pb-0">
-      <div className="flex flex-col items-start gap-4 sm:flex-row sm:gap-5">
+    <figure className="figure m-0">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-x-3 sm:flex sm:gap-5">
         {/* Source 280x280 */}
-        <div className="flex flex-col gap-2">
-          <span className="font-mono text-[11px] text-ink-2">
+        <div className="flex min-w-0 flex-col gap-2">
+          <span className="font-mono text-xs text-ink-2">
             SOURCE <span className="text-ink-3">280&times;280</span>
           </span>
           <div className="well plate-marks relative">
@@ -222,13 +222,15 @@ export function PixelGrid() {
               width={SRC_SIZE}
               height={SRC_SIZE}
               className="block cursor-crosshair"
-              style={{ width: 200, height: 200, imageRendering: "pixelated" }}
-              onMouseMove={handleSourceHover}
-              onMouseLeave={clearHover}
+              style={{ width: "100%", maxWidth: 200, height: "auto", aspectRatio: "1", imageRendering: "pixelated" }}
+              onPointerMove={handleSourceHover}
+              onPointerDown={handleSourceHover}
+              onPointerLeave={clearHover}
+              onPointerCancel={clearHover}
             />
             {!hasData && empty}
           </div>
-          <span className="h-4 font-mono text-[11px] text-ink-3">
+          <span className="h-4 font-mono text-xs text-ink-3">
             {activeCell && hasData
               ? `${ZOOM_CELLS}\u00d7${ZOOM_CELLS} source region`
               : "\u00a0"}
@@ -236,17 +238,12 @@ export function PixelGrid() {
         </div>
 
         <div className="self-center text-ink-3 sm:pt-6">
-          <span className="hidden sm:inline">
-            <Latex math="\xrightarrow{\;\div 10\;}" />
-          </span>
-          <span className="sm:hidden">
-            <Latex math="\downarrow\;\div 10" />
-          </span>
+          <Latex math="\xrightarrow{\;\div 10\;}" />
         </div>
 
         {/* Output 28x28 */}
-        <div className="flex flex-col gap-2">
-          <span className="font-mono text-[11px] text-ink-2">
+        <div className="flex min-w-0 flex-col gap-2">
+          <span className="font-mono text-xs text-ink-2">
             DOWNSAMPLED <span className="text-ink-3">28&times;28</span>
           </span>
           <div className="well plate-marks relative">
@@ -255,13 +252,15 @@ export function PixelGrid() {
               width={OUTPUT_CANVAS}
               height={OUTPUT_CANVAS}
               className="block cursor-crosshair"
-              style={{ width: 200, height: 200, imageRendering: "pixelated" }}
-              onMouseMove={handleOutputHover}
-              onMouseLeave={clearHover}
+              style={{ width: "100%", maxWidth: 200, height: "auto", aspectRatio: "1", imageRendering: "pixelated" }}
+              onPointerMove={handleOutputHover}
+              onPointerDown={handleOutputHover}
+              onPointerLeave={clearHover}
+              onPointerCancel={clearHover}
             />
             {!hasData && empty}
           </div>
-          <span className="h-4 font-mono text-[11px] text-ink-3">
+          <span className="h-4 font-mono text-xs text-ink-3">
             {activeCell && hasData
               ? `output[${activeCell.row}, ${activeCell.col}]`
               : "\u00a0"}
@@ -271,9 +270,9 @@ export function PixelGrid() {
 
       {/* Zoom detail strip */}
       {hasData && (
-        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-rule-faint pt-5">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-3 border-t border-rule-faint pt-5 sm:justify-start">
           <div className="flex flex-col gap-1.5">
-            <span className="font-mono text-[11px] text-ink-3">
+            <span className="font-mono text-xs text-ink-3">
               {ZOOM_CELLS}&times;{ZOOM_CELLS} source pixels
             </span>
             <canvas
@@ -290,7 +289,7 @@ export function PixelGrid() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="font-mono text-[11px] text-ink-3">result</span>
+            <span className="font-mono text-xs text-ink-3">result</span>
             <div
               className="flex size-14 items-center justify-center rounded-[2px] border border-annotation"
               style={{ backgroundColor: `rgb(${v255},${v255},${v255})` }}
@@ -328,7 +327,7 @@ export function PixelGrid() {
             . Cyan marks the source region, orange its output pixel.
           </>
         ) : (
-          "Hover either canvas to see which source pixels map to each output value."
+          "Tap or hover either canvas to see which source pixels map to each output value."
         )}
       </figcaption>
     </figure>

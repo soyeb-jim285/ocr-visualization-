@@ -6,6 +6,7 @@ import {
   nchwToChannels,
   softmax,
 } from "./modelUtils";
+import { serialRun } from "./runQueue";
 import type { LayerActivations } from "@/stores/inferenceStore";
 
 export interface InferenceResult {
@@ -28,15 +29,16 @@ export async function runInference(
 
   let results;
   try {
-    results = await session.run({ input: inputTensor });
+    results = await serialRun(() => session.run({ input: inputTensor }));
   } catch (e) {
     // Session may be corrupted — recreate it and retry once
     console.warn("ONNX session.run failed, recreating session:", e);
     invalidateSession();
     session = await loadModel();
-    results = await session.run({
-      input: new ort.Tensor("float32", inputData, [1, 1, 28, 28]),
-    });
+    const s2 = session;
+    results = await serialRun(() =>
+      s2.run({ input: new ort.Tensor("float32", inputData, [1, 1, 28, 28]) }),
+    );
   }
 
   const layerActivations: LayerActivations = {};

@@ -80,9 +80,9 @@ export function PatchGrid({
                 >
                   {showValues && (() => {
                     const text = valueFormat(val);
-                    const baseSize = Math.max(8, cellSize * 0.28);
+                    const baseSize = Math.max(10, cellSize * 0.3);
                     const fontSize = text.length > 5
-                      ? Math.max(7, cellSize / (text.length * 0.65))
+                      ? Math.max(9, cellSize / (text.length * 0.62))
                       : baseSize;
                     return (
                       <span
@@ -100,7 +100,7 @@ export function PatchGrid({
         </div>
       </div>
       {label && (
-        <span className="font-mono text-[11px] text-ink-3">{label}</span>
+        <span className="font-mono text-xs text-ink-3">{label}</span>
       )}
     </div>
   );

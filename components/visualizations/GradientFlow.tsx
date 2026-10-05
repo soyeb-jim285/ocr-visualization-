@@ -18,7 +18,6 @@ import type { WeightSnapshots } from "@/lib/training/trainingData";
 import { loadWeightSnapshots } from "@/lib/training/trainingData";
 
 const LAYERS = ["conv1", "conv2", "conv3", "dense1"];
-const SNAPSHOT_EPOCHS = [0, 1, 2, 5, 10, 15, 20, 25, 30, 40, 50, 60, 74];
 
 const LAYER_COLORS: Record<string, string> = {
   conv1: "#7f8cff", // --sig-conv1
@@ -43,9 +42,10 @@ function computeGradientProxy(
   layer: string,
   epochIdx: number
 ): number {
-  const epochs = SNAPSHOT_EPOCHS.filter(
-    (e) => snapshots[String(e)]?.[layer] !== undefined
-  );
+  const epochs = Object.keys(snapshots)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .filter((e) => snapshots[String(e)]?.[layer] !== undefined);
   if (epochIdx <= 0 || epochIdx >= epochs.length) return 0;
 
   const prev = snapshots[String(epochs[epochIdx - 1])]?.[layer];
@@ -85,7 +85,7 @@ export function GradientFlow() {
   const availableEpochs = useMemo(
     () =>
       snapshots
-        ? SNAPSHOT_EPOCHS.filter((e) => snapshots[String(e)] !== undefined)
+        ? Object.keys(snapshots).map(Number).sort((a, b) => a - b)
         : [],
     [snapshots]
   );
@@ -100,9 +100,9 @@ export function GradientFlow() {
     return values;
   }, [snapshots, epochIdx]);
 
-  if (!snapshots) {
+  if (!snapshots || availableEpochs.length < 2) {
     return (
-      <div className="viz-empty-state flex h-48 items-center justify-center">
+      <div className="viz-empty-state flex min-h-[420px] items-center justify-center" aria-busy="true">
         <p>Loading gradient data...</p>
       </div>
     );
@@ -129,9 +129,9 @@ export function GradientFlow() {
         />
         <p className="callout mt-2">
           <span className="tag">NOTE</span>
-          {epochIdx <= 2
+          {availableEpochs[epochIdx] <= 3
             ? "Early training — large weight updates across all layers as the network rapidly learns basic patterns."
-            : epochIdx <= 5
+            : availableEpochs[epochIdx] <= 10
               ? "Learning is slowing down in earlier layers as they settle on stable feature detectors."
               : "Later epochs — weight changes become small and focused, fine-tuning rather than restructuring."}
         </p>
@@ -151,26 +151,27 @@ export function GradientFlow() {
             />
           </svg>
           <span>INPUT</span>
-          <span className="ml-2">gradient flows backwards</span>
+          <span className="ml-2 max-sm:hidden">gradient flows backwards</span>
         </div>
         {/* Gradient flow bar chart */}
         {chartData && (
-          <div className="overflow-x-auto scrollbar-none">
+          <div>
             <ChartContainer
               config={chartConfig}
-              className="well h-[200px] w-full min-w-[320px] sm:h-[220px]"
+              className="well h-[200px] w-full min-w-0 sm:h-[220px]"
             >
               <BarChart
                 data={chartData}
                 layout="vertical"
-                margin={{ top: 12, right: 48, bottom: 8, left: 56 }}
+                margin={{ top: 12, right: 24, bottom: 8, left: 56 }}
               >
                 <XAxis
                   type="number"
                   tick={{ fill: "#8896a3", fontSize: 11 }}
                   tickLine={false}
                   axisLine={{ stroke: "rgba(170,205,225,0.14)" }}
-                  tickFormatter={(v: number) => v.toExponential(1)}
+                  tickCount={3}
+                  tickFormatter={(v: number) => v.toExponential(0)}
                 />
                 <YAxis
                   type="category"
@@ -181,6 +182,7 @@ export function GradientFlow() {
                   width={52}
                 />
                 <ChartTooltip
+                  wrapperStyle={{ pointerEvents: "none" }}
                   cursor={{ fill: "rgba(170,205,225,0.05)" }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) return null;

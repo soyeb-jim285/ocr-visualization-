@@ -343,7 +343,7 @@ export function NeuronNetworkCanvas({
         const x = l.layerX[li];
         const maxY = l.layerBottomY[li];
         const isHov = hoveredLayer === li;
-        const dy = width < 500 && li % 2 ? 22 : 0; // stagger labels on narrow widths
+        const dy = width < 500 ? ((LAYERS.length - 1 - li) % 3) * 11 : 0; // stagger labels on narrow widths (3 rows)
         const lit = hasData && waveProgress - li >= 1;
 
         // 1px tick from the column to its label; signal-coloured when the layer is lit
@@ -358,7 +358,10 @@ export function NeuronNetworkCanvas({
 
         ctx.fillStyle = isHov ? INK : INK3;
         ctx.font = `${isHov ? "500 " : ""}10.5px ${mono}`;
-        ctx.fillText(layer.displayName, x, maxY + 18 + dy);
+        // keep first/last labels inside the canvas on narrow widths
+        ctx.textAlign = width < 500 && li === 0 ? "left" : width < 500 && li === LAYERS.length - 1 ? "right" : "center";
+        ctx.fillText(width < 500 && layer.name === "output" ? "Out" : layer.displayName, ctx.textAlign === "left" ? Math.max(12, x - 14) : ctx.textAlign === "right" ? Math.min(x + 12, width - 12) : x, maxY + 18 + dy);
+        ctx.textAlign = "center";
 
         const unit = (layer.type === "conv" || layer.type === "relu" || layer.type === "pool") && layer.name !== "relu4" ? "ch" : "";
         if (width >= 480) {
@@ -424,7 +427,8 @@ export function NeuronNetworkCanvas({
 
     let closestNeuron: HoveredNeuron | null = null;
     let closestLayer: number | null = null;
-    let minNeuronDist = 18, minLayerDist = 40;
+    const coarse = typeof window !== "undefined" && window.matchMedia("(pointer:coarse)").matches;
+    let minNeuronDist = coarse ? 24 : 18, minLayerDist = 40;
 
     for (let i = 0; i < l.totalNeurons; i++) {
       const dx = mx - l.posX[i], dy = my - l.posY[i];

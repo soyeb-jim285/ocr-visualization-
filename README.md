@@ -73,7 +73,7 @@ Browser training subsets:
 
 ## Environment Variables
 
-- `NEXT_PUBLIC_MODEL_BASE_URL` (optional): custom base URL for epoch checkpoint models
+- `NEXT_PUBLIC_MODEL_BASE_URL` (optional): custom base URL for epoch checkpoint models; expects `<base>/v2/checkpoints/epoch-XX/model.onnx` (epochs 0-39). Use `/models` locally with files in `public/models/v2/` (gitignored) until uploaded to HF under `v2/`
 - `MODAL_ENDPOINT_URL` (optional): backend endpoint used by `/api/gpu-train`
 
 ## Training / Data Scripts

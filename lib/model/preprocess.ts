@@ -24,8 +24,10 @@ export function preprocessCanvas(imageData: ImageData): {
     gray2D.push(row);
   }
 
-  // Step 2: Resize to 28x28 using bilinear interpolation
-  const resized = resize2D(gray2D, height, width, 28, 28);
+  // Step 2: EMNIST-style normalization — crop to ink bbox, fit long side to
+  // 24px (aspect kept), center in 28x28. Must match normalize_glyph() in
+  // scripts/train_combined.py.
+  const resized = normalizeGlyph(gray2D, height, width);
 
   // Step 3: Build NCHW tensor with transpose for the model.
   // EMNIST images are stored transposed, so we transpose our input to match.
@@ -39,6 +41,41 @@ export function preprocessCanvas(imageData: ImageData): {
 
   // pixelArray stays in the original (non-transposed) orientation for display
   return { tensor, pixelArray: resized };
+}
+
+function normalizeGlyph(src: number[][], h: number, w: number): number[][] {
+  const out = Array.from({ length: 28 }, () => new Array<number>(28).fill(0));
+  let max = 0;
+  for (const row of src) for (const v of row) if (v > max) max = v;
+  if (max === 0) return out;
+
+  let y0 = h, y1 = -1, x0 = w, x1 = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (src[y][x] > 0.2 * max) {
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+      }
+    }
+  }
+  const ch = y1 - y0 + 1;
+  const cw = x1 - x0 + 1;
+  const s = 24 / Math.max(ch, cw);
+  const nh = Math.max(1, Math.round(ch * s));
+  const nw = Math.max(1, Math.round(cw * s));
+  const crop = src.slice(y0, y1 + 1).map((row) => row.slice(x0, x1 + 1));
+  const small = resize2D(crop, ch, cw, nh, nw);
+
+  let smax = 0;
+  for (const row of small) for (const v of row) if (v > smax) smax = v;
+  const oy = Math.floor((28 - nh) / 2);
+  const ox = Math.floor((28 - nw) / 2);
+  for (let y = 0; y < nh; y++) {
+    for (let x = 0; x < nw; x++) out[oy + y][ox + x] = small[y][x] / smax;
+  }
+  return out;
 }
 
 /** Area-average (box filter) resize — properly averages all source pixels per target pixel */

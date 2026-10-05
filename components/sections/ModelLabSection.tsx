@@ -45,6 +45,12 @@ export function ModelLabSection() {
   const onnxModelUrlRef = useRef<string | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
+  // Stacked layout: results move above the form, so bring them into view when training starts
+  useEffect(() => {
+    if (phase === "idle" || !window.matchMedia("(max-width: 1023px)").matches) return;
+    chartContainerRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }, [phase === "idle"]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const loadTf = useCallback(async () => {
     if (tfRef.current) return tfRef.current;
     const tf = await import("@tensorflow/tfjs");
@@ -399,10 +405,11 @@ export function ModelLabSection() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-8% 0px" }}
         transition={{ duration: reduce ? 0.15 : 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="grid gap-10 lg:grid-cols-12 lg:gap-x-10"
+        className="grid gap-8 sm:gap-10 lg:grid-cols-12 lg:gap-x-10"
       >
         {/* Left: builder + controls */}
         <div className="min-w-0 space-y-10 lg:col-span-5 xl:col-span-4">
+          <p className="caption sm:hidden">Configure layers, then press Train.</p>
           <ArchitectureBuilder />
           <TrainingControls
             onTrain={handleTrain}
@@ -412,7 +419,7 @@ export function ModelLabSection() {
         </div>
 
         {/* Right: results */}
-        <div className="min-w-0 space-y-10 self-start lg:col-span-7 xl:sticky xl:top-8 xl:col-span-8">
+        <div className={`min-w-0 space-y-10 self-start lg:col-span-7 xl:sticky xl:top-8 xl:col-span-8 ${phase !== "idle" ? "max-lg:order-first" : ""}`}>
           {trained && (
             <ExportPanel
               onExportModel={handleExportModel}
@@ -426,10 +433,14 @@ export function ModelLabSection() {
 
           {trained && <ModelLabInference />}
 
-          {phase === "idle" && <NetworkDiagram />}
+          {phase === "idle" && (
+            <div className="overflow-x-auto scrollbar-none">
+              <NetworkDiagram />
+            </div>
+          )}
 
           {phase === "idle" && !hasTrainedModel && (
-            <div className="viz-empty-state min-h-[120px]">
+            <div className="viz-empty-state min-h-[120px] max-sm:hidden">
               Press Train to watch loss and accuracy fall, epoch by epoch
             </div>
           )}

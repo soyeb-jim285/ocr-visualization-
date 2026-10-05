@@ -61,7 +61,7 @@ export function ImageUploader({ compact = false }: ImageUploaderProps) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="relative inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-rule bg-transparent text-ink-2 transition-colors duration-150 after:absolute after:-inset-2 hover:border-rule-strong hover:text-phosphor"
+          className="relative inline-flex size-11 sm:size-6 items-center justify-center rounded-[2px] border border-rule bg-transparent text-ink-2 transition-colors duration-150 sm:after:absolute sm:after:-inset-2 hover:border-rule-strong hover:text-phosphor"
           aria-label="Upload image"
           title="Upload image"
         >
