@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo, useEffect, useCallback } from "react";
+import { useRef, useSyncExternalStore, useMemo, useEffect, useCallback } from "react";
 import {
   LAYERS,
   CONN_COUNT,
@@ -20,6 +20,8 @@ import {
   type HoveredNeuron,
 } from "@/lib/network/networkConstants";
 
+const noopSubscribe = () => () => {};
+
 export interface NeuronNetworkCanvasProps {
   width: number;
   height: number;
@@ -29,6 +31,8 @@ export interface NeuronNetworkCanvasProps {
   hoveredNeuronRef: React.RefObject<HoveredNeuron | null>;
   waveRef: React.RefObject<number>;
   showSignals?: boolean;
+  /** Skip painting while true (RAF keeps polling). */
+  paused?: boolean;
   /** Increment to trigger a redraw when showSignals=false (on-demand mode). */
   drawTrigger?: number;
   onHoverLayer: (li: number | null) => void;
@@ -45,17 +49,28 @@ export function NeuronNetworkCanvas({
   hoveredNeuronRef,
   waveRef,
   showSignals = true,
+  paused = false,
   drawTrigger,
   onHoverLayer,
   onHoverNeuron,
   onClickLayer,
 }: NeuronNetworkCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+  // Post-mount so the first client render matches the server
+  const dpr = useSyncExternalStore(noopSubscribe, () => Math.min(window.devicePixelRatio || 1, 2), () => 1);
+  const pausedRef = useRef(paused);
+  const wakeRef = useRef<(() => void) | null>(null);
+  useEffect(() => { pausedRef.current = paused; wakeRef.current?.(); }, [paused]);
+  const visibleRef = useRef(true);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const io = new IntersectionObserver(([e]) => { visibleRef.current = e.isIntersecting; wakeRef.current?.(); });
+    io.observe(canvas);
+    return () => io.disconnect();
+  }, []);
 
   const layout = useMemo(() => computeLayout(width, height), [width, height]);
-  const layoutRef = useRef(layout);
-  layoutRef.current = layout;
 
   // Pre-compute resolved connection positions for current layout
   const connResolved = useMemo(() => {
@@ -92,8 +107,9 @@ export function NeuronNetworkCanvas({
       const hoveredLayer = hoveredLayerRef.current;
       const hoveredNeuron = hoveredNeuronRef.current;
       const waveProgress = waveRef.current;
-      const l = layoutRef.current;
+      const l = layout;
       const hasData = activationMap.size > 0;
+      const actsByLayer = LAYERS.map((ly) => activationMap.get(ly.name));
       const { fromXArr, fromYArr, toXArr, toYArr } = connResolved;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -108,8 +124,8 @@ export function NeuronNetworkCanvas({
         for (let ci = 0; ci < CONN_COUNT; ci++) {
           const fl = connFromLayer[ci], tl = connToLayer[ci];
           const fn = connFromNeuron[ci], tn = connToNeuron[ci];
-          const fromActs = activationMap.get(LAYERS[fl].name);
-          const toActs = activationMap.get(LAYERS[tl].name);
+          const fromActs = actsByLayer[fl];
+          const toActs = actsByLayer[tl];
           const connStrength = Math.sqrt((fromActs?.[fn] ?? 0) * (toActs?.[tn] ?? 0));
 
           const fromWave = waveProgress - fl;
@@ -164,8 +180,8 @@ export function NeuronNetworkCanvas({
             let bestW = 0;
             for (let a = 0; a < 3; a++) {
               const ci = Math.floor(Math.random() * CONN_COUNT);
-              const fActs = activationMap.get(LAYERS[connFromLayer[ci]].name);
-              const tActs = activationMap.get(LAYERS[connToLayer[ci]].name);
+              const fActs = actsByLayer[connFromLayer[ci]];
+              const tActs = actsByLayer[connToLayer[ci]];
               const w = Math.sqrt((fActs?.[connFromNeuron[ci]] ?? 0) * (tActs?.[connToNeuron[ci]] ?? 0));
               if (w > bestW) { bestW = w; bestCi = ci; }
             }
@@ -180,8 +196,8 @@ export function NeuronNetworkCanvas({
           if (layerWave < 0.5) continue;
 
           const tl = connToLayer[ci];
-          const fromActs = activationMap.get(LAYERS[fl].name);
-          const toActs = activationMap.get(LAYERS[tl].name);
+          const fromActs = actsByLayer[fl];
+          const toActs = actsByLayer[tl];
           const fVal = fromActs?.[connFromNeuron[ci]] ?? 0;
           const tVal = toActs?.[connToNeuron[ci]] ?? 0;
           const w = Math.sqrt(fVal * tVal);
@@ -296,15 +312,16 @@ export function NeuronNetworkCanvas({
         const x = l.layerX[li];
         const maxY = l.layerBottomY[li];
         const isHov = hoveredLayer === li;
+        const dy = width < 500 && li % 2 ? 22 : 0; // stagger labels on narrow widths
 
         ctx.fillStyle = isHov ? layer.color : "rgba(255,255,255,0.4)";
         ctx.font = isHov ? "bold 10px system-ui,sans-serif" : "10px system-ui,sans-serif";
-        ctx.fillText(layer.displayName, x, maxY + 16);
+        ctx.fillText(layer.displayName, x, maxY + 16 + dy);
 
         const unit = (layer.type === "conv" || layer.type === "relu" || layer.type === "pool") && layer.name !== "relu4" ? "ch" : "";
         ctx.fillStyle = "rgba(255,255,255,0.15)";
         ctx.font = "8px system-ui,sans-serif";
-        ctx.fillText(`${layer.totalNeurons}${unit ? " " + unit : " neurons"}`, x, maxY + 28);
+        ctx.fillText(`${layer.totalNeurons}${unit ? " " + unit : " neurons"}`, x, maxY + 28 + dy);
 
         if (layer.totalNeurons > layer.displayNeurons) {
           ctx.fillStyle = "rgba(255,255,255,0.12)";
@@ -320,19 +337,30 @@ export function NeuronNetworkCanvas({
     drawRef.current = draw;
 
     if (showSignals) {
-      // Continuous RAF loop for animated signals
+      // Continuous RAF loop for animated signals; one static draw so a paused canvas isn't blank
+      draw();
       let raf = 0;
+      // Loop stops when hidden/offscreen/paused; wake() restarts it
       const animate = () => {
+        raf = 0;
+        if (document.hidden || !visibleRef.current || pausedRef.current) return;
         draw();
         raf = requestAnimationFrame(animate);
       };
-      raf = requestAnimationFrame(animate);
-      return () => cancelAnimationFrame(raf);
+      const wake = () => { if (!raf) raf = requestAnimationFrame(animate); };
+      wakeRef.current = wake;
+      document.addEventListener("visibilitychange", wake);
+      wake();
+      return () => {
+        cancelAnimationFrame(raf);
+        document.removeEventListener("visibilitychange", wake);
+        wakeRef.current = null;
+      };
     } else {
       // Initial draw for static mode
       draw();
     }
-  }, [width, height, dpr, connResolved, showSignals, activationMapRef, outputLabelsRef, hoveredLayerRef, hoveredNeuronRef, waveRef]);
+  }, [width, height, dpr, layout, connResolved, showSignals, activationMapRef, outputLabelsRef, hoveredLayerRef, hoveredNeuronRef, waveRef]);
 
   // On-demand redraw when drawTrigger changes (static mode only)
   useEffect(() => {
@@ -348,7 +376,7 @@ export function NeuronNetworkCanvas({
     const rect = canvas.getBoundingClientRect();
     const scaleX = width / rect.width, scaleY = height / rect.height;
     const mx = (clientX - rect.left) * scaleX, my = (clientY - rect.top) * scaleY;
-    const l = layoutRef.current;
+    const l = layout;
 
     let closestNeuron: HoveredNeuron | null = null;
     let closestLayer: number | null = null;
@@ -368,7 +396,7 @@ export function NeuronNetworkCanvas({
       }
     }
     return { layer: closestLayer, neuron: closestNeuron };
-  }, [width, height]);
+  }, [layout, width, height]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const { layer, neuron } = findNearest(e.clientX, e.clientY);
@@ -392,8 +420,8 @@ export function NeuronNetworkCanvas({
   return (
     <canvas
       ref={canvasRef}
-      width={width * dpr}
-      height={height * dpr}
+      width={Math.round(width * dpr)}
+      height={Math.round(height * dpr)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}

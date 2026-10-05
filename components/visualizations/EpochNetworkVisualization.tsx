@@ -6,7 +6,8 @@ import {
   runEpochInference,
   TOTAL_EPOCHS,
   PREFETCH_EPOCHS,
-  getCachedModelCount,
+  getPrefetchedCount,
+  prefetchAllEpochs,
   getInferenceCache,
 } from "@/lib/model/epochModels";
 import { preprocessCanvas } from "@/lib/model/preprocess";
@@ -32,7 +33,7 @@ export function EpochNetworkVisualization() {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loadedCount, setLoadedCount] = useState(() => getCachedModelCount());
+  const [loadedCount, setLoadedCount] = useState(() => getPrefetchedCount());
   const [drawTrigger, setDrawTrigger] = useState(0);
 
   const tensorRef = useRef<Float32Array | null>(null);
@@ -41,7 +42,7 @@ export function EpochNetworkVisualization() {
   const pendingEpochRef = useRef<number>(0);
   const playIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Use the shared module-level inference cache (populated by EpochPrefetcher)
+  // Use the shared module-level inference cache (cleared by EpochPrefetcher on input change)
   const resultsCacheRef = useRef(getInferenceCache());
 
   // Canvas refs
@@ -74,10 +75,12 @@ export function EpochNetworkVisualization() {
     return () => ro.disconnect();
   }, []);
 
-  // Poll model download progress (driven by EpochPrefetcher)
+  // Start background checkpoint download on mount (idempotent, low concurrency)
+  // and poll its progress
   useEffect(() => {
+    prefetchAllEpochs();
     const interval = setInterval(() => {
-      const count = getCachedModelCount();
+      const count = getPrefetchedCount();
       setLoadedCount(count);
       if (count >= PREFETCH_EPOCHS.length) clearInterval(interval);
     }, 500);

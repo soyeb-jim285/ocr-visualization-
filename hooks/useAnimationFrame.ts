@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect } from "react";
 
 /**
  * Hook for smooth requestAnimationFrame animations.
@@ -10,34 +10,40 @@ export function useAnimationFrame(
   callback: (deltaTime: number, elapsed: number) => void,
   running: boolean = true
 ) {
-  const rafRef = useRef<number>(0);
-  const previousTimeRef = useRef<number>(0);
-  const startTimeRef = useRef<number>(0);
-
-  const animate = useCallback(
-    (time: number) => {
-      if (startTimeRef.current === 0) {
-        startTimeRef.current = time;
-      }
-      const deltaTime = time - previousTimeRef.current;
-      const elapsed = time - startTimeRef.current;
-      previousTimeRef.current = time;
-
-      callback(deltaTime, elapsed);
-      rafRef.current = requestAnimationFrame(animate);
-    },
-    [callback]
-  );
+  const rafRef = useRef<number | null>(null);
+  const callbackRef = useRef(callback);
 
   useEffect(() => {
-    if (running) {
-      previousTimeRef.current = performance.now();
-      rafRef.current = requestAnimationFrame(animate);
+    callbackRef.current = callback;
+  }, [callback]);
+
+  useEffect(() => {
+    if (!running) {
+      return;
     }
+
+    let previousTime = performance.now();
+    let startTime = 0;
+
+    const animate = (time: number) => {
+      if (startTime === 0) {
+        startTime = time;
+      }
+      const deltaTime = time - previousTime;
+      const elapsed = time - startTime;
+      previousTime = time;
+
+      callbackRef.current(deltaTime, elapsed);
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+
     return () => {
-      if (rafRef.current) {
+      if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
       }
     };
-  }, [running, animate]);
+  }, [running]);
 }

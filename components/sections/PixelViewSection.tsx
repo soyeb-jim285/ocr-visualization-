@@ -34,7 +34,7 @@ export function PixelViewSection() {
           </div>
 
           {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
             <span><Latex math="I" /> — source image (280&times;280)</span>
             <span><Latex math="O" /> — output pixel (28&times;28)</span>
             <span><Latex math="R_i, R_j" /> — source region</span>
@@ -42,7 +42,7 @@ export function PixelViewSection() {
             <span><Latex math="A" /> — total overlap area</span>
           </div>
 
-          <p className="text-sm leading-relaxed text-foreground/45">
+          <p className="text-sm leading-relaxed text-foreground/60">
             The grayscale normalization is straightforward:{" "}
             <Latex math="I(x,y) = R(x,y) / 255" />, where{" "}
             <Latex math="R" /> is the red channel (identical to green and blue

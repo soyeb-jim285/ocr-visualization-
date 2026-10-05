@@ -91,7 +91,7 @@ function SortableConvLayer({
           <GripVertical size={14} />
         </button>
 
-        <span className="shrink-0 font-mono text-[10px] text-foreground/30">
+        <span className="shrink-0 font-mono text-[10px] text-foreground/55">
           {index + 1}
         </span>
 
@@ -176,7 +176,7 @@ export function ArchitectureBuilder() {
       <h3 className="text-sm font-semibold text-foreground/70">Architecture</h3>
 
       {/* Spatial dim flow */}
-      <div className="flex flex-wrap items-center gap-1 text-[11px] text-foreground/40">
+      <div className="flex flex-wrap items-center gap-1 text-[11px] text-foreground/55">
         <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono">
           28×28×1
         </span>
@@ -223,7 +223,7 @@ export function ArchitectureBuilder() {
               <Button
                 variant="outline"
                 onClick={addConvLayer}
-                className="w-full border-dashed border-border/40 text-xs text-foreground/35 hover:border-indigo-500/40 hover:text-indigo-400 hover:bg-transparent"
+                className="w-full border-dashed border-border/40 text-xs text-foreground/55 hover:border-indigo-500/40 hover:text-indigo-400 hover:bg-transparent"
               >
                 <Plus size={14} />
                 Add Conv Layer
@@ -240,7 +240,7 @@ export function ArchitectureBuilder() {
         </h4>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
+            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
               Width
             </label>
             <Slider
@@ -251,12 +251,12 @@ export function ArchitectureBuilder() {
               step={64}
               className="my-2 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:border-indigo-500 [&_[data-slot=slider-thumb]]:size-3"
             />
-            <span className="block text-center font-mono text-[10px] text-foreground/40">
+            <span className="block text-center font-mono text-[10px] text-foreground/55">
               {dense.width}
             </span>
           </div>
           <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
+            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
               Dropout
             </label>
             <Slider
@@ -267,13 +267,13 @@ export function ArchitectureBuilder() {
               step={0.05}
               className="my-2 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:border-indigo-500 [&_[data-slot=slider-thumb]]:size-3"
             />
-            <span className="block text-center font-mono text-[10px] text-foreground/40">
+            <span className="block text-center font-mono text-[10px] text-foreground/55">
               {dense.dropout.toFixed(2)}
             </span>
           </div>
         </div>
         <div className="mt-2">
-          <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
+          <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
             Activation
           </label>
           <ToggleGroup
@@ -287,7 +287,7 @@ export function ArchitectureBuilder() {
               <ToggleGroupItem
                 key={act}
                 value={act}
-                className="h-auto min-w-0 shrink rounded-md px-2 py-1 text-xs font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
+                className="h-auto min-w-0 shrink rounded-md px-2 py-1 text-xs font-medium bg-white/5 text-foreground/55 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
               >
                 {act}
               </ToggleGroupItem>
@@ -297,7 +297,7 @@ export function ArchitectureBuilder() {
       </div>
 
       {/* Param count */}
-      <div className="text-center font-mono text-xs text-foreground/40">
+      <div className="text-center font-mono text-xs text-foreground/55">
         {paramCount < 1e6
           ? `${(paramCount / 1e3).toFixed(1)}K`
           : `${(paramCount / 1e6).toFixed(1)}M`}{" "}

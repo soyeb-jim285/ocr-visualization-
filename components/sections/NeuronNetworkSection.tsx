@@ -6,6 +6,7 @@ import {
   useCallback,
   useMemo,
   useEffect,
+  useLayoutEffect,
 } from "react";
 import { motion, useDragControls, type PanInfo } from "framer-motion";
 import { DrawingCanvas } from "@/components/canvas/DrawingCanvas";
@@ -217,20 +218,26 @@ function InspectorPanel({
   const [selectedChannel, setSelectedChannel] = useState(initialChannel);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Snapshot data so content persists during close animation
-  const snapRef = useRef<{
+  // Snapshot data so content persists during close animation (derived during render, not a ref)
+  type Snap = {
     layer: NeuronLayerDef; activations: typeof activations; prediction: typeof prediction;
     topPrediction: typeof topPrediction; channelCount: number;
-  } | null>(null);
-  if (layer) {
-    snapRef.current = {
+  };
+  const [snapshot, setSnapshot] = useState<Snap | null>(null);
+  if (layer && (snapshot?.layer !== layer || snapshot.activations !== activations
+    || snapshot.prediction !== prediction || snapshot.topPrediction !== topPrediction)) {
+    setSnapshot({
       layer, activations, prediction, topPrediction,
       channelCount: activations && Array.isArray(activations[0]) ? (activations as number[][][]).length : 0,
-    };
+    });
   }
-  const snap = snapRef.current;
 
-  useEffect(() => { if (open) setSelectedChannel(initialChannel); }, [open, initialChannel]);
+  // Re-sync channel when (re)opened or retargeted
+  const [syncKey, setSyncKey] = useState(`${open}:${initialChannel}`);
+  if (syncKey !== `${open}:${initialChannel}`) {
+    setSyncKey(`${open}:${initialChannel}`);
+    if (open) setSelectedChannel(initialChannel);
+  }
 
   useEffect(() => {
     if (!layer || !open) return;
@@ -294,33 +301,33 @@ function InspectorPanel({
   }, [layer, activations, inputTensor, selectedChannel, prediction, open]);
 
   const stats = useMemo(() => {
-    if (!snap?.activations) return null;
-    if (Array.isArray(snap.activations[0])) {
-      const acts = snap.activations as number[][][];
+    if (!snapshot?.activations) return null;
+    if (Array.isArray(snapshot.activations[0])) {
+      const acts = snapshot.activations as number[][][];
       let min = Infinity, max = -Infinity, sum = 0, count = 0, activeCount = 0;
       for (const ch of acts) for (const row of ch) for (const v of row) {
         if (v < min) min = v; if (v > max) max = v; sum += v; count++; if (v > 0) activeCount++;
       }
       return { min, max, mean: sum / count, activePercent: (activeCount / count) * 100 };
     } else {
-      const vals = snap.activations as number[];
+      const vals = snapshot.activations as number[];
       let min = Infinity, max = -Infinity, sum = 0, activeCount = 0;
       for (const v of vals) { if (v < min) min = v; if (v > max) max = v; sum += v; if (v > 0) activeCount++; }
       return { min, max, mean: sum / vals.length, activePercent: (activeCount / vals.length) * 100 };
     }
-  }, [snap?.activations]);
+  }, [snapshot]);
 
   const outputChartData = useMemo(() => {
-    if (!snap?.prediction || snap.layer.type !== "output") return [];
-    return snap.prediction
+    if (!snapshot?.prediction || snapshot.layer.type !== "output") return [];
+    return snapshot.prediction
       .map((v, i) => ({ char: EMNIST_CLASSES[i], confidence: +(v * 100).toFixed(1), idx: i }))
       .filter(d => !BYMERGE_MERGED_INDICES.has(d.idx))
       .sort((a, b) => b.confidence - a.confidence)
       .slice(0, 15);
-  }, [snap?.prediction, snap?.layer.type]);
+  }, [snapshot]);
 
-  if (!snap) return null;
-  const dl = snap.layer;
+  if (!snapshot) return null;
+  const dl = snapshot.layer;
   const unitLabel = (dl.type === "conv" || (dl.type === "relu" && dl.name !== "relu4") || dl.type === "pool") ? "channels" : (dl.type === "input" ? "pixels" : "neurons");
 
   return (
@@ -341,7 +348,7 @@ function InspectorPanel({
         </DialogHeader>
 
         {stats && (
-          <div className="mx-6 flex flex-wrap gap-x-5 gap-y-1 rounded-lg bg-foreground/[0.03] px-3 py-2 font-mono text-xs text-foreground/50">
+          <div className="mx-6 flex flex-wrap gap-x-5 gap-y-1 rounded-lg bg-foreground/[0.03] px-3 py-2 font-mono text-xs text-foreground/55">
             <span>Min: <span className="text-foreground">{stats.min.toFixed(3)}</span></span>
             <span>Max: <span className="text-foreground">{stats.max.toFixed(3)}</span></span>
             <span>Mean: <span className="text-foreground">{stats.mean.toFixed(3)}</span></span>
@@ -349,20 +356,20 @@ function InspectorPanel({
           </div>
         )}
 
-        {dl.type === "output" && snap.topPrediction && (
+        {dl.type === "output" && snapshot.topPrediction && (
           <div
             className="mx-6 flex items-center gap-4 rounded-lg border px-4 py-3"
             style={{ background: `${dl.color}15`, borderColor: `${dl.color}30` }}
           >
             <span className="text-4xl font-bold" style={{ color: dl.color }}>
-              {EMNIST_CLASSES[snap.topPrediction.classIndex]}
+              {EMNIST_CLASSES[snapshot.topPrediction.classIndex]}
             </span>
             <div>
               <div className="text-sm text-foreground">
-                Predicted: <strong>{EMNIST_CLASSES[snap.topPrediction.classIndex]}</strong>
+                Predicted: <strong>{EMNIST_CLASSES[snapshot.topPrediction.classIndex]}</strong>
               </div>
-              <div className="text-[13px] text-foreground/50">
-                Confidence: {(snap.topPrediction.confidence * 100).toFixed(1)}%
+              <div className="text-[13px] text-foreground/55">
+                Confidence: {(snapshot.topPrediction.confidence * 100).toFixed(1)}%
               </div>
             </div>
           </div>
@@ -400,25 +407,25 @@ function InspectorPanel({
           <div className="flex gap-4 px-6 pb-6">
             <canvas
               ref={mainCanvasRef}
-              width={snap.channelCount > 0 ? 350 : 500}
-              height={snap.channelCount > 0 ? 350 : 300}
+              width={snapshot.channelCount > 0 ? 350 : 500}
+              height={snapshot.channelCount > 0 ? 350 : 300}
               className="shrink-0 rounded-lg"
               style={{
-                width: snap.channelCount > 0 ? 350 : "100%",
-                height: snap.channelCount > 0 ? 350 : 300,
+                width: snapshot.channelCount > 0 ? 350 : "100%",
+                height: snapshot.channelCount > 0 ? 350 : 300,
                 imageRendering: dl.type === "input" ? "pixelated" : "auto",
               }}
             />
-            {snap.channelCount > 0 && (
+            {snapshot.channelCount > 0 && (
               <div className="min-w-0 flex-1">
                 <p className="mb-2 text-xs text-foreground/40">
-                  {snap.channelCount} channels — click to inspect
+                  {snapshot.channelCount} channels — click to inspect
                 </p>
                 <div className="flex max-h-[340px] flex-wrap gap-1 overflow-y-auto">
-                  {Array.from({ length: snap.channelCount }, (_, i) => (
+                  {Array.from({ length: snapshot.channelCount }, (_, i) => (
                     <ChannelThumb
                       key={i} chIdx={i}
-                      activations={snap.activations as number[][][]}
+                      activations={snapshot.activations as number[][][]}
                       selected={i === selectedChannel}
                       color={dl.color}
                       onClick={() => setSelectedChannel(i)}
@@ -478,6 +485,7 @@ export function NeuronNetworkSection() {
   const topPrediction = useInferenceStore(s => s.topPrediction);
   const inferenceTimeMs = useInferenceStore(s => s.inferenceTimeMs);
   const heroStage = useUIStore(s => s.heroStage);
+  const heroOffscreen = useUIStore(s => s.activeSection !== 0);
   const setHeroStage = useUIStore(s => s.setHeroStage);
 
   const [inspectedLayerIdx, setInspectedLayerIdx] = useState<number | null>(null);
@@ -500,10 +508,12 @@ export function NeuronNetworkSection() {
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
 
-  // Hover state as refs — avoids re-render on every mouse move
-  const [, forceRender] = useState(0);
+  // Hover state refs are used by canvas drawing loops.
   const hoveredLayerRef = useRef<number | null>(null);
   const hoveredNeuronRef = useRef<HoveredNeuron | null>(null);
+  const [hoveredLayer, setHoveredLayer] = useState<number | null>(null);
+  const [hoveredNeuron, setHoveredNeuron] = useState<HoveredNeuron | null>(null);
+  const [hoveredNeuronTooltipPos, setHoveredNeuronTooltipPos] = useState({ left: 0, top: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ w: 1200, h: 500 });
@@ -511,6 +521,7 @@ export function NeuronNetworkSection() {
   // Wave progress — ref only, no state, updated in RAF
   const waveRef = useRef(0);
   const waveTargetRef = useRef(0);
+  const startWaveRef = useRef<() => void>(() => {});
   const hasData = Object.keys(layerActivations).length > 0;
 
   useEffect(() => {
@@ -534,17 +545,18 @@ export function NeuronNetworkSection() {
   const floatingCardHeight = floatingCanvasSize + 40;
 
   const expandedX = viewport.w ? (viewport.w - expandedCardWidth) / 2 : 16;
-  const expandedY = viewport.h ? Math.max(viewport.w < 640 ? 80 : 100, viewport.h * (viewport.w < 640 ? 0.18 : 0.22)) : 120;
+  const expandedY = viewport.h ? Math.max(viewport.w < 640 ? 340 : 230, viewport.h * (viewport.w < 640 ? 0.18 : 0.24)) : 120;
 
   const maxFloatingX = Math.max(12, viewport.w - floatingCardWidth - 12);
   const maxFloatingY = Math.max(12, viewport.h - floatingCardHeight - 12);
 
+  // Phones: bottom-left so the card doesn't cover the network
   const defaultFloatingPos = useMemo(
-    () => ({
-      x: 16,
-      y: 16,
-    }),
-    [viewport.w, viewport.h, floatingCardWidth, maxFloatingX, maxFloatingY]
+    () =>
+      viewport.w && viewport.w < 640
+        ? { x: 12, y: viewport.h - floatingCardHeight - 72 }
+        : { x: 16, y: 16 },
+    [viewport.w, viewport.h, floatingCardWidth, floatingCardHeight]
   );
 
   const floatingPos = customFloatingPos
@@ -591,6 +603,7 @@ export function NeuronNetworkSection() {
       // Already revealed — start wave immediately
       waveRef.current = 0;
       waveTargetRef.current = LAYERS.length + 1;
+      startWaveRef.current();
     } else {
       // Not revealed yet — defer until section appears
       pendingWaveRef.current = true;
@@ -604,6 +617,7 @@ export function NeuronNetworkSection() {
       pendingWaveRef.current = false;
       waveRef.current = 0;
       waveTargetRef.current = LAYERS.length + 1;
+      startWaveRef.current();
     }
   }, [isRevealedStage]);
 
@@ -611,14 +625,15 @@ export function NeuronNetworkSection() {
   useEffect(() => {
     let raf = 0;
     const tick = () => {
+      raf = 0;
       const target = waveTargetRef.current;
       const current = waveRef.current;
-      if (Math.abs(target - current) > 0.01) {
-        waveRef.current = target > current ? current + (target - current) * 0.035 : 0;
-      }
+      if (Math.abs(target - current) <= 0.01) return; // settled; startWave restarts
+      waveRef.current = target > current ? current + (target - current) * 0.035 : 0;
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+    startWaveRef.current = () => { if (!raf) raf = requestAnimationFrame(tick); };
+    startWaveRef.current();
     return () => cancelAnimationFrame(raf);
   }, []);
 
@@ -647,16 +662,19 @@ export function NeuronNetworkSection() {
   const outputLabelsRef = useRef<string[]>([]);
 
   const activationMap = useMemo(() => extractActivations(layerActivations, inputTensor, prediction), [layerActivations, inputTensor, prediction]);
-  activationMapRef.current = activationMap;
+  useLayoutEffect(() => {
+    activationMapRef.current = activationMap;
+  }, [activationMap]);
 
   const outputLabels = useMemo(() => getOutputLabels(prediction), [prediction]);
-  outputLabelsRef.current = outputLabels;
+  useLayoutEffect(() => {
+    outputLabelsRef.current = outputLabels;
+  }, [outputLabels]);
 
   const onHoverLayer = useCallback((li: number | null) => {
     if (hoveredLayerRef.current !== li) {
       hoveredLayerRef.current = li;
-      // Only re-render for tooltip display, not for canvas (canvas reads ref)
-      forceRender(n => n + 1);
+      setHoveredLayer(li);
     }
   }, []);
 
@@ -664,7 +682,14 @@ export function NeuronNetworkSection() {
     const prev = hoveredNeuronRef.current;
     if (prev?.layerIdx !== n?.layerIdx || prev?.neuronIdx !== n?.neuronIdx) {
       hoveredNeuronRef.current = n;
-      forceRender(nn => nn + 1);
+      setHoveredNeuron(n);
+      if (n) {
+        const rect = canvasContainerRef.current?.getBoundingClientRect();
+        setHoveredNeuronTooltipPos({
+          left: n.screenX - (rect?.left ?? 0),
+          top: n.screenY - (rect?.top ?? 0),
+        });
+      }
     }
   }, []);
 
@@ -679,9 +704,7 @@ export function NeuronNetworkSection() {
   );
 
   const inspectedLayer = inspectedLayerIdx !== null ? LAYERS[inspectedLayerIdx] : null;
-  const hoveredLayer = hoveredLayerRef.current;
-  const hoveredNeuron = hoveredNeuronRef.current;
-  const stageHeight = viewport.h ? Math.max(viewport.h, 760) : 760;
+  const stageHeight = viewport.h ? Math.max(viewport.h, viewport.w < 640 ? 880 : 760) : 760;
 
   return (
     <motion.section
@@ -690,7 +713,7 @@ export function NeuronNetworkSection() {
       initial={false}
       animate={{
         minHeight: isDrawingStage ? stageHeight : Math.max(400, Math.min(560, viewport.h * 0.75)),
-        paddingTop: isDrawingStage ? 56 : (viewport.w < 640 ? 12 : 48),
+        paddingTop: isDrawingStage ? 56 : (viewport.w < 640 ? 150 : 48),
         paddingBottom: isDrawingStage ? 36 : (viewport.w < 640 ? 8 : 20),
       }}
       transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
@@ -700,16 +723,16 @@ export function NeuronNetworkSection() {
         <HeroHeader />
       </div>
 
-      <motion.div
-        initial={false}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      <div
         className={`relative flex w-full items-stretch overflow-hidden ${
           isRevealedStage ? "pointer-events-auto" : "pointer-events-none"
         }`}
         ref={containerRef}
       >
-        <div className="relative min-w-0 flex-1" ref={canvasContainerRef}>
+        <div
+          className={`relative min-w-0 flex-1 transition-opacity duration-700 motion-reduce:transition-none ${isDrawingStage ? "opacity-20" : ""}`}
+          ref={canvasContainerRef}
+        >
           <NeuronNetworkCanvas
             width={containerSize.w}
             height={containerSize.h}
@@ -718,6 +741,7 @@ export function NeuronNetworkSection() {
             hoveredLayerRef={hoveredLayerRef}
             hoveredNeuronRef={hoveredNeuronRef}
             waveRef={waveRef}
+            paused={!isRevealedStage}
             onHoverLayer={onHoverLayer}
             onHoverNeuron={onHoverNeuron}
             onClickLayer={onClickLayer}
@@ -725,14 +749,17 @@ export function NeuronNetworkSection() {
 
           {isRevealedStage && (
             <>
+              <p className="pointer-events-none absolute inset-x-0 bottom-1 text-center text-xs text-foreground/55">
+                Hover or tap a neuron to inspect it
+              </p>
               {/* Neuron tooltip */}
               <Tooltip open={!!hoveredNeuron && hasData}>
                 <TooltipTrigger asChild>
                   <div
                     className="pointer-events-none absolute h-px w-px"
                     style={{
-                      left: (hoveredNeuron?.screenX ?? 0) - (canvasContainerRef.current?.getBoundingClientRect().left ?? 0),
-                      top: (hoveredNeuron?.screenY ?? 0) - (canvasContainerRef.current?.getBoundingClientRect().top ?? 0),
+                      left: hoveredNeuronTooltipPos.left,
+                      top: hoveredNeuronTooltipPos.top,
                     }}
                   />
                 </TooltipTrigger>
@@ -774,7 +801,7 @@ export function NeuronNetworkSection() {
           open={isRevealedStage && inspectedLayerIdx !== null}
           onClose={() => { setInspectedLayerIdx(null); setInspectedNeuronIdx(null); }}
         />
-      </motion.div>
+      </div>
 
       <motion.div
         drag={isRevealedStage}
@@ -786,11 +813,14 @@ export function NeuronNetworkSection() {
         onDragEnd={handleDragEnd}
         onAnimationComplete={handleCanvasTransitionComplete}
         initial={false}
-        animate={
-          shouldUseFloatingLayout
+        animate={{
+          ...(shouldUseFloatingLayout
             ? { x: floatingPos.x, y: floatingPos.y, width: floatingCardWidth }
-            : { x: expandedX, y: expandedY, width: expandedCardWidth }
-        }
+            : { x: expandedX, y: expandedY, width: expandedCardWidth }),
+          // hide the big hero card once scrolled past the hero before first stroke
+          opacity: isDrawingStage && heroOffscreen ? 0 : 1,
+          pointerEvents: isDrawingStage && heroOffscreen ? "none" : "auto",
+        }}
         transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.6 }}
         className="fixed left-0 top-0 z-50"
       >
@@ -805,7 +835,7 @@ export function NeuronNetworkSection() {
             <button
               type="button"
               onPointerDown={(event) => dragControls.start(event)}
-              className="mb-0.5 flex w-full cursor-grab justify-center py-0.5 active:cursor-grabbing"
+              className="mb-0.5 flex w-full cursor-grab touch-none justify-center py-2 active:cursor-grabbing"
               aria-label="Move floating canvas"
             >
               <span className="h-0.5 w-5 rounded-full bg-foreground/25" />
@@ -820,7 +850,7 @@ export function NeuronNetworkSection() {
           />
 
           {shouldUseFloatingLayout && (
-            <p className="mt-0.5 text-center font-mono text-[9px] text-foreground/30" style={{ visibility: inferenceTimeMs !== null ? "visible" : "hidden" }}>
+            <p className="mt-0.5 text-center font-mono text-[10px] text-foreground/55" style={{ visibility: inferenceTimeMs !== null ? "visible" : "hidden" }}>
               {inferenceTimeMs !== null ? (inferenceTimeMs < 1 ? "<1" : Math.round(inferenceTimeMs)) : "0"}ms
             </p>
           )}

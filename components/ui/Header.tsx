@@ -28,21 +28,22 @@ export function Header() {
     const sectionId = SECTION_IDS[index];
     if (!sectionId) return;
     const el = document.getElementById(sectionId);
-    el?.scrollIntoView({ behavior: "smooth" });
+    el?.scrollIntoView(); // smooth vs. reduced-motion handled by html scroll-behavior in globals.css
   };
 
   return (
     <div className="fixed left-0 right-0 top-0 z-50">
       {/* Section dots - desktop */}
-      <div className="hidden items-center justify-center gap-1 bg-background/70 py-2 backdrop-blur-lg md:flex">
+      <nav aria-label="Sections" className="hidden items-center justify-center gap-1 bg-background/70 py-2 backdrop-blur-lg md:flex">
         {SECTION_LABELS.map((label, i) => (
           <button
             key={i}
             onClick={() => scrollToSection(i)}
+            aria-label={label}
             className={`group flex items-center gap-1.5 rounded-full px-2 py-1 text-xs transition-all ${
               activeSection === i
                 ? "bg-accent-primary/10 text-accent-primary"
-                : "text-foreground/30 hover:text-foreground/50"
+                : "text-foreground/55 hover:text-foreground/80"
             }`}
           >
             <div
@@ -57,7 +58,7 @@ export function Header() {
             </span>
           </button>
         ))}
-      </div>
+      </nav>
 
       {/* Compact mobile section navigator */}
       <div className="mx-2 mt-1 flex items-center justify-between rounded-full border border-border/50 bg-background/72 px-2 py-1 shadow-lg shadow-black/25 backdrop-blur-xl md:hidden">
@@ -65,7 +66,7 @@ export function Header() {
           type="button"
           onClick={() => scrollToSection(Math.max(0, safeActiveSection - 1))}
           disabled={safeActiveSection <= 0}
-          className="rounded-full px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-foreground/60 transition disabled:opacity-30"
+          className="relative after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] rounded-full px-2 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-foreground/60 transition disabled:opacity-30"
         >
           Prev
         </button>
@@ -73,7 +74,7 @@ export function Header() {
         <button
           type="button"
           onClick={() => scrollToSection(safeActiveSection)}
-          className="rounded-full border border-border/60 bg-black/20 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-foreground/68"
+          className="relative after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] rounded-full border border-border/60 bg-black/20 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-foreground/68"
           aria-label={`Current section: ${activeLabel}`}
         >
           {safeActiveSection + 1}/{SECTION_LABELS.length} - {activeLabel}
@@ -83,7 +84,7 @@ export function Header() {
           type="button"
           onClick={() => scrollToSection(Math.min(lastSection, safeActiveSection + 1))}
           disabled={safeActiveSection >= lastSection}
-          className="rounded-full px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-foreground/60 transition disabled:opacity-30"
+          className="relative after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] rounded-full px-2 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-foreground/60 transition disabled:opacity-30"
         >
           Next
         </button>

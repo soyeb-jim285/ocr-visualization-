@@ -1,16 +1,5 @@
 "use client";
 
-const TECH_STACK = [
-  { label: "Next.js 16", href: "https://nextjs.org" },
-  { label: "React 19", href: "https://react.dev" },
-  { label: "TypeScript", href: "https://typescriptlang.org" },
-  { label: "ONNX Runtime", href: "https://onnxruntime.ai" },
-  { label: "Tailwind CSS", href: "https://tailwindcss.com" },
-  { label: "Zustand", href: "https://zustand.docs.pmnd.rs" },
-  { label: "Framer Motion", href: "https://motion.dev" },
-  { label: "Three.js", href: "https://threejs.org" },
-];
-
 const LINKS = [
   {
     label: "Source Code",
@@ -40,25 +29,9 @@ export function FooterSection() {
         className="mx-auto px-4 py-12 sm:px-6 sm:py-16"
         style={{ maxWidth: "var(--content-max-width)" }}
       >
-        {/* Tech stack */}
-        <div className="mb-8">
-          <p className="mb-3 text-center font-mono text-[11px] uppercase tracking-[0.2em] text-foreground/35">
-            Built with
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {TECH_STACK.map(({ label, href }) => (
-              <a
-                key={label}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full border border-border/50 px-3 py-1.5 text-xs text-foreground/50 transition-colors hover:border-accent-primary/40 hover:text-foreground/70"
-              >
-                {label}
-              </a>
-            ))}
-          </div>
-        </div>
+        <p className="mb-8 text-center text-xs text-foreground/55">
+          Built with Next.js · React · TypeScript · ONNX Runtime · Tailwind CSS · Zustand · Framer Motion · Three.js
+        </p>
 
         {/* Links */}
         <div className="mb-8 flex flex-wrap items-center justify-center gap-4">
@@ -78,13 +51,13 @@ export function FooterSection() {
 
         {/* Divider + attribution */}
         <div className="flex flex-col items-center gap-2 pt-6">
-          <p className="text-xs text-foreground/30">
+          <p className="text-xs text-foreground/50">
             Trained on{" "}
             <a
               href="https://www.nist.gov/itl/products-and-services/emnist-dataset"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline decoration-foreground/15 underline-offset-2 hover:text-foreground/50"
+              className="underline decoration-foreground/15 underline-offset-2 hover:text-foreground/80"
             >
               EMNIST ByMerge
             </a>
@@ -93,13 +66,13 @@ export function FooterSection() {
               href="https://data.mendeley.com/datasets/hf6sf8zrkc/2"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline decoration-foreground/15 underline-offset-2 hover:text-foreground/50"
+              className="underline decoration-foreground/15 underline-offset-2 hover:text-foreground/80"
             >
               BanglaLekha-Isolated
             </a>
             {" "}— 146 character classes, ~980K training images, 75 epochs
           </p>
-          <p className="text-xs text-foreground/20">
+          <p className="text-xs text-foreground/50">
             Inference runs entirely in your browser via WebAssembly.
           </p>
         </div>

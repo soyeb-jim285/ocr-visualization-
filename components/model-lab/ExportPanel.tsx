@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, FileJson, Image } from "lucide-react";
+import { Download, FileJson, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -54,7 +54,7 @@ export function ExportPanel({
         disabled={chartExporting}
         className="text-foreground/60 hover:text-foreground/80"
       >
-        <Image className="h-3.5 w-3.5" />
+        <ImageIcon className="h-3.5 w-3.5" />
         {chartExporting ? "Exporting..." : "Chart"}
         <Badge variant="secondary" className="ml-1 rounded bg-white/8 px-1.5 py-0.5 text-[10px] font-medium text-foreground/40">
           PNG

@@ -213,7 +213,7 @@ function PoolingViz({
           onMouseMove={handleBeforeMove}
           onMouseLeave={clearHover}
         />
-        <span className="font-mono text-[11px] text-foreground/30">
+        <span className="font-mono text-[11px] text-foreground/55">
           {BEFORE_GRID}&times;{BEFORE_GRID}
           {hoverPool && (
             <span className="text-cyan-400">
@@ -268,7 +268,7 @@ function PoolingViz({
           onMouseMove={handleAfterMove}
           onMouseLeave={clearHover}
         />
-        <span className="font-mono text-[11px] text-foreground/30">
+        <span className="font-mono text-[11px] text-foreground/55">
           {AFTER_GRID}&times;{AFTER_GRID}
           {hoverPool && (
             <span className="text-amber-400">
@@ -335,7 +335,7 @@ export function PoolingSection() {
           </div>
 
           {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
             <span>
               <Latex math="A" /> — input activation map
             </span>
@@ -347,7 +347,7 @@ export function PoolingSection() {
             </span>
           </div>
 
-          <p className="text-sm leading-relaxed text-foreground/45">
+          <p className="text-sm leading-relaxed text-foreground/60">
             With stride 2, each 2&times;2 window produces one output value,
             halving both dimensions:{" "}
             <Latex math="(64, 28, 28) \xrightarrow{2{\times}2\;\text{max pool}} (64, 14, 14)" />
@@ -371,21 +371,21 @@ export function PoolingSection() {
                   <span className="font-mono font-semibold text-foreground/60">
                     {stats.beforeSize}
                   </span>
-                  <span className="text-foreground/40">values</span>
+                  <span className="text-foreground/55">values</span>
                   <span className="text-accent-tertiary">&rarr;</span>
                   <span className="font-mono font-semibold text-accent-tertiary">
                     {stats.afterSize}
                   </span>
-                  <span className="text-foreground/40">values</span>
+                  <span className="text-foreground/55">values</span>
                   <span className="text-foreground/15">|</span>
                   <span className="font-mono font-semibold text-green-400">
                     75%
                   </span>
-                  <span className="text-foreground/40">reduction</span>
+                  <span className="text-foreground/55">reduction</span>
                 </div>
               )}
 
-              <span className="text-[11px] text-foreground/30">
+              <span className="text-[11px] text-foreground/55">
                 Hover either map to see the 2&times;2 pooling region
               </span>
             </>
@@ -394,12 +394,12 @@ export function PoolingSection() {
               <div className="flex flex-col items-center gap-2">
                 <span className="text-xs font-medium text-foreground/60">Before Pooling</span>
                 <div className="rounded-md border border-border/50 bg-black" style={{ width: 140, height: 140 }} />
-                <span className="font-mono text-[11px] text-foreground/30">28&times;28</span>
+                <span className="font-mono text-[11px] text-foreground/55">28&times;28</span>
               </div>
               <div className="flex flex-col items-center gap-2">
                 <span className="text-xs font-medium text-foreground/60">After Pooling</span>
                 <div className="rounded-md border border-border/50 bg-black" style={{ width: 140, height: 140 }} />
-                <span className="font-mono text-[11px] text-foreground/30">14&times;14</span>
+                <span className="font-mono text-[11px] text-foreground/55">14&times;14</span>
               </div>
             </div>
           )}
@@ -408,7 +408,7 @@ export function PoolingSection() {
 
       {/* Filter selection: clickable thumbnails — full width */}
       <div className="mt-6 space-y-3">
-        <p className="text-center text-xs text-foreground/40">
+        <p className="text-center text-xs text-foreground/55">
           Select a filter — click any feature map below
         </p>
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
@@ -435,7 +435,7 @@ export function PoolingSection() {
                     className="cursor-pointer border border-border/50 bg-black"
                     style={{ width: 56, height: 56 }}
                   />
-                  <span className="text-xs text-foreground/40">
+                  <span className="text-xs text-foreground/55">
                     #{i + 1}
                   </span>
                 </div>

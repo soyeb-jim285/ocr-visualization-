@@ -54,7 +54,7 @@ function InputStrip({ pool2Maps }: { pool2Maps: number[][][] }) {
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="text-[11px] text-foreground/30">
+      <span className="text-[11px] text-foreground/55">
         Flattened input (12,544 values)
       </span>
       <canvas
@@ -145,7 +145,7 @@ function NeuronGrid({ activations }: { activations: number[] }) {
     <div className="flex flex-col items-center gap-3">
       {/* Grid */}
       <div className="flex flex-col items-center gap-1">
-        <span className="text-[11px] text-foreground/30">
+        <span className="text-[11px] text-foreground/55">
           Hidden layer — 512 neurons (32&times;16)
         </span>
         <canvas
@@ -178,17 +178,17 @@ function NeuronGrid({ activations }: { activations: number[] }) {
       <div className="flex flex-col items-center gap-2">
         <div className="flex items-center gap-4 text-sm">
           <span className="font-mono font-semibold text-green-400">{active}</span>
-          <span className="text-foreground/40">active</span>
+          <span className="text-foreground/55">active</span>
           <span className="text-foreground/15">|</span>
           <span className="font-mono font-semibold text-foreground/60">{sparsity}%</span>
-          <span className="text-foreground/40">sparse</span>
+          <span className="text-foreground/55">sparse</span>
           <span className="text-foreground/15">|</span>
           <span className="font-mono font-semibold text-accent-primary">6.4M</span>
-          <span className="text-foreground/40">params</span>
+          <span className="text-foreground/55">params</span>
         </div>
 
         {/* Top 5 neurons */}
-        <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 font-mono text-[11px] text-foreground/35">
+        <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 font-mono text-[11px] text-foreground/55">
           <span className="text-foreground/20">top:</span>
           {topNeurons.map(({ v, i }, rank) => (
             <span key={i} className={rank === 0 ? "text-accent-primary" : ""}>
@@ -241,14 +241,14 @@ export function FullyConnectedSection() {
           </div>
 
           {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
             <span><Latex math="\mathbf{x}" /> — flattened input (12,544)</span>
             <span><Latex math="W" /> — weight matrix</span>
             <span><Latex math="\mathbf{b}" /> — bias vector</span>
             <span><Latex math="\mathbf{h}" /> — hidden activations (512)</span>
           </div>
 
-          <p className="text-sm leading-relaxed text-foreground/45">
+          <p className="text-sm leading-relaxed text-foreground/60">
             The weight matrix <Latex math="W" /> has shape{" "}
             <Latex math="512 \times 12{,}544" />, giving{" "}
             <Latex math="512 \times 12{,}544 + 512 = 6{,}423{,}040" /> learnable
@@ -281,7 +281,7 @@ export function FullyConnectedSection() {
             ) : (
               <>
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-[11px] text-foreground/30">
+                  <span className="text-[11px] text-foreground/55">
                     Flattened input (12,544 values)
                   </span>
                   <div className="rounded-sm border border-border/40 bg-black" style={{ width: GRID_W, height: STRIP_H }} />
@@ -295,7 +295,7 @@ export function FullyConnectedSection() {
                 </div>
 
                 <div className="flex flex-col items-center gap-1">
-                  <span className="text-[11px] text-foreground/30">
+                  <span className="text-[11px] text-foreground/55">
                     Hidden layer — 512 neurons (32&times;16)
                   </span>
                   <div className="rounded-md border border-border/60 bg-black" style={{ width: GRID_W, height: GRID_H }} />

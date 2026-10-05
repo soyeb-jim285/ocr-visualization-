@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Environment, PerspectiveCamera } from "@react-three/drei";
 import { LayerMesh } from "./LayerMesh";
@@ -16,17 +16,19 @@ export function NetworkScene() {
   const layerActivations = useInferenceStore((s) => s.layerActivations);
   const hasData = Object.keys(layerActivations).length > 0;
 
-  const visualizableLayers = getVisualizableLayers();
-
-  const layerPositions = visualizableLayers.map((layer, i) => ({
-    ...layer,
-    position: [0, 0, i * LAYER_SPACING] as [number, number, number],
-    index: i,
-  }));
+  const layerPositions = useMemo(
+    () =>
+      getVisualizableLayers().map((layer, i) => ({
+        ...layer,
+        position: [0, 0, i * LAYER_SPACING] as [number, number, number],
+        index: i,
+      })),
+    []
+  );
 
   return (
     <div className="h-[70vh] w-full overflow-hidden rounded-2xl border border-border bg-[#08080c]">
-      <Canvas>
+      <Canvas dpr={[1, 1.5]}>
         <Suspense fallback={null}>
           <PerspectiveCamera
             makeDefault

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useEffect, useMemo, useState } from "react";
 import { viridis } from "@/lib/network/networkConstants";
 interface ActivationHeatmapProps {
   data: number[][];
@@ -18,6 +18,8 @@ export function ActivationHeatmap({
   selected,
 }: ActivationHeatmapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
   const rows = data.length;
   const cols = data[0]?.length ?? 0;
 
@@ -27,9 +29,26 @@ export function ActivationHeatmap({
     return { min: mn, max: mx };
   }, [data]);
 
+  // Mount the canvas only once the cell is near the viewport (one-shot).
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || rows === 0) return;
+    if (!visible || !canvas || rows === 0) return;
     const ctx = canvas.getContext("2d")!;
 
     const imageData = ctx.createImageData(cols, rows);
@@ -49,7 +68,7 @@ export function ActivationHeatmap({
     }
 
     ctx.putImageData(imageData, 0, 0);
-  }, [data, rows, cols, min, max]);
+  }, [visible, data, rows, cols, min, max]);
 
   return (
     <div
@@ -58,21 +77,25 @@ export function ActivationHeatmap({
       }`}
       onClick={onClick}
     >
-      <canvas
-        ref={canvasRef}
-        width={cols}
-        height={rows}
-        className={`block rounded-md transition-all ${
-          selected
-            ? "ring-2 ring-accent-primary/80 shadow-[0_0_0_1px_rgba(99,102,241,0.32)]"
-            : "ring-1 ring-white/16 group-hover:ring-accent-primary/45"
-        }`}
-        style={{
-          width: size,
-          height: size,
-          imageRendering: "pixelated",
-        }}
-      />
+      <div ref={boxRef} style={{ width: size, height: size }}>
+        {visible && (
+          <canvas
+            ref={canvasRef}
+            width={cols}
+            height={rows}
+            className={`block rounded-md transition-all ${
+              selected
+                ? "ring-2 ring-accent-primary/80 shadow-[0_0_0_1px_rgba(99,102,241,0.32)]"
+                : "ring-1 ring-white/16 group-hover:ring-accent-primary/45"
+            }`}
+            style={{
+              width: size,
+              height: size,
+              imageRendering: "pixelated",
+            }}
+          />
+        )}
+      </div>
       {label && (
         <span className="text-xs text-foreground/40 group-hover:text-foreground/60">
           {label}

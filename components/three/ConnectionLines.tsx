@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { LayerMeta } from "@/lib/model/layerInfo";
@@ -15,7 +15,7 @@ export function ConnectionLines({ layers, hasData }: ConnectionLinesProps) {
 
   const lines = useMemo(() => {
     const result: {
-      points: THREE.Vector3[];
+      geometry: THREE.BufferGeometry;
       key: string;
     }[] = [];
 
@@ -29,21 +29,25 @@ export function ConnectionLines({ layers, hasData }: ConnectionLinesProps) {
         const xOffset = j * 0.15;
         result.push({
           key: `${i}-${j}`,
-          points: [
-            new THREE.Vector3(from[0] + xOffset, from[1] + yOffset, from[2]),
-            new THREE.Vector3(
-              (from[0] + to[0]) / 2 + xOffset * 0.5,
-              (from[1] + to[1]) / 2 + yOffset * 0.5,
-              (from[2] + to[2]) / 2
-            ),
-            new THREE.Vector3(to[0] + xOffset, to[1] + yOffset, to[2]),
-          ],
+          geometry: new THREE.BufferGeometry().setFromPoints(
+            new THREE.QuadraticBezierCurve3(
+              new THREE.Vector3(from[0] + xOffset, from[1] + yOffset, from[2]),
+              new THREE.Vector3(
+                (from[0] + to[0]) / 2 + xOffset * 0.5,
+                (from[1] + to[1]) / 2 + yOffset * 0.5,
+                (from[2] + to[2]) / 2
+              ),
+              new THREE.Vector3(to[0] + xOffset, to[1] + yOffset, to[2])
+            ).getPoints(30)
+          ),
         });
       }
     }
 
     return result;
   }, [layers]);
+
+  useEffect(() => () => lines.forEach((l) => l.geometry.dispose()), [lines]);
 
   // Animate opacity pulse when data is flowing
   useFrame((state) => {
@@ -60,26 +64,16 @@ export function ConnectionLines({ layers, hasData }: ConnectionLinesProps) {
 
   return (
     <group ref={groupRef}>
-      {lines.map((line) => {
-        const curve = new THREE.QuadraticBezierCurve3(
-          line.points[0],
-          line.points[1],
-          line.points[2]
-        );
-        const points = curve.getPoints(30);
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-        return (
-          <line key={line.key}>
-            <primitive object={geometry} attach="geometry" />
-            <lineBasicMaterial
-              color={hasData ? "#818cf8" : "#6366f1"}
-              transparent
-              opacity={hasData ? 0.15 : 0.04}
-            />
-          </line>
-        );
-      })}
+      {lines.map((line) => (
+        <line key={line.key}>
+          <primitive object={line.geometry} attach="geometry" />
+          <lineBasicMaterial
+            color={hasData ? "#818cf8" : "#6366f1"}
+            transparent
+            opacity={hasData ? 0.15 : 0.04}
+          />
+        </line>
+      ))}
     </group>
   );
 }

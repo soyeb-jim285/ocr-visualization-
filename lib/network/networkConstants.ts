@@ -15,7 +15,7 @@ export interface NeuronLayerDef {
   description: string;
 }
 
-export function parseHex(hex: string): [number, number, number] {
+function parseHex(hex: string): [number, number, number] {
   return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
 }
 
@@ -145,7 +145,7 @@ export const sigConnIdx = new Uint16Array(SIGNAL_COUNT);
 export const sigProgress = new Float32Array(SIGNAL_COUNT);
 export const sigSpeed = new Float32Array(SIGNAL_COUNT);
 export const sigIntensity = new Float32Array(SIGNAL_COUNT);
-export const sigSize = new Float32Array(SIGNAL_COUNT);
+const sigSize = new Float32Array(SIGNAL_COUNT);
 
 (() => {
   const rand = makePRNG(123);

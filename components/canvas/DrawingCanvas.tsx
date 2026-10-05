@@ -116,26 +116,20 @@ export function DrawingCanvas({
             height: canvasSize,
             imageRendering: "auto",
           }}
-          onMouseDown={(e) => startDrawing(e.nativeEvent)}
-          onMouseMove={(e) => draw(e.nativeEvent)}
-          onMouseUp={() => stopDrawing()}
-          onMouseLeave={() => stopDrawing()}
-          onTouchStart={(e) => {
-            e.preventDefault();
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId);
             startDrawing(e.nativeEvent);
           }}
-          onTouchMove={(e) => {
-            e.preventDefault();
-            draw(e.nativeEvent);
-          }}
-          onTouchEnd={() => stopDrawing()}
+          onPointerMove={(e) => draw(e.nativeEvent)}
+          onPointerUp={() => stopDrawing()}
+          onPointerCancel={() => stopDrawing()}
           aria-label="Drawing canvas for character input"
         />
 
         {/* Draw hint overlay */}
         {!hasDrawn && variant === "hero" && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="text-lg text-foreground/30">
+            <p className="text-xl text-foreground/60">
               Draw a letter or digit
             </p>
           </div>
@@ -147,20 +141,20 @@ export function DrawingCanvas({
           <div className="flex items-center gap-2">
             <button
               onClick={clear}
-              className="rounded-lg border border-border/80 px-4 py-2 text-sm text-foreground/65 transition-colors hover:border-accent-primary hover:text-foreground"
+              className="rounded-lg border border-border/80 px-4 py-2.5 text-sm text-foreground/65 transition-colors hover:border-accent-primary hover:text-foreground"
             >
               Clear
             </button>
             {hasDrawn && (
               <button
                 onClick={share}
-                className="rounded-lg border border-border/80 px-4 py-2 text-sm text-foreground/65 transition-colors hover:border-accent-primary hover:text-foreground"
+                className="rounded-lg border border-border/80 px-4 py-2.5 text-sm text-foreground/65 transition-colors hover:border-accent-primary hover:text-foreground"
               >
                 {shareState === "copied" ? "Copied!" : "Share"}
               </button>
             )}
           </div>
-          <p className="text-center font-mono text-[10px] tracking-wider text-foreground/20">
+          <p className="text-center font-mono text-[10px] tracking-wider text-foreground/55">
             A–Z &middot; a–z &middot; 0–9 &middot; ক–হ &middot; compound characters
           </p>
         </>

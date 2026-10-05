@@ -53,14 +53,4 @@ export const BYMERGE_MERGED_INDICES = new Set([
   61, // z → Z (35)
 ]);
 
-export const CLASS_GROUPS = {
-  digits: { start: 0, end: 9, label: "Digits" },
-  uppercase: { start: 10, end: 35, label: "Uppercase" },
-  lowercase: { start: 36, end: 61, label: "Lowercase" },
-  bnVowels: { start: 62, end: 72, label: "স্বরবর্ণ" },
-  bnConsonants: { start: 73, end: 111, label: "ব্যঞ্জনবর্ণ" },
-  bnDigits: { start: 112, end: 121, label: "বাংলা সংখ্যা" },
-  bnCompounds: { start: 122, end: 145, label: "যুক্তবর্ণ" },
-} as const;
-
 export const NUM_CLASSES = 146;

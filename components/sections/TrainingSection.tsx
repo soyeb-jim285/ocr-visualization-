@@ -55,7 +55,7 @@ export function TrainingSection() {
           />
         </div>
 
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
           <span><Latex math="y_i" /> — true label (one-hot)</span>
           <span><Latex math="\hat{y}_i" /> — predicted probability</span>
           <span><Latex math="\theta" /> — all model weights</span>
@@ -63,7 +63,7 @@ export function TrainingSection() {
           <span><Latex math="\nabla_\theta \mathcal{L}" /> — gradient</span>
         </div>
 
-        <p className="text-sm leading-relaxed text-foreground/45">
+        <p className="text-sm leading-relaxed text-foreground/60">
           The gradient <Latex math="\nabla_\theta \mathcal{L}" /> tells each
           weight how to change to reduce the loss. Backpropagation computes this
           efficiently using the chain rule, flowing error signals backward
@@ -90,7 +90,7 @@ export function TrainingSection() {
           </h3>
           {loadError ? (
             <div className="viz-empty-state h-48">
-              <p className="text-foreground/30">
+              <p className="text-foreground/55">
                 Training history not available — run the training script first
               </p>
             </div>

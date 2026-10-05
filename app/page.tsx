@@ -1,13 +1,5 @@
+import dynamic from "next/dynamic";
 import { EpochPrefetcher } from "@/components/EpochPrefetcher";
-import { PixelViewSection } from "@/components/sections/PixelViewSection";
-import { ConvolutionSection } from "@/components/sections/ConvolutionSection";
-import { ActivationSection } from "@/components/sections/ActivationSection";
-import { SecondConvSection } from "@/components/sections/SecondConvSection";
-import { PoolingSection } from "@/components/sections/PoolingSection";
-import { DeeperLayersSection } from "@/components/sections/DeeperLayersSection";
-import { FullyConnectedSection } from "@/components/sections/FullyConnectedSection";
-import { SoftmaxSection } from "@/components/sections/SoftmaxSection";
-import { TrainingSection } from "@/components/sections/TrainingSection";
 import { NeuronNetworkSection } from "@/components/sections/NeuronNetworkSection";
 import { ModelLabWrapper } from "@/components/sections/ModelLabWrapper";
 
@@ -17,6 +9,45 @@ import { ScrollTracker } from "@/components/ui/ScrollTracker";
 import { Header } from "@/components/ui/Header";
 import { NetworkView3D } from "@/components/three/NetworkView3D";
 import { LazySection } from "@/components/ui/LazySection";
+
+// matches LazySection fallbackHeight so layout does not jump while the chunk loads
+
+const PixelViewSection = dynamic(() =>
+  import("@/components/sections/PixelViewSection").then((m) => m.PixelViewSection),
+  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+);
+const ConvolutionSection = dynamic(() =>
+  import("@/components/sections/ConvolutionSection").then((m) => m.ConvolutionSection),
+  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+);
+const ActivationSection = dynamic(() =>
+  import("@/components/sections/ActivationSection").then((m) => m.ActivationSection),
+  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+);
+const SecondConvSection = dynamic(() =>
+  import("@/components/sections/SecondConvSection").then((m) => m.SecondConvSection),
+  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+);
+const PoolingSection = dynamic(() =>
+  import("@/components/sections/PoolingSection").then((m) => m.PoolingSection),
+  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+);
+const DeeperLayersSection = dynamic(() =>
+  import("@/components/sections/DeeperLayersSection").then((m) => m.DeeperLayersSection),
+  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+);
+const FullyConnectedSection = dynamic(() =>
+  import("@/components/sections/FullyConnectedSection").then((m) => m.FullyConnectedSection),
+  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+);
+const SoftmaxSection = dynamic(() =>
+  import("@/components/sections/SoftmaxSection").then((m) => m.SoftmaxSection),
+  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+);
+const TrainingSection = dynamic(() =>
+  import("@/components/sections/TrainingSection").then((m) => m.TrainingSection),
+  { loading: () => <div style={{ minHeight: "50vh" }} /> },
+);
 
 export default function Home() {
   return (

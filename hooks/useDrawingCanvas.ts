@@ -33,31 +33,33 @@ export function useDrawingCanvas({
     return canvasRef.current?.getContext("2d") ?? null;
   }, []);
 
-  const clear = useCallback(() => {
+  const fillBackground = useCallback(() => {
     const ctx = getCtx();
     if (!ctx) return;
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, width, height);
-    setHasDrawn(false);
   }, [getCtx, backgroundColor, width, height]);
 
+  const clear = useCallback(() => {
+    fillBackground();
+    setHasDrawn(false);
+  }, [fillBackground]);
+
   const getPoint = useCallback(
-    (e: MouseEvent | TouchEvent) => {
+    (e: PointerEvent) => {
       const canvas = canvasRef.current;
       if (!canvas) return { x: 0, y: 0 };
       const rect = canvas.getBoundingClientRect();
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
       return {
-        x: ((clientX - rect.left) / rect.width) * width,
-        y: ((clientY - rect.top) / rect.height) * height,
+        x: ((e.clientX - rect.left) / rect.width) * width,
+        y: ((e.clientY - rect.top) / rect.height) * height,
       };
     },
     [width, height]
   );
 
   const startDrawing = useCallback(
-    (e: MouseEvent | TouchEvent) => {
+    (e: PointerEvent) => {
       isDrawing.current = true;
       lastPoint.current = getPoint(e);
       setHasDrawn(true);
@@ -66,7 +68,7 @@ export function useDrawingCanvas({
   );
 
   const draw = useCallback(
-    (e: MouseEvent | TouchEvent) => {
+    (e: PointerEvent) => {
       if (!isDrawing.current) return;
       const ctx = getCtx();
       if (!ctx || !lastPoint.current) return;
@@ -106,8 +108,8 @@ export function useDrawingCanvas({
 
   // Initialize canvas on mount
   useEffect(() => {
-    clear();
-  }, [clear]);
+    fillBackground();
+  }, [fillBackground]);
 
   return { canvasRef, clear, hasDrawn, setHasDrawn, startDrawing, draw, stopDrawing };
 }

@@ -104,8 +104,8 @@ export async function runEpochInference(
  * Prefetch adjacent epoch models for smooth slider scrubbing.
  */
 export function prefetchAdjacentEpochs(currentEpoch: number): void {
-  // Prefetch ±3 epochs around current position
-  for (let offset = -3; offset <= 3; offset++) {
+  // Prefetch ±1 epochs around current position
+  for (let offset = -1; offset <= 1; offset++) {
     const e = currentEpoch + offset;
     if (e >= 0 && e < TOTAL_EPOCHS && !sessionCache.has(e)) {
       loadEpochModel(e).catch(() => {});
@@ -117,14 +117,14 @@ export function prefetchAdjacentEpochs(currentEpoch: number): void {
 export const TOTAL_EPOCHS = 75;
 
 /** Key epochs to prefetch upfront (rest load on-demand when user scrubs) */
-export const PREFETCH_EPOCHS = [0, 1, 2, 5, 10, 15, 20, 25, 30, 40, 50, 60, 74];
+export const PREFETCH_EPOCHS = [0, 5, 20, 74];
 
 let prefetchAllStarted = false;
 
 /**
- * Prefetch key epoch models in the background, 3 at a time.
+ * Prefetch key epoch models in the background, 1 at a time.
  * Call once when the epoch timeline component mounts.
- * Only downloads ~13 key checkpoints; others load on-demand.
+ * Only downloads a few key checkpoints; others load on-demand.
  */
 export function prefetchAllEpochs(
   onProgress?: (loaded: number, total: number) => void
@@ -138,7 +138,7 @@ export function prefetchAllEpochs(
 
   async function loadBatch() {
     while (queue.length > 0) {
-      const batch = queue.splice(0, 3);
+      const batch = queue.splice(0, 1);
       await Promise.allSettled(
         batch.map((e) =>
           loadEpochModel(e)
@@ -163,6 +163,11 @@ export function getCachedModelCount(): number {
   return sessionCache.size;
 }
 
+/** Number of PREFETCH_EPOCHS already cached (excludes on-demand loads) */
+export function getPrefetchedCount(): number {
+  return PREFETCH_EPOCHS.filter((e) => sessionCache.has(e)).length;
+}
+
 // ── Shared inference result cache ──────────────────────────────────────
 // Module-level so both EpochPrefetcher and EpochNetworkVisualization share it.
 
@@ -181,45 +186,4 @@ export function getInferenceCacheInputId() {
 export function clearInferenceCache(): number {
   inferenceResultCache.clear();
   return ++cachedInputId;
-}
-
-/**
- * Pre-compute epoch inferences for key epochs in the background, 2 at a time.
- * Stores results in the shared module-level cache.
- * Aborts if inputId changes (meaning user drew something new).
- */
-export function prefetchAllEpochInferences(
-  inputData: Float32Array,
-  inputId: number,
-  onProgress?: (computed: number, total: number) => void
-): void {
-  const total = PREFETCH_EPOCHS.length;
-  const queue = PREFETCH_EPOCHS.filter((e) => !inferenceResultCache.has(e));
-  let computed = PREFETCH_EPOCHS.filter((e) => inferenceResultCache.has(e)).length;
-
-  async function computeBatch() {
-    while (queue.length > 0) {
-      // Abort if input changed
-      if (cachedInputId !== inputId) return;
-
-      const batch = queue.splice(0, 2);
-      await Promise.allSettled(
-        batch.map((e) =>
-          runEpochInference(inputData, e)
-            .then((result) => {
-              if (cachedInputId !== inputId) return;
-              inferenceResultCache.set(e, result);
-              computed++;
-              onProgress?.(computed, total);
-            })
-            .catch(() => {
-              computed++;
-              onProgress?.(computed, total);
-            })
-        )
-      );
-    }
-  }
-
-  computeBatch();
 }

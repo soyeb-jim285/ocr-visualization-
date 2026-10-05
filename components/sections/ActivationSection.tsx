@@ -113,12 +113,12 @@ export function ActivationSection() {
           </div>
 
           {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
             <span><Latex math="x" /> — pre-activation value (from conv)</span>
             <span><Latex math="\max(0, x)" /> — output (always &ge; 0)</span>
           </div>
 
-          <p className="text-sm leading-relaxed text-foreground/45">
+          <p className="text-sm leading-relaxed text-foreground/60">
             The gradient is equally simple:{" "}
             <Latex math="\frac{\partial}{\partial x}\text{ReLU}(x) = \mathbf{1}_{x > 0}" />
             {" "}— it passes gradients through unchanged for positive inputs and
@@ -136,7 +136,7 @@ export function ActivationSection() {
         <div className="flex w-full shrink-0 flex-col items-center gap-5 lg:w-auto">
           {/* ReLU function chart */}
           <div className="flex flex-col items-center gap-1.5">
-            <span className="text-xs text-foreground/40">
+            <span className="text-xs text-foreground/55">
               Interactive ReLU curve
             </span>
             <ChartContainer
@@ -200,7 +200,7 @@ export function ActivationSection() {
                 />
               </LineChart>
             </ChartContainer>
-            <span className="text-[11px] text-foreground/30">
+            <span className="text-[11px] text-foreground/55">
               Hover to see input &rarr; output mapping
             </span>
           </div>
@@ -216,7 +216,7 @@ export function ActivationSection() {
               ) : (
                 <div className="h-[120px] w-[120px] rounded-md border border-border/50 bg-black" />
               )}
-              <span className="text-[11px] text-foreground/30">
+              <span className="text-[11px] text-foreground/55">
                 Contains negatives
               </span>
             </div>
@@ -241,7 +241,7 @@ export function ActivationSection() {
               ) : (
                 <div className="h-[120px] w-[120px] rounded-md border border-border/50 bg-black" />
               )}
-              <span className="text-[11px] text-foreground/30">
+              <span className="text-[11px] text-foreground/55">
                 Negatives zeroed
               </span>
             </div>
@@ -251,13 +251,13 @@ export function ActivationSection() {
           {stats && (
             <div className="flex items-center gap-4 text-sm">
               <span className="font-mono font-semibold text-red-400">{stats.negCount}</span>
-              <span className="text-foreground/40">zeroed</span>
+              <span className="text-foreground/55">zeroed</span>
               <span className="text-foreground/15">|</span>
               <span className="font-mono font-semibold text-foreground/60">{stats.negPercent}%</span>
-              <span className="text-foreground/40">sparsity</span>
+              <span className="text-foreground/55">sparsity</span>
               <span className="text-foreground/15">|</span>
               <span className="font-mono font-semibold text-green-400">{stats.activeNeurons}</span>
-              <span className="text-foreground/40">active</span>
+              <span className="text-foreground/55">active</span>
             </div>
           )}
         </div>
@@ -265,7 +265,7 @@ export function ActivationSection() {
 
       {/* Filter selection: clickable feature map thumbnails — full width */}
       <div className="mt-6 space-y-3">
-        <p className="text-center text-xs text-foreground/40">
+        <p className="text-center text-xs text-foreground/55">
           Select a filter — click any feature map below
         </p>
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
@@ -292,7 +292,7 @@ export function ActivationSection() {
                     className="cursor-pointer border border-border/50 bg-black"
                     style={{ width: 56, height: 56 }}
                   />
-                  <span className="text-xs text-foreground/40">#{i + 1}</span>
+                  <span className="text-xs text-foreground/55">#{i + 1}</span>
                 </div>
               ))}
         </div>

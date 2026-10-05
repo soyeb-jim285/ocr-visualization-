@@ -17,7 +17,7 @@ export function DeeperLayersSection() {
       <SectionHeader
         step={6}
         title="Going Deeper: Third Convolution"
-        subtitle="After pooling compressed the spatial dimensions to 14×14, a third convolution layer reads all 64 pooled feature maps. It learns to detect high-level character parts — loops, crossbars, serifs — that require combining many simpler patterns."
+        subtitle="After pooling compressed the spatial dimensions to 14×14, a third convolution layer reads all 128 pooled feature maps. It learns to detect high-level character parts — loops, crossbars, serifs — that require combining many simpler patterns."
       />
 
       {/* Theory introduction */}
@@ -25,8 +25,8 @@ export function DeeperLayersSection() {
         <p className="text-base leading-relaxed text-foreground/65 sm:text-lg">
           Each successive layer has a larger <em>receptive field</em> — by layer
           3, each neuron integrates information from a wide region of the
-          original input. The third convolution reads all 64 channels from pool1
-          and produces 128 new feature maps, followed by ReLU and a second
+          original input. The third convolution reads all 128 channels from pool1
+          and produces 256 new feature maps, followed by ReLU and a second
           pooling step that further compresses spatial dimensions to 7&times;7.
         </p>
 
@@ -37,7 +37,7 @@ export function DeeperLayersSection() {
           />
         </div>
 
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
           <span>
             Conv3: <Latex math="256 \times (3 \times 3 \times 128 + 1) = 295{,}168" /> params
           </span>
@@ -46,7 +46,7 @@ export function DeeperLayersSection() {
           </span>
         </div>
 
-        <p className="text-sm leading-relaxed text-foreground/45">
+        <p className="text-sm leading-relaxed text-foreground/60">
           The filter count doubles again — 64, 128, 256 — while pooling halves
           the spatial dimensions. The total information capacity stays roughly
           constant, but shifts from <em>spatial detail</em> to{" "}
@@ -58,14 +58,14 @@ export function DeeperLayersSection() {
       </div>
 
       <div className="flex flex-col gap-10 sm:gap-16">
-        {/* Conv3: 128 filters, 14x14 */}
+        {/* Conv3: 256 filters, 14x14 */}
         <div>
           <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-accent-secondary/10 px-3 py-1 text-sm font-medium text-accent-secondary">
               Conv3 Output
             </span>
-            <span className="text-xs text-foreground/40 sm:text-sm">
-              128 filters &middot; 14&times;14
+            <span className="text-xs text-foreground/55 sm:text-sm">
+              256 filters &middot; 14&times;14
             </span>
           </div>
           {conv3Maps ? (
@@ -86,20 +86,20 @@ export function DeeperLayersSection() {
             </div>
           )}
           {conv3Maps && conv3Maps.length > 32 && (
-            <p className="mt-2 text-center text-xs text-foreground/30">
+            <p className="mt-2 text-center text-xs text-foreground/55">
               Showing 32 of {conv3Maps.length} feature maps
             </p>
           )}
         </div>
 
-        {/* ReLU3: 128 filters, 14x14 */}
+        {/* ReLU3: 256 filters, 14x14 */}
         <div>
           <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-accent-tertiary/10 px-3 py-1 text-sm font-medium text-accent-tertiary">
               After ReLU
             </span>
-            <span className="text-xs text-foreground/40 sm:text-sm">
-              128 feature maps &middot; 14&times;14 &middot; negatives zeroed
+            <span className="text-xs text-foreground/55 sm:text-sm">
+              256 feature maps &middot; 14&times;14 &middot; negatives zeroed
             </span>
           </div>
           {relu3Maps ? (
@@ -112,7 +112,7 @@ export function DeeperLayersSection() {
                 cellSize={56}
               />
               {relu3Maps.length > 32 && (
-                <p className="mt-2 text-center text-xs text-foreground/30">
+                <p className="mt-2 text-center text-xs text-foreground/55">
                   Showing 32 of {relu3Maps.length} feature maps
                 </p>
               )}
@@ -128,14 +128,14 @@ export function DeeperLayersSection() {
           )}
         </div>
 
-        {/* Pool2: 128 filters, 7x7 */}
+        {/* Pool2: 256 filters, 7x7 */}
         <div>
           <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full bg-accent-warning/10 px-3 py-1 text-sm font-medium text-accent-warning">
               After Pooling
             </span>
-            <span className="text-xs text-foreground/40 sm:text-sm">
-              128 feature maps &middot; 7&times;7 each
+            <span className="text-xs text-foreground/55 sm:text-sm">
+              256 feature maps &middot; 7&times;7 each
             </span>
           </div>
           {pool2Maps ? (
@@ -147,13 +147,13 @@ export function DeeperLayersSection() {
                 columnsSm={4}
                 cellSize={56}
               />
-              <p className="mt-3 text-center text-sm text-foreground/40">
-                These compact 7&times;7 feature maps will be flattened into a
-                single vector of{" "}
-                <Latex math="7 \times 7 \times 128 = 6{,}272" /> values for the
-                dense layers.
-              </p>
-            </>
+                <p className="mt-3 text-center text-sm text-foreground/55">
+                  These compact 7&times;7 feature maps will be flattened into a
+                  single vector of{" "}
+                  <Latex math="7 \times 7 \times 256 = 12{,}544" /> values for the
+                  dense layers.
+                </p>
+              </>
           ) : (
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
               {Array.from({ length: 16 }, (_, i) => (

@@ -20,8 +20,10 @@ function TypingAnimation() {
     } else if (isDeleting && displayed.length > 0) {
       timer = setTimeout(() => setDisplayed(displayed.slice(0, -1)), 50);
     } else {
-      setIsDeleting(false);
-      setIdx((i) => (i + 1) % scripts.length);
+      timer = setTimeout(() => {
+        setIsDeleting(false);
+        setIdx((i) => (i + 1) % scripts.length);
+      }, 0);
     }
 
     return () => clearTimeout(timer);
@@ -40,10 +42,10 @@ function TypingAnimation() {
 export function HeroHeader() {
   return (
     <div className="flex flex-col items-center gap-1.5">
-      <h1 className="text-center text-2xl font-semibold tracking-tight text-foreground sm:text-4xl md:text-[2.7rem]">
+      <h1 className="text-balance text-center text-4xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-5xl md:text-6xl">
         Peel Back the Layers of Recognition
       </h1>
-      <p className="max-w-xl text-center text-sm leading-relaxed text-foreground/40 sm:text-base">
+      <p className="max-w-xl text-center text-sm leading-relaxed text-foreground/60 sm:text-base">
         An interactive deep dive into how a CNN reads handwritten characters
         — draw anything and watch 13 layers process it in real time.
       </p>

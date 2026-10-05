@@ -104,7 +104,7 @@ export function TrainingControls({
 
       {/* Mode toggle: Browser / HF CPU / GPU */}
       <div>
-        <label className="mb-1.5 block text-[11px] uppercase tracking-wider text-foreground/35">
+        <label className="mb-1.5 block text-[11px] uppercase tracking-wider text-foreground/55">
           Compute
         </label>
         <ToggleGroup
@@ -121,14 +121,14 @@ export function TrainingControls({
               value={mode.value}
               className={cn(
                 "h-auto min-w-0 shrink flex-1 flex-col items-start gap-0 overflow-hidden rounded-md px-2 py-1.5",
-                "bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/40",
+                "bg-white/5 text-foreground/55 hover:bg-white/10 hover:text-foreground/60",
                 mode.value === "gpu" && "data-[state=on]:bg-emerald-500/15 data-[state=on]:text-emerald-400",
                 mode.value === "hf" && "data-[state=on]:bg-purple-500/15 data-[state=on]:text-purple-400",
                 mode.value === "browser" && "data-[state=on]:bg-indigo-500/15 data-[state=on]:text-indigo-400",
               )}
             >
               <span className="text-xs font-medium">{mode.label}</span>
-              <span className="truncate text-[10px] text-foreground/30">{mode.desc}</span>
+              <span className="truncate text-[10px] text-foreground/55">{mode.desc}</span>
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -136,7 +136,7 @@ export function TrainingControls({
 
       {/* Dataset selector */}
       <div>
-        <label className="mb-1.5 block text-[11px] uppercase tracking-wider text-foreground/35">
+        <label className="mb-1.5 block text-[11px] uppercase tracking-wider text-foreground/55">
           Dataset
         </label>
         <ToggleGroup
@@ -151,10 +151,10 @@ export function TrainingControls({
             <ToggleGroupItem
               key={tab.value}
               value={tab.value}
-              className="h-auto min-w-0 shrink flex-col items-start gap-0 overflow-hidden rounded-md px-2 py-1.5 bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/40 data-[state=on]:bg-indigo-500/15 data-[state=on]:text-indigo-400"
+              className="h-auto min-w-0 shrink flex-col items-start gap-0 overflow-hidden rounded-md px-2 py-1.5 bg-white/5 text-foreground/55 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/15 data-[state=on]:text-indigo-400"
             >
               <span className="text-xs font-medium">{tab.label}</span>
-              <span className="truncate self-stretch text-[10px] text-foreground/30">{tab.desc}</span>
+              <span className="truncate self-stretch text-[10px] text-foreground/55">{tab.desc}</span>
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
@@ -165,7 +165,7 @@ export function TrainingControls({
         <div className="grid grid-cols-2 gap-3">
           {/* Learning rate */}
           <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
+            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
               Learning Rate
             </label>
             <Slider
@@ -177,14 +177,14 @@ export function TrainingControls({
               disabled={isBusy}
               className="my-2 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:border-indigo-500 [&_[data-slot=slider-thumb]]:size-3"
             />
-            <span className="block text-center font-mono text-[10px] text-foreground/40">
+            <span className="block text-center font-mono text-[10px] text-foreground/55">
               {learningRate.toExponential(1)}
             </span>
           </div>
 
           {/* Epochs */}
           <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
+            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
               Epochs
             </label>
             <Slider
@@ -196,7 +196,7 @@ export function TrainingControls({
               disabled={isBusy}
               className="my-2 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:border-indigo-500 [&_[data-slot=slider-thumb]]:size-3"
             />
-            <span className="block text-center font-mono text-[10px] text-foreground/40">
+            <span className="block text-center font-mono text-[10px] text-foreground/55">
               {epochs}
             </span>
           </div>
@@ -205,7 +205,7 @@ export function TrainingControls({
         <div className="grid grid-cols-2 gap-3">
           {/* Batch size */}
           <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
+            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
               Batch Size
             </label>
             <ToggleGroup
@@ -220,7 +220,7 @@ export function TrainingControls({
                 <ToggleGroupItem
                   key={bs}
                   value={String(bs)}
-                  className="h-auto min-w-0 shrink flex-1 rounded-md px-1 py-1 text-[11px] font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
+                  className="h-auto min-w-0 shrink flex-1 rounded-md px-1 py-1 text-[11px] font-medium bg-white/5 text-foreground/55 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
                 >
                   {bs}
                 </ToggleGroupItem>
@@ -230,7 +230,7 @@ export function TrainingControls({
 
           {/* Optimizer */}
           <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
+            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
               Optimizer
             </label>
             <ToggleGroup
@@ -245,7 +245,7 @@ export function TrainingControls({
                 <ToggleGroupItem
                   key={opt.value}
                   value={opt.value}
-                  className="h-auto min-w-0 shrink flex-1 rounded-md px-1 py-1 text-[11px] font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
+                  className="h-auto min-w-0 shrink flex-1 rounded-md px-1 py-1 text-[11px] font-medium bg-white/5 text-foreground/55 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
                 >
                   {opt.label}
                 </ToggleGroupItem>
@@ -258,7 +258,7 @@ export function TrainingControls({
       {/* Max samples slider (server modes) */}
       {trainingMode !== "browser" && (
         <div>
-          <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/30">
+          <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
             Training Samples
           </label>
           <Slider
@@ -270,7 +270,7 @@ export function TrainingControls({
             disabled={isBusy}
             className="my-2 [&_[data-slot=slider-range]]:bg-purple-500 [&_[data-slot=slider-thumb]]:border-purple-500 [&_[data-slot=slider-thumb]]:size-3"
           />
-          <span className="block text-center font-mono text-[10px] text-foreground/40">
+          <span className="block text-center font-mono text-[10px] text-foreground/55">
             {(maxSamples / 1000).toFixed(0)}K samples
           </span>
         </div>
@@ -335,7 +335,7 @@ export function TrainingControls({
           </span>
         )}
         {isTraining && !gpuStatus && (
-          <span className="ml-2 font-mono text-xs text-foreground/40">
+          <span className="ml-2 font-mono text-xs text-foreground/55">
             Epoch {currentEpoch}/{epochs}
             {trainingMode === "browser" && totalBatches > 0 && (
               <span>
@@ -349,7 +349,7 @@ export function TrainingControls({
 
       {/* Timing stats */}
       {timingInfo && (
-        <div className="flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[11px] text-foreground/35">
+        <div className="flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[11px] text-foreground/55">
           <span>
             {formatDuration(timingInfo.avgMs)}/epoch
           </span>
@@ -395,7 +395,7 @@ export function TrainingControls({
 
       {/* Cold-start hint for server modes */}
       {phase === "loading-data" && trainingMode !== "browser" && (
-        <p className="text-[11px] text-foreground/30">
+        <p className="text-[11px] text-foreground/55">
           Cold start may take up to ~1 minute while the server spins up.
         </p>
       )}

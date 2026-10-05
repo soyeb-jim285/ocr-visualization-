@@ -1,4 +1,4 @@
-export type LayerType =
+type LayerType =
   | "input"
   | "conv2d"
   | "batchnorm"
@@ -182,9 +182,4 @@ export const LAYER_CONFIG: LayerMeta[] = [
 /** Get only visualizable layers */
 export function getVisualizableLayers(): LayerMeta[] {
   return LAYER_CONFIG.filter((l) => l.visualizable);
-}
-
-/** Get layers for a specific section */
-export function getLayersForSection(sectionIndex: number): LayerMeta[] {
-  return LAYER_CONFIG.filter((l) => l.sectionIndex === sectionIndex);
 }

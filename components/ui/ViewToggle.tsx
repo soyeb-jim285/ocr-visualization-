@@ -13,8 +13,8 @@ export function ViewToggle() {
         <button
           key={mode}
           onClick={() => setViewMode(mode)}
-          className={`relative rounded-full px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] transition-colors ${
-            viewMode === mode ? "text-background" : "text-foreground/50"
+          className={`relative min-h-10 min-w-12 rounded-full px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.16em] transition-colors ${
+            viewMode === mode ? "text-background" : "text-foreground/55"
           }`}
         >
           {viewMode === mode && (

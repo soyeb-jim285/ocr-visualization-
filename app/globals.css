@@ -143,9 +143,9 @@ body {
     align-items: center;
     justify-content: center;
     border-radius: 0.9rem;
-    border: 1px dashed rgba(255, 255, 255, 0.14);
-    background: rgba(8, 10, 16, 0.44);
-    color: rgba(232, 232, 237, 0.46);
+    border: 1px solid color-mix(in oklab, var(--border) 40%, transparent);
+    background: rgba(19, 19, 26, 0.6);
+    color: rgba(232, 232, 237, 0.55);
     text-align: center;
     padding: 1rem;
   }
@@ -214,20 +214,15 @@ canvas {
   }
 }
 
-/* Hero header animations */
-@keyframes gradient-shift {
-  0% { background-position: 0% center; }
-  100% { background-position: 200% center; }
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
 }
-@keyframes fade-up {
-  0% { opacity: 0; transform: translateY(8px); }
-  15% { opacity: 1; transform: translateY(0); }
-  85% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-8px); }
-}
-.animate-gradient-shift {
-  animation: gradient-shift 4s linear infinite;
-}
-.animate-fade-up {
-  animation: fade-up 2.2s ease both;
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
 }

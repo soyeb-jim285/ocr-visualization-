@@ -4,7 +4,6 @@ import { useCallback, useRef } from "react";
 import { preprocessCanvas } from "@/lib/model/preprocess";
 import { runInference } from "@/lib/model/predict";
 import { useInferenceStore } from "@/stores/inferenceStore";
-import { useUIStore } from "@/stores/uiStore";
 import { triggerCustomInfer } from "@/lib/model-lab/customInferBridge";
 
 export function useInference() {
@@ -17,11 +16,7 @@ export function useInference() {
     }
   }, []);
 
-  // Stable reference — reads modelLoaded from the store directly so the
-  // callback never goes stale when the hero stage or other props change.
   const infer = useCallback((imageData: ImageData) => {
-    if (!useUIStore.getState().modelLoaded) return;
-
     // Debounce: wait 150ms after last stroke
     if (debounceRef.current) clearTimeout(debounceRef.current);
 

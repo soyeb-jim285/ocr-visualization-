@@ -49,7 +49,7 @@ function SoftmaxChart({
     <div className="flex w-full flex-col items-center gap-3">
       {/* Logit chart */}
       <div className="w-full">
-        <p className="mb-1 text-center text-[11px] text-foreground/35">
+        <p className="mb-1 text-center text-[11px] text-foreground/55">
           Raw logits (before softmax)
         </p>
         <ChartContainer
@@ -117,7 +117,7 @@ function SoftmaxChart({
 
       {/* Probability chart */}
       <div className="w-full">
-        <p className="mb-1 text-center text-[11px] text-foreground/35">
+        <p className="mb-1 text-center text-[11px] text-foreground/55">
           Probabilities (after softmax)
         </p>
         <ChartContainer
@@ -240,7 +240,7 @@ export function SoftmaxSection() {
           </div>
 
           {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
             <span>
               <Latex math="\mathbf{z}" /> — raw logits (146 values)
             </span>
@@ -253,7 +253,7 @@ export function SoftmaxSection() {
             </span>
           </div>
 
-          <p className="text-sm leading-relaxed text-foreground/45">
+          <p className="text-sm leading-relaxed text-foreground/60">
             In practice we subtract the max logit first for numerical stability:{" "}
             <Latex math="e^{z_i - z_{\max}}" /> instead of{" "}
             <Latex math="e^{z_i}" />. Of the 146 output neurons, 15 are masked
@@ -270,7 +270,7 @@ export function SoftmaxSection() {
           ) : (
             <div className="flex w-full flex-col items-center gap-3">
               <div className="w-full">
-                <p className="mb-1 text-center text-[11px] text-foreground/35">
+                <p className="mb-1 text-center text-[11px] text-foreground/55">
                   Raw logits (before softmax)
                 </p>
                 <div className="h-[160px] w-full rounded-lg border border-border bg-surface" />
@@ -280,7 +280,7 @@ export function SoftmaxSection() {
                 className="text-foreground/30"
               />
               <div className="w-full">
-                <p className="mb-1 text-center text-[11px] text-foreground/35">
+                <p className="mb-1 text-center text-[11px] text-foreground/55">
                   Probabilities (after softmax)
                 </p>
                 <div className="h-[160px] w-full rounded-lg border border-border bg-surface" />
@@ -300,17 +300,17 @@ export function SoftmaxSection() {
           <span className="font-mono font-semibold text-accent-secondary">
             {(topPrediction.confidence * 100).toFixed(1)}%
           </span>
-          <span className="text-foreground/40">confidence</span>
+          <span className="text-foreground/55">confidence</span>
           <span className="text-foreground/15">|</span>
           <span className="font-mono font-semibold text-foreground/60">
             131
           </span>
-          <span className="text-foreground/40">valid classes</span>
+          <span className="text-foreground/55">valid classes</span>
           <span className="text-foreground/15">|</span>
           <span className="font-mono font-semibold text-foreground/60">
             {prediction.reduce((s, p) => s + p, 0).toFixed(3)}
           </span>
-          <span className="text-foreground/40">sum</span>
+          <span className="text-foreground/55">sum</span>
         </div>
       )}
     </SectionWrapper>

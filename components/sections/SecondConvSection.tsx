@@ -59,13 +59,13 @@ export function SecondConvSection() {
           </div>
 
           {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
             <span><Latex math="I_c" /> — input channel <Latex math="c" /> (from relu1)</span>
             <span><Latex math="K_{k,c}" /> — kernel for filter <Latex math="k" />, channel <Latex math="c" /></span>
             <span><Latex math="O_k" /> — output feature map <Latex math="k" /></span>
           </div>
 
-          <p className="text-sm leading-relaxed text-foreground/45">
+          <p className="text-sm leading-relaxed text-foreground/60">
             The shape transforms:{" "}
             <Latex math="(64, 28, 28) \xrightarrow{\text{conv2 + ReLU}} (128, 28, 28)" />.
             Parameters:{" "}
@@ -89,7 +89,7 @@ export function SecondConvSection() {
               ) : (
                 <div className="h-[120px] w-[120px] rounded-md border border-border/50 bg-black" />
               )}
-              <span className="text-[11px] text-foreground/30">
+              <span className="text-[11px] text-foreground/55">
                 Before ReLU
               </span>
             </div>
@@ -114,7 +114,7 @@ export function SecondConvSection() {
               ) : (
                 <div className="h-[120px] w-[120px] rounded-md border border-border/50 bg-black" />
               )}
-              <span className="text-[11px] text-foreground/30">
+              <span className="text-[11px] text-foreground/55">
                 Ready for pooling
               </span>
             </div>
@@ -126,17 +126,17 @@ export function SecondConvSection() {
               <span className="font-mono font-semibold text-red-400">
                 {stats.negCount}
               </span>
-              <span className="text-foreground/40">zeroed</span>
+              <span className="text-foreground/55">zeroed</span>
               <span className="text-foreground/15">|</span>
               <span className="font-mono font-semibold text-foreground/60">
                 {stats.negPercent}%
               </span>
-              <span className="text-foreground/40">sparsity</span>
+              <span className="text-foreground/55">sparsity</span>
               <span className="text-foreground/15">|</span>
               <span className="font-mono font-semibold text-green-400">
                 {stats.activeNeurons}
               </span>
-              <span className="text-foreground/40">active</span>
+              <span className="text-foreground/55">active</span>
             </div>
           )}
         </div>
@@ -144,7 +144,7 @@ export function SecondConvSection() {
 
       {/* Filter selection: clickable thumbnails — full width */}
       <div className="mt-6 space-y-3">
-        <p className="text-center text-xs text-foreground/40">
+        <p className="text-center text-xs text-foreground/55">
           Select a filter — click any feature map below
         </p>
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
@@ -171,7 +171,7 @@ export function SecondConvSection() {
                     className="cursor-pointer border border-border/50 bg-black"
                     style={{ width: 56, height: 56 }}
                   />
-                  <span className="text-xs text-foreground/40">
+                  <span className="text-xs text-foreground/55">
                     #{i + 1}
                   </span>
                 </div>

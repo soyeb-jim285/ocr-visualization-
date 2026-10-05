@@ -65,7 +65,7 @@ function elementwiseProducts(a: number[][], b: number[][]): number[][] {
 function ViridisLegend({ min, max }: { min: number; max: number }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="font-mono text-[9px] text-foreground/30">{max.toFixed(1)}</span>
+      <span className="font-mono text-[10px] text-foreground/55">{max.toFixed(1)}</span>
       <div className="flex flex-col" style={{ width: 12, height: 140 }}>
         {Array.from({ length: 32 }, (_, i) => {
           const t = 1 - i / 31; // 1 at top, 0 at bottom
@@ -81,7 +81,7 @@ function ViridisLegend({ min, max }: { min: number; max: number }) {
           );
         })}
       </div>
-      <span className="font-mono text-[9px] text-foreground/30">{min.toFixed(1)}</span>
+      <span className="font-mono text-[10px] text-foreground/55">{min.toFixed(1)}</span>
     </div>
   );
 }
@@ -320,14 +320,14 @@ export function ConvolutionTheory() {
           </div>
 
           {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/40 lg:justify-start">
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
             <span><Latex math="I" /> — input patch</span>
             <span><Latex math="K" /> — kernel weights</span>
             <span><Latex math="b" /> — bias</span>
             <span><Latex math="O" /> — output value</span>
           </div>
 
-          <p className="text-sm leading-relaxed text-foreground/45">
+          <p className="text-sm leading-relaxed text-foreground/60">
             With <Latex math="\text{padding}=1" />, the 3&times;3 kernel can be centered on every
             pixel — including edges, where zero-padded values fill in. This preserves the spatial
             dimensions:{" "}
@@ -345,7 +345,7 @@ export function ConvolutionTheory() {
               {/* Top row: input → feature map */}
               <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-xs text-foreground/40">Input (28&times;28)</span>
+                  <span className="text-xs text-foreground/55">Input (28&times;28)</span>
                   <canvas
                     ref={inputCanvasRef}
                     width={CANVAS}
@@ -358,7 +358,7 @@ export function ConvolutionTheory() {
                     }}
                     onClick={handleCanvasClick}
                   />
-                  <span className="text-[11px] text-foreground/30">Cyan = current 3&times;3 patch</span>
+                  <span className="text-[11px] text-foreground/55">Cyan = current 3&times;3 patch</span>
                 </div>
 
                 <div className="text-foreground/25">
@@ -367,7 +367,7 @@ export function ConvolutionTheory() {
                 </div>
 
                 <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-xs text-foreground/40">
+                  <span className="text-xs text-foreground/55">
                     Feature Map #{selectedFilter + 1}
                   </span>
                   <div className="flex items-center gap-2">
@@ -394,7 +394,7 @@ export function ConvolutionTheory() {
                     )}
                     {outputMap && <ViridisLegend min={outputMinMax.min} max={outputMinMax.max} />}
                   </div>
-                  <span className="text-[11px] text-foreground/30">
+                  <span className="text-[11px] text-foreground/55">
                     Orange = output at [{kernelPos.row}, {kernelPos.col}]
                   </span>
                 </div>
@@ -443,7 +443,7 @@ export function ConvolutionTheory() {
                   />
 
                   <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-[11px] text-foreground/40"><Latex math="\scriptstyle\sum + b" /></span>
+                    <span className="text-[11px] text-foreground/55"><Latex math="\scriptstyle\sum + b" /></span>
                     <span className="text-foreground/30"><Latex math="\longrightarrow" /></span>
                   </div>
 
@@ -459,7 +459,7 @@ export function ConvolutionTheory() {
 
                 {/* Compact sum breakdown */}
                 {rawConvValue !== null && productsSum !== null && (
-                  <div className="mt-3 flex flex-col items-center gap-1 font-mono text-xs text-foreground/40">
+                  <div className="mt-3 flex flex-col items-center gap-1 font-mono text-xs text-foreground/55">
                     <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
                       <span>
                         <span className="text-foreground/25">Σ(products)</span>{" "}
@@ -510,14 +510,14 @@ export function ConvolutionTheory() {
                 >
                   Reset
                 </button>
-                <span className="font-mono text-[10px] text-foreground/30">
+                <span className="font-mono text-[10px] text-foreground/55">
                   [{kernelPos.row}, {kernelPos.col}]
                 </span>
               </div>
             </div>
           ) : (
             <div className="flex h-48 items-center justify-center">
-              <p className="text-foreground/30">
+              <p className="text-foreground/55">
                 Draw a character above to see activations
               </p>
             </div>
@@ -528,7 +528,7 @@ export function ConvolutionTheory() {
       {/* Filter selection: clickable feature map thumbnails — full width */}
       {hasData && (
         <div className="space-y-3">
-          <p className="text-center text-xs text-foreground/40">
+          <p className="text-center text-xs text-foreground/55">
             Select a filter — click any feature map below
           </p>
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
@@ -558,7 +558,7 @@ export function ConvolutionTheory() {
                         backgroundColor: "var(--surface)",
                       }}
                     />
-                    <span className="text-xs text-foreground/40">#{i + 1}</span>
+                    <span className="text-xs text-foreground/55">#{i + 1}</span>
                   </div>
                 ))}
           </div>

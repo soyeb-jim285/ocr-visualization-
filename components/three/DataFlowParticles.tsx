@@ -7,6 +7,11 @@ import type { LayerMeta } from "@/lib/model/layerInfo";
 
 const PARTICLE_COUNT = 400;
 
+function seededRandom(seed: number) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
 interface DataFlowParticlesProps {
   layers: (LayerMeta & { position: [number, number, number] })[];
 }
@@ -25,10 +30,15 @@ export function DataFlowParticles({ layers }: DataFlowParticlesProps) {
     const colors = new Float32Array(PARTICLE_COUNT * 3);
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 3;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 3;
-      positions[i * 3 + 2] = Math.random() * totalLength;
-      speeds[i] = 0.015 + Math.random() * 0.04;
+      const randX = seededRandom(i * 3 + 1);
+      const randY = seededRandom(i * 3 + 2);
+      const randZ = seededRandom(i * 3 + 3);
+      const randSpeed = seededRandom(i * 3 + 4);
+
+      positions[i * 3] = (randX - 0.5) * 3;
+      positions[i * 3 + 1] = (randY - 0.5) * 3;
+      positions[i * 3 + 2] = randZ * totalLength;
+      speeds[i] = 0.015 + randSpeed * 0.04;
 
       // Gradient: cyan at start → indigo → purple at end
       const progress = positions[i * 3 + 2] / Math.max(totalLength, 1);
