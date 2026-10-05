@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { Latex } from "@/components/ui/Latex";
+import { PHOSPHOR, ANNOTATION } from "@/lib/theme";
 
 const SRC_SIZE = 280;
 const DST_SIZE = 28;
@@ -82,7 +83,7 @@ export function PixelGrid() {
       ctx.putImageData(inputImageData, 0, 0, sx, sy, sz, sz);
 
       // Cyan border
-      ctx.strokeStyle = "#06b6d4";
+      ctx.strokeStyle = PHOSPHOR;
       ctx.lineWidth = 2;
       ctx.strokeRect(sx + 1, sy + 1, sz - 2, sz - 2);
     }
@@ -113,7 +114,7 @@ export function PixelGrid() {
 
     // Highlight active cell
     if (activeCell) {
-      ctx.strokeStyle = "#f59e0b";
+      ctx.strokeStyle = ANNOTATION;
       ctx.lineWidth = 2;
       ctx.strokeRect(
         activeCell.col * OUTPUT_CELL + 1,
@@ -151,7 +152,7 @@ export function PixelGrid() {
     }
 
     // Grid lines
-    ctx.strokeStyle = "rgba(6, 182, 212, 0.25)";
+    ctx.strokeStyle = "rgba(143, 227, 255, 0.25)";
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= ZOOM_CELLS; i++) {
       const p = i * ZOOM_CELL_PX;
@@ -197,42 +198,44 @@ export function PixelGrid() {
   );
   const clearHover = useCallback(() => setHovered(null), []);
 
+
   const hasData = inputTensor && inputImageData;
+  const v255 = activeCell ? Math.round(activeCell.value * 255) : 0;
+
+  const empty = (
+    <div className="viz-empty-state absolute inset-0 min-h-0 border-0 bg-bg-inset/90 px-3 text-center text-sm">
+      Draw something to light this up
+    </div>
+  );
 
   return (
-    <div className="flex flex-col items-center gap-5">
-      {/* Source -> Output canvases */}
-      <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-5">
+    <figure className="figure m-0 pb-16 sm:pb-0">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:gap-5">
         {/* Source 280x280 */}
-        <div className="flex flex-col items-center gap-1.5">
-          <span className="text-xs text-foreground/40">Source (280&times;280)</span>
-          <div className="relative">
+        <div className="flex flex-col gap-2">
+          <span className="font-mono text-[11px] text-ink-2">
+            SOURCE <span className="text-ink-3">280&times;280</span>
+          </span>
+          <div className="well plate-marks relative">
             <canvas
               ref={sourceRef}
               width={SRC_SIZE}
               height={SRC_SIZE}
-              className="cursor-crosshair rounded-lg border border-border/60"
-              style={{ width: 180, height: 180, imageRendering: "pixelated" }}
+              className="block cursor-crosshair"
+              style={{ width: 200, height: 200, imageRendering: "pixelated" }}
               onMouseMove={handleSourceHover}
               onMouseLeave={clearHover}
             />
-            {!hasData && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-surface/80">
-                <p className="text-xs text-foreground/30">
-                  Draw a character above
-                </p>
-              </div>
-            )}
+            {!hasData && empty}
           </div>
-          <span className="h-4 text-[10px] text-foreground/30">
+          <span className="h-4 font-mono text-[11px] text-ink-3">
             {activeCell && hasData
-              ? `Cyan = ${ZOOM_CELLS}\u00d7${ZOOM_CELLS} source region`
+              ? `${ZOOM_CELLS}\u00d7${ZOOM_CELLS} source region`
               : "\u00a0"}
           </span>
         </div>
 
-        {/* Arrow */}
-        <div className="text-foreground/25">
+        <div className="self-center text-ink-3 sm:pt-6">
           <span className="hidden sm:inline">
             <Latex math="\xrightarrow{\;\div 10\;}" />
           </span>
@@ -242,96 +245,92 @@ export function PixelGrid() {
         </div>
 
         {/* Output 28x28 */}
-        <div className="flex flex-col items-center gap-1.5">
-          <span className="text-xs text-foreground/40">
-            Downsampled (28&times;28)
+        <div className="flex flex-col gap-2">
+          <span className="font-mono text-[11px] text-ink-2">
+            DOWNSAMPLED <span className="text-ink-3">28&times;28</span>
           </span>
-          <div className="relative">
+          <div className="well plate-marks relative">
             <canvas
               ref={outputRef}
               width={OUTPUT_CANVAS}
               height={OUTPUT_CANVAS}
-              className="cursor-crosshair rounded-lg border border-border/60"
-              style={{ width: 180, height: 180, imageRendering: "pixelated" }}
+              className="block cursor-crosshair"
+              style={{ width: 200, height: 200, imageRendering: "pixelated" }}
               onMouseMove={handleOutputHover}
               onMouseLeave={clearHover}
             />
-            {!hasData && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-surface/80">
-                <p className="text-xs text-foreground/30">
-                  Draw a character above
-                </p>
-              </div>
-            )}
+            {!hasData && empty}
           </div>
-          <span className="h-4 text-[10px] text-foreground/30">
+          <span className="h-4 font-mono text-[11px] text-ink-3">
             {activeCell && hasData
-              ? `Orange = output[${activeCell.row}, ${activeCell.col}]`
+              ? `output[${activeCell.row}, ${activeCell.col}]`
               : "\u00a0"}
           </span>
         </div>
       </div>
 
-      {/* Zoom detail panel — always visible when data exists */}
+      {/* Zoom detail strip */}
       {hasData && (
-        <div className="flex items-center gap-4 rounded-xl border border-border/40 bg-surface-elevated/60 px-5 py-3 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-[10px] text-foreground/30">
+        <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-rule-faint pt-5">
+          <div className="flex flex-col gap-1.5">
+            <span className="font-mono text-[11px] text-ink-3">
               {ZOOM_CELLS}&times;{ZOOM_CELLS} source pixels
             </span>
             <canvas
               ref={zoomRef}
               width={ZOOM_CANVAS}
               height={ZOOM_CANVAS}
-              className="rounded border border-cyan-500/30"
+              className="rounded-[2px] border border-sig"
               style={{ width: 80, height: 80, imageRendering: "pixelated" }}
             />
           </div>
 
-          <div className="flex flex-col items-center text-foreground/25">
+          <div className="text-ink-3">
             <Latex math="\xrightarrow{\;\text{avg}\;}" />
           </div>
 
-          <div className="flex flex-col items-center gap-1">
-            <span className="text-[10px] text-foreground/30">result</span>
+          <div className="flex flex-col gap-1.5">
+            <span className="font-mono text-[11px] text-ink-3">result</span>
             <div
-              className="flex h-12 w-12 items-center justify-center rounded border border-amber-500/40"
-              style={{
-                backgroundColor: activeCell
-                  ? `rgb(${Math.round(activeCell.value * 255)},${Math.round(activeCell.value * 255)},${Math.round(activeCell.value * 255)})`
-                  : "transparent",
-              }}
+              className="flex size-14 items-center justify-center rounded-[2px] border border-annotation"
+              style={{ backgroundColor: `rgb(${v255},${v255},${v255})` }}
             >
               {activeCell && (
                 <span
-                  className="font-mono text-xs font-bold"
-                  style={{
-                    color:
-                      activeCell.value > 0.5
-                        ? "rgba(0,0,0,0.8)"
-                        : "rgba(255,255,255,0.7)",
-                  }}
+                  className="font-mono text-xs font-medium"
+                  style={{ color: activeCell.value > 0.5 ? "#06080b" : "#e9eef2" }}
                 >
                   {activeCell.value.toFixed(2)}
                 </span>
               )}
             </div>
           </div>
+
+          <div className="flex items-stretch gap-2">
+            <div className="flex h-16 flex-col items-end justify-between font-mono text-[10.5px] leading-none text-ink-3">
+              <span>1</span>
+              <span>0</span>
+            </div>
+            <div
+              className="h-16 w-1.5 rounded-[1px]"
+              style={{ background: "linear-gradient(to top, #000, #fff)" }}
+            />
+          </div>
         </div>
       )}
 
-      {/* Coordinate readout */}
-      {activeCell && hasData ? (
-        <p className="font-mono text-[11px] text-foreground/35">
-          output[{activeCell.row}, {activeCell.col}] ={" "}
-          {activeCell.value.toFixed(4)}
-        </p>
-      ) : hasData ? (
-        <p className="text-xs text-foreground/30">
-          Hover either canvas to see which source pixels map to each output
-          value
-        </p>
-      ) : null}
-    </div>
+      <figcaption className="figcap">
+        <b>FIG. 1.1</b>{" "}
+        {activeCell && hasData ? (
+          <>
+            output[{activeCell.row}, {activeCell.col}] ={" "}
+            <span className="text-ink">{activeCell.value.toFixed(4)}</span>
+            . Cyan marks the source region, orange its output pixel.
+          </>
+        ) : (
+          "Hover either canvas to see which source pixels map to each output value."
+        )}
+      </figcaption>
+    </figure>
   );
 }

@@ -5,11 +5,10 @@ import { useModelLabStore } from "@/stores/modelLabStore";
 import type { TrainingMode } from "@/stores/modelLabStore";
 import type { DatasetType } from "@/lib/model-lab/dataLoader";
 import type { OptimizerType } from "@/lib/model-lab/trainModel";
-import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { cn } from "@/lib/utils";
+import { Field, CHIP } from "./LayerConfig";
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
@@ -98,169 +97,124 @@ export function TrainingControls({
   const sliderToLr = (v: number) =>
     10 ** (v * (Math.log10(1e-2) - Math.log10(1e-4)) + Math.log10(1e-4));
 
-  return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-foreground/70">Training</h3>
+  const chipBig =
+    "chip !h-full min-h-[52px] w-full self-stretch min-w-0 flex-col items-start justify-center gap-0.5 rounded-[2px] border border-rule bg-transparent px-2.5 py-1.5 text-left font-normal text-ink-2 hover:bg-transparent hover:text-ink data-[state=on]:bg-[color-mix(in_oklab,var(--sig)_14%,transparent)] data-[state=on]:text-ink";
 
-      {/* Mode toggle: Browser / HF CPU / GPU */}
-      <div>
-        <label className="mb-1.5 block text-[11px] uppercase tracking-wider text-foreground/55">
-          Compute
-        </label>
+  const trainLabel =
+    phase === "loading-data"
+      ? trainingMode !== "browser"
+        ? "Connecting…"
+        : "Loading data…"
+      : phase === "building"
+        ? "Building model…"
+        : trainingMode === "gpu"
+          ? "Train on GPU"
+          : trainingMode === "hf"
+            ? "Train on HF"
+            : "Train";
+
+  return (
+    <div className="figure space-y-5">
+      <h3 className="font-serif text-xl text-ink">Training</h3>
+
+      <Field label="COMPUTE">
         <ToggleGroup
           type="single"
           value={trainingMode}
           onValueChange={(v) => v && setTrainingMode(v as TrainingMode)}
           disabled={isBusy}
           spacing={1}
-          className="flex w-full gap-1"
+          className="grid w-full grid-cols-3 items-stretch gap-2"
         >
           {MODE_OPTIONS.map((mode) => (
-            <ToggleGroupItem
-              key={mode.value}
-              value={mode.value}
-              className={cn(
-                "h-auto min-w-0 shrink flex-1 flex-col items-start gap-0 overflow-hidden rounded-md px-2 py-1.5",
-                "bg-white/5 text-foreground/55 hover:bg-white/10 hover:text-foreground/60",
-                mode.value === "gpu" && "data-[state=on]:bg-emerald-500/15 data-[state=on]:text-emerald-400",
-                mode.value === "hf" && "data-[state=on]:bg-purple-500/15 data-[state=on]:text-purple-400",
-                mode.value === "browser" && "data-[state=on]:bg-indigo-500/15 data-[state=on]:text-indigo-400",
-              )}
-            >
-              <span className="text-xs font-medium">{mode.label}</span>
-              <span className="truncate text-[10px] text-foreground/55">{mode.desc}</span>
+            <ToggleGroupItem key={mode.value} value={mode.value} className={chipBig}>
+              <span className="text-[12px] font-medium">{mode.label}</span>
+              <span className="whitespace-normal text-[11px] leading-snug text-ink-3">{mode.desc}</span>
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </div>
+      </Field>
 
-      {/* Dataset selector */}
-      <div>
-        <label className="mb-1.5 block text-[11px] uppercase tracking-wider text-foreground/55">
-          Dataset
-        </label>
+      <Field label="DATASET">
         <ToggleGroup
           type="single"
           value={datasetType}
           onValueChange={(v) => v && setDatasetType(v as DatasetType)}
           disabled={isBusy}
           spacing={1}
-          className="grid w-full grid-cols-2 gap-1.5 sm:grid-cols-4"
+          className="grid w-full grid-cols-2 items-stretch gap-2"
         >
           {DATASET_TABS.map((tab) => (
-            <ToggleGroupItem
-              key={tab.value}
-              value={tab.value}
-              className="h-auto min-w-0 shrink flex-col items-start gap-0 overflow-hidden rounded-md px-2 py-1.5 bg-white/5 text-foreground/55 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/15 data-[state=on]:text-indigo-400"
-            >
-              <span className="text-xs font-medium">{tab.label}</span>
-              <span className="truncate self-stretch text-[10px] text-foreground/55">{tab.desc}</span>
+            <ToggleGroupItem key={tab.value} value={tab.value} className={chipBig}>
+              <span className="text-[12px] font-medium">{tab.label}</span>
+              <span className="whitespace-normal text-[11px] leading-snug text-ink-3">{tab.desc}</span>
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+      </Field>
+
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+        <Field label="LEARNING RATE" value={learningRate.toExponential(1)}>
+          <Slider
+            value={[lrToSlider(learningRate)]}
+            onValueChange={([v]) => setLearningRate(sliderToLr(v))}
+            min={0}
+            max={1}
+            step={0.01}
+            disabled={isBusy}
+            className="my-2"
+          />
+        </Field>
+
+        <Field label="EPOCHS" value={String(epochs).padStart(3, "0")}>
+          <Slider
+            value={[epochs]}
+            onValueChange={([v]) => setEpochs(v)}
+            min={1}
+            max={50}
+            step={1}
+            disabled={isBusy}
+            className="my-2"
+          />
+        </Field>
+
+        <Field label="BATCH SIZE">
+          <ToggleGroup
+            type="single"
+            value={String(batchSize)}
+            onValueChange={(v) => v && setBatchSize(Number(v) as typeof batchSize)}
+            disabled={isBusy}
+            spacing={1}
+            className="grid w-full grid-cols-4 gap-2"
+          >
+            {BATCH_OPTIONS.map((bs) => (
+              <ToggleGroupItem key={bs} value={String(bs)} className={`${CHIP} px-1`}>
+                {bs}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </Field>
+
+        <Field label="OPTIMIZER">
+          <ToggleGroup
+            type="single"
+            value={optimizer}
+            onValueChange={(v) => v && setOptimizer(v as OptimizerType)}
+            disabled={isBusy}
+            spacing={1}
+            className="grid w-full grid-cols-3 gap-2"
+          >
+            {OPTIMIZER_OPTIONS.map((opt) => (
+              <ToggleGroupItem key={opt.value} value={opt.value} className={`${CHIP} !px-1 text-[10.5px]`}>
+                {opt.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </Field>
       </div>
 
-      {/* Hyperparameters */}
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          {/* Learning rate */}
-          <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
-              Learning Rate
-            </label>
-            <Slider
-              value={[lrToSlider(learningRate)]}
-              onValueChange={([v]) => setLearningRate(sliderToLr(v))}
-              min={0}
-              max={1}
-              step={0.01}
-              disabled={isBusy}
-              className="my-2 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:border-indigo-500 [&_[data-slot=slider-thumb]]:size-3"
-            />
-            <span className="block text-center font-mono text-[10px] text-foreground/55">
-              {learningRate.toExponential(1)}
-            </span>
-          </div>
-
-          {/* Epochs */}
-          <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
-              Epochs
-            </label>
-            <Slider
-              value={[epochs]}
-              onValueChange={([v]) => setEpochs(v)}
-              min={1}
-              max={50}
-              step={1}
-              disabled={isBusy}
-              className="my-2 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:border-indigo-500 [&_[data-slot=slider-thumb]]:size-3"
-            />
-            <span className="block text-center font-mono text-[10px] text-foreground/55">
-              {epochs}
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {/* Batch size */}
-          <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
-              Batch Size
-            </label>
-            <ToggleGroup
-              type="single"
-              value={String(batchSize)}
-              onValueChange={(v) => v && setBatchSize(Number(v) as typeof batchSize)}
-              disabled={isBusy}
-              spacing={1}
-              className="flex w-full gap-1"
-            >
-              {BATCH_OPTIONS.map((bs) => (
-                <ToggleGroupItem
-                  key={bs}
-                  value={String(bs)}
-                  className="h-auto min-w-0 shrink flex-1 rounded-md px-1 py-1 text-[11px] font-medium bg-white/5 text-foreground/55 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
-                >
-                  {bs}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </div>
-
-          {/* Optimizer */}
-          <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
-              Optimizer
-            </label>
-            <ToggleGroup
-              type="single"
-              value={optimizer}
-              onValueChange={(v) => v && setOptimizer(v as OptimizerType)}
-              disabled={isBusy}
-              spacing={1}
-              className="flex w-full gap-1"
-            >
-              {OPTIMIZER_OPTIONS.map((opt) => (
-                <ToggleGroupItem
-                  key={opt.value}
-                  value={opt.value}
-                  className="h-auto min-w-0 shrink flex-1 rounded-md px-1 py-1 text-[11px] font-medium bg-white/5 text-foreground/55 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
-                >
-                  {opt.label}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-          </div>
-        </div>
-      </div>
-
-      {/* Max samples slider (server modes) */}
       {trainingMode !== "browser" && (
-        <div>
-          <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
-            Training Samples
-          </label>
+        <Field label="TRAINING SAMPLES" value={`${(maxSamples / 1000).toFixed(0)}K samples`}>
           <Slider
             value={[maxSamples]}
             onValueChange={([v]) => setMaxSamples(v)}
@@ -268,141 +222,92 @@ export function TrainingControls({
             max={50000}
             step={5000}
             disabled={isBusy}
-            className="my-2 [&_[data-slot=slider-range]]:bg-purple-500 [&_[data-slot=slider-thumb]]:border-purple-500 [&_[data-slot=slider-thumb]]:size-3"
+            className="my-2"
           />
-          <span className="block text-center font-mono text-[10px] text-foreground/55">
-            {(maxSamples / 1000).toFixed(0)}K samples
-          </span>
-        </div>
+        </Field>
       )}
 
-      {/* Action buttons */}
-      <div className="flex items-center gap-2">
+      {/* Actions */}
+      <div className="flex flex-wrap items-center gap-2 border-t border-rule pt-5">
         {!isTraining ? (
-          <Button
-            onClick={onTrain}
-            disabled={isBusy || hasErrors}
-            size="sm"
-            className={cn(
-              "text-xs font-semibold text-white",
-              trainingMode === "gpu"
-                ? "bg-emerald-600 hover:bg-emerald-500"
-                : trainingMode === "hf"
-                  ? "bg-purple-600 hover:bg-purple-500"
-                  : "bg-indigo-600 hover:bg-indigo-500",
+          <button type="button" onClick={onTrain} disabled={isBusy || hasErrors} className="btn-primary">
+            {isBusy && (
+              <span className="size-1.5 rounded-full bg-annotation motion-safe:animate-pulse" aria-hidden />
             )}
-          >
-            {phase === "loading-data"
-              ? trainingMode !== "browser"
-                ? "Connecting..."
-                : "Loading data..."
-              : phase === "building"
-                ? "Building model..."
-                : trainingMode === "gpu"
-                  ? "Train on GPU"
-                  : trainingMode === "hf"
-                    ? "Train on HF"
-                    : "Train"}
-          </Button>
+            {trainLabel}
+          </button>
         ) : (
-          <Button
+          <button
+            type="button"
             onClick={onStop}
-            variant="destructive"
-            size="sm"
-            className="text-xs font-semibold"
+            className="btn-ghost !border-annotation/60 !text-annotation hover:!border-annotation"
           >
             Stop
-          </Button>
+          </button>
         )}
 
-        <Button
-          onClick={onReset}
-          disabled={isBusy}
-          variant="outline"
-          size="sm"
-          className="text-xs font-medium text-foreground/50"
-        >
+        <button type="button" onClick={onReset} disabled={isBusy} className="btn-ghost">
           Reset
-        </Button>
+        </button>
 
-        {/* Status */}
         {gpuStatus && trainingMode !== "browser" && (
-          <span className={cn(
-            "ml-2 font-mono text-xs",
-            trainingMode === "gpu" ? "text-emerald-400/70" : "text-purple-400/70"
-          )}>
-            {gpuStatus}
-          </span>
+          <span className="font-mono text-[11px] text-sig">{gpuStatus}</span>
         )}
         {isTraining && !gpuStatus && (
-          <span className="ml-2 font-mono text-xs text-foreground/55">
-            Epoch {currentEpoch}/{epochs}
+          <span className="readout">
+            EPOCH {String(currentEpoch).padStart(3, "0")}/{String(epochs).padStart(3, "0")}
             {trainingMode === "browser" && totalBatches > 0 && (
-              <span>
-                {" "}
-                — Batch {currentBatch}/{totalBatches}
+              <span className="text-ink-3">
+                {" · "}BATCH {currentBatch}/{totalBatches}
               </span>
             )}
           </span>
         )}
       </div>
 
-      {/* Timing stats */}
+      {hasErrors && !isBusy && (
+        <p className="font-mono text-[11px] text-ink-3">Fix the architecture errors above to enable training.</p>
+      )}
+
       {timingInfo && (
-        <div className="flex flex-wrap gap-x-4 gap-y-0.5 font-mono text-[11px] text-foreground/55">
-          <span>
-            {formatDuration(timingInfo.avgMs)}/epoch
-          </span>
-          <span>
-            elapsed: {formatDuration(timingInfo.elapsed)}
-          </span>
-          {isTraining && timingInfo.remaining > 0 && (
-            <span>
-              ~{formatDuration(timingInfo.remaining)} remaining
-            </span>
-          )}
-          {isTraining && (
-            <span>
-              est. total: ~{formatDuration(timingInfo.avgMs * epochs)}
-            </span>
-          )}
-          {!isTraining && phase === "trained" && (
-            <span>
-              total: {formatDuration(timingInfo.elapsed)}
-            </span>
-          )}
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[2px] border border-rule bg-rule sm:grid-cols-4">
+          {[
+            ["AVG / EPOCH", formatDuration(timingInfo.avgMs)],
+            ["ELAPSED", formatDuration(timingInfo.elapsed)],
+            isTraining
+              ? ["REMAINING", timingInfo.remaining > 0 ? `~${formatDuration(timingInfo.remaining)}` : "—"]
+              : ["TOTAL", formatDuration(timingInfo.elapsed)],
+            ["EST. TOTAL", `~${formatDuration(timingInfo.avgMs * epochs)}`],
+          ].map(([k, v]) => (
+            <div key={k} className="bg-bg-inset px-3 py-2">
+              <p className="font-mono text-[10.5px] tracking-[0.06em] text-ink-3">{k}</p>
+              <p className="readout">{v}</p>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Progress bar */}
       {isTraining && trainingMode === "browser" && totalBatches > 0 && (
         <Progress
           value={(currentBatch / totalBatches) * 100}
-          className="h-1 bg-white/5 [&_[data-slot=progress-indicator]]:bg-indigo-500"
+          className="h-0.5 bg-rule [&_[data-slot=progress-indicator]]:bg-phosphor"
         />
       )}
       {isTraining && trainingMode !== "browser" && epochs > 0 && (
         <Progress
           value={(currentEpoch / epochs) * 100}
-          className={cn(
-            "h-1 bg-white/5",
-            trainingMode === "gpu"
-              ? "[&_[data-slot=progress-indicator]]:bg-emerald-500"
-              : "[&_[data-slot=progress-indicator]]:bg-purple-500"
-          )}
+          className="h-0.5 bg-rule [&_[data-slot=progress-indicator]]:bg-phosphor"
         />
       )}
 
-      {/* Cold-start hint for server modes */}
       {phase === "loading-data" && trainingMode !== "browser" && (
-        <p className="text-[11px] text-foreground/55">
-          Cold start may take up to ~1 minute while the server spins up.
-        </p>
+        <p className="caption">Cold start may take up to ~1 minute while the server spins up.</p>
       )}
 
-      {/* Error message */}
       {phase === "error" && errorMessage && (
-        <p className="text-xs text-red-400">{errorMessage}</p>
+        <p className="border-y border-annotation/40 py-2 font-mono text-[11px] text-annotation" role="alert">
+          {errorMessage}
+        </p>
       )}
     </div>
   );

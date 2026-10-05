@@ -1,8 +1,36 @@
 "use client";
 
-import { useState, useId } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, type ReactNode, type CSSProperties } from "react";
+import {
+  motion,
+  AnimatePresence,
+  useReducedMotion,
+} from "framer-motion";
 import { ActivationHeatmap } from "./ActivationHeatmap";
+
+/** Scroll-reveal wrapper shared by the mid sections (once, transform/opacity only). */
+export function Reveal({
+  children,
+  delay = 0,
+  className,
+}: {
+  children: ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      className={className}
+      initial={reduce ? false : { opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-12% 0px" }}
+      transition={{ duration: reduce ? 0.15 : 0.5, delay, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 interface FeatureMapGridProps {
   /** Array of feature maps: [numFilters][height][width] */
@@ -21,15 +49,12 @@ export function FeatureMapGrid({
   cellSize = 72,
 }: FeatureMapGridProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
-  const gridId = useId();
   const smCols = columnsSm ?? columns;
 
   if (!featureMaps || featureMaps.length === 0) {
     return (
       <div className="viz-empty-state h-40">
-        <p className="text-foreground/30">
-          Draw a character to see feature maps
-        </p>
+        <p className="font-serif italic">Draw something to light this up</p>
       </div>
     );
   }
@@ -37,27 +62,19 @@ export function FeatureMapGrid({
   const expandedMap =
     expandedIdx !== null ? featureMaps[expandedIdx] : null;
 
-  const cssId = `fmg${gridId.replace(/:/g, "")}`;
-
   return (
     <div className="flex flex-col gap-4">
-      {smCols !== columns && (
-        <style>{`
-          .${cssId} { grid-template-columns: repeat(${smCols}, minmax(0, 1fr)); }
-          @media (min-width: 640px) { .${cssId} { grid-template-columns: repeat(${columns}, minmax(0, 1fr)); } }
-        `}</style>
-      )}
-      {/* Compact grid */}
+      {/* Specimen grid */}
       <div
-        className={`grid gap-2 ${smCols !== columns ? cssId : ""}`}
-        style={smCols === columns ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}
+        className="grid grid-cols-[repeat(var(--cs),minmax(0,1fr))] justify-items-center gap-x-2 gap-y-3 sm:grid-cols-[repeat(var(--c),minmax(0,1fr))]"
+        style={{ "--c": columns, "--cs": smCols } as CSSProperties}
       >
         {featureMaps.map((fm, i) => (
           <ActivationHeatmap
             key={`${layerName}-${i}`}
             data={fm}
             size={cellSize}
-            label={`#${i + 1}`}
+            label={String(i + 1).padStart(3, "0")}
             onClick={() => setExpandedIdx(expandedIdx === i ? null : i)}
             selected={expandedIdx === i}
           />
@@ -71,22 +88,20 @@ export function FeatureMapGrid({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="mx-auto flex max-w-sm flex-col items-center gap-3 border-t border-border/60 pt-4 sm:pt-5">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-accent-primary">
-                  Filter #{expandedIdx + 1}
-                </span>
-                <span className="text-xs text-foreground/40">
-                  {expandedMap.length}x{expandedMap[0]?.length ?? 0}
-                </span>
+            <div className="figure mx-auto flex max-w-sm flex-col items-center gap-3">
+              <div className="well plate-marks p-2">
+                <ActivationHeatmap data={expandedMap} size={220} />
               </div>
-              <ActivationHeatmap data={expandedMap} size={220} />
-              <button
-                onClick={() => setExpandedIdx(null)}
-                className="text-xs text-foreground/45 underline decoration-border/40 underline-offset-4 hover:text-foreground/70"
-              >
+              <p className="figcap mt-0 text-center">
+                <b>
+                  {layerName.toUpperCase()} · {String(expandedIdx + 1).padStart(3, "0")}
+                </b>{" "}
+                {expandedMap.length}×{expandedMap[0]?.length ?? 0}
+              </p>
+              <button onClick={() => setExpandedIdx(null)} className="text-btn">
                 Close
               </button>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { SectionWrapper } from "@/components/ui/SectionWrapper";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ActivationHeatmap } from "@/components/visualizations/ActivationHeatmap";
@@ -21,12 +22,19 @@ import {
   ReferenceArea,
 } from "recharts";
 
+const reveal = (delay = 0) => ({
+  initial: { opacity: 0, y: 12 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-12% 0px" },
+  transition: { duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] as const },
+});
+
 /* ── ReLU chart config & data ────────────────────────────────────── */
 
 const chartConfig = {
-  negative: { label: "Zeroed (x ≤ 0)", color: "#f87171" },
-  positive: { label: "Identity (x > 0)", color: "#4ade80" },
-  reference: { label: "y = x", color: "rgba(255,255,255,0.1)" },
+  negative: { label: "Zeroed (x ≤ 0)", color: "#ff6b4a" },
+  positive: { label: "Identity (x > 0)", color: "#8fe3ff" },
+  reference: { label: "y = x", color: "rgba(170,205,225,0.3)" },
 } satisfies ChartConfig;
 
 const reluData = (() => {
@@ -50,10 +58,10 @@ function ReluTooltip({ active, payload }: { active?: boolean; payload?: Array<{ 
   const x = payload[0].payload.x;
   const y = Math.max(0, x);
   return (
-    <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
+    <div className="rounded-[3px] border border-rule-strong bg-bg-raised px-2 py-1 font-mono text-[11px]">
       <div className="flex items-center gap-3">
-        <span className="text-foreground/50">x = <span className="font-mono text-foreground">{x.toFixed(1)}</span></span>
-        <span className="text-foreground/50">f(x) = <span className={`font-mono font-medium ${x <= 0 ? "text-red-400" : "text-green-400"}`}>{y.toFixed(1)}</span></span>
+        <span className="text-ink-3">x = <span className="font-mono text-ink">{x.toFixed(1)}</span></span>
+        <span className="text-ink-3">f(x) = <span className={`font-mono font-medium ${x <= 0 ? "text-annotation" : "text-phosphor"}`}>{y.toFixed(1)}</span></span>
       </div>
     </div>
   );
@@ -63,10 +71,14 @@ function ReluTooltip({ active, payload }: { active?: boolean; payload?: Array<{ 
 
 export function ActivationSection() {
   const layerActivations = useInferenceStore((s) => s.layerActivations);
-  const [selectedFilter, setSelectedFilter] = useState(0);
+  const [pickedFilter, setSelectedFilter] = useState<number | null>(null);
 
   const conv1Maps = layerActivations["conv1"] as number[][][] | undefined;
   const relu1Maps = layerActivations["relu1"] as number[][][] | undefined;
+
+  // default to the first filter that is not entirely dead, so the demo shows real data
+  const firstLive = relu1Maps?.findIndex((fm) => fm.flat().some((v) => v > 0)) ?? -1;
+  const selectedFilter = pickedFilter ?? Math.max(0, firstLive);
 
   const beforeRelu = conv1Maps?.[selectedFilter];
   const afterRelu = relu1Maps?.[selectedFilter];
@@ -85,197 +97,188 @@ export function ActivationSection() {
   const numFilters = conv1Maps?.length ?? 64;
 
   return (
-    <SectionWrapper id="activation">
+    <SectionWrapper id="activation" sig="relu" mirror>
       <SectionHeader
         step={3}
+        tag="ReLU · 64 ch · 28×28"
         title="Amplifying Signals: ReLU Activation"
-        subtitle="ReLU (Rectified Linear Unit) is deceptively simple: it keeps positive values unchanged and sets all negative values to zero. This non-linearity is what allows neural networks to learn complex, non-linear patterns."
+        subtitle="ReLU (Rectified Linear Unit) is deceptively simple: it keeps positive values unchanged and sets all negative values to zero. This non-linearity is what lets networks learn complex patterns."
       />
 
-      <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:gap-12">
-        {/* Left: theory text */}
-        <div className="flex-1 space-y-4 text-center lg:text-left">
-          <p className="text-base leading-relaxed text-foreground/65 sm:text-lg">
-            After convolution produces raw feature maps, each value passes
-            through a <em>non-linear activation function</em>. Without
-            non-linearity, stacking multiple layers would collapse into a single
-            linear transformation — equivalent to just one layer. ReLU breaks
-            this by zeroing all negative values while keeping positive ones
-            unchanged.
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-x-6 gap-y-10 lg:grid-cols-12">
+        {/* Figures first on desktop (mirrored plate) */}
+        <motion.div {...reveal(0.16)} className="space-y-10 min-w-0 lg:order-1 lg:col-span-7">
+          {/* ReLU curve */}
+          <figure className="figure m-0">
+            <span className="mb-3 block font-mono text-[11px] text-ink-2">
+              f(x) = max(0, x)
+            </span>
+            <div className="well plate-marks p-2">
+              <ChartContainer config={chartConfig} className="h-[220px] w-full">
+                <LineChart data={reluData} margin={{ top: 8, right: 12, bottom: 4, left: -8 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(170,205,225,0.07)" />
+                  <ReferenceArea x1={-3} x2={0} fill="rgba(255,107,74,0.05)" fillOpacity={1} />
+                  <XAxis
+                    dataKey="x"
+                    type="number"
+                    domain={[-3, 3]}
+                    ticks={[-3, -2, -1, 0, 1, 2, 3]}
+                    stroke="rgba(170,205,225,0.3)"
+                    tick={{ fontSize: 11, fill: "#8896a3" }}
+                    axisLine={{ stroke: "rgba(170,205,225,0.3)" }}
+                  />
+                  <YAxis
+                    domain={[-0.5, 3]}
+                    ticks={[0, 1, 2, 3]}
+                    stroke="rgba(170,205,225,0.3)"
+                    tick={{ fontSize: 11, fill: "#8896a3" }}
+                    axisLine={{ stroke: "rgba(170,205,225,0.3)" }}
+                  />
+                  <ReferenceLine y={0} stroke="rgba(170,205,225,0.3)" />
+                  <ReferenceLine x={0} stroke="rgba(170,205,225,0.3)" />
+                  <ChartTooltip content={<ReluTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="reference"
+                    stroke="var(--color-reference)"
+                    strokeDasharray="4 3"
+                    strokeWidth={1}
+                    dot={false}
+                    activeDot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="negative"
+                    stroke="var(--color-negative)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#ff6b4a", stroke: "#06080b", strokeWidth: 1 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="positive"
+                    stroke="var(--color-positive)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#8fe3ff", stroke: "#06080b", strokeWidth: 1 }}
+                  />
+                </LineChart>
+              </ChartContainer>
+            </div>
+            <figcaption className="figcap [overflow-wrap:anywhere]">
+              <b>FIG. 3.1</b> Orange: negatives are zeroed. Cyan: positives pass unchanged. Hover to
+              read the mapping.
+            </figcaption>
+          </figure>
+
+          {/* Before -> After */}
+          <figure className="figure m-0">
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
+              <div className="flex flex-col gap-2">
+                <span className="font-mono text-[11px] text-annotation">BEFORE RELU</span>
+                <div className="well plate-marks">
+                  {beforeRelu ? (
+                    <ActivationHeatmap data={beforeRelu} size={132} />
+                  ) : (
+                    <div className="viz-empty-state min-h-0 border-0 px-3 text-center text-sm" style={{ width: 132, height: 132 }}>
+                      Draw something to light this up
+                    </div>
+                  )}
+                </div>
+                <span className="font-mono text-[11px] text-ink-3">contains negatives</span>
+              </div>
+
+              <div className="text-ink-3 sm:pt-0">
+                <Latex math="\xrightarrow{\max(0,\,x)}" className="hidden sm:block" />
+                <Latex math="\downarrow" className="sm:hidden" />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <span className="font-mono text-[11px] text-phosphor">AFTER RELU</span>
+                <div className="well plate-marks">
+                  {afterRelu ? (
+                    <ActivationHeatmap data={afterRelu} size={132} />
+                  ) : (
+                    <div className="viz-empty-state min-h-0 border-0 px-3 text-center text-sm" style={{ width: 132, height: 132 }}>
+                      Draw something to light this up
+                    </div>
+                  )}
+                </div>
+                <span className="font-mono text-[11px] text-ink-3">negatives zeroed</span>
+              </div>
+
+              {stats && (
+                <dl className="grid grid-cols-3 gap-x-6 sm:ml-auto sm:grid-cols-1 sm:gap-y-3">
+                  {[
+                    [stats.negCount, "zeroed", "text-annotation"],
+                    [`${stats.negPercent}%`, "sparsity", "text-ink-3"],
+                    [stats.activeNeurons, "active", "text-phosphor"],
+                  ].map(([v, l, c]) => (
+                    <div key={l as string}>
+                      <dd className="font-mono text-xl tabular-nums text-ink">{v}</dd>
+                      <dt className={`font-mono text-[11px] ${c}`}>{l}</dt>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </div>
+            <figcaption className="figcap">
+              <b>FIG. 3.2</b> Filter {selectedFilter + 1}, before and after rectification, on a shared
+              viridis scale.
+            </figcaption>
+          </figure>
+        </motion.div>
+
+        {/* Theory */}
+        <motion.div {...reveal()} className="min-w-0 space-y-6 lg:order-2 lg:col-span-5">
+          <p className="prose-body">
+            After convolution produces raw feature maps, each value passes through a{" "}
+            <em>non-linear activation function</em>. Without non-linearity, stacking layers would
+            collapse into a single linear transformation. ReLU breaks this by zeroing all negative
+            values while keeping positive ones unchanged.
           </p>
 
-          {/* Main equation — piecewise */}
-          <div className="py-3">
+          <div className="formula">
             <Latex
               display
               math="\text{ReLU}(x) = \max(0,\, x) = \begin{cases} x & \text{if } x > 0 \\ 0 & \text{if } x \leq 0 \end{cases}"
             />
+            <span className="eq-no">(3)</span>
           </div>
 
-          {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
-            <span><Latex math="x" /> — pre-activation value (from conv)</span>
-            <span><Latex math="\max(0, x)" /> — output (always &ge; 0)</span>
-          </div>
+          <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-1.5 text-sm">
+            <dt className="text-ink"><Latex math="x" /></dt>
+            <dd className="font-mono text-[11px] text-ink-3">pre-activation value (from conv)</dd>
+            <dt className="text-ink"><Latex math="\max(0, x)" /></dt>
+            <dd className="font-mono text-[11px] text-ink-3">output, always &ge; 0</dd>
+          </dl>
 
-          <p className="text-sm leading-relaxed text-foreground/60">
-            The gradient is equally simple:{" "}
-            <Latex math="\frac{\partial}{\partial x}\text{ReLU}(x) = \mathbf{1}_{x > 0}" />
-            {" "}— it passes gradients through unchanged for positive inputs and
-            blocks them entirely for negative ones. This avoids the vanishing
-            gradient problem that plagues sigmoid and tanh in deep networks.
-            Applied element-wise, the shape is preserved:{" "}
-            <Latex math="(64, 28, 28) \xrightarrow{\text{ReLU}} (64, 28, 28)" />.
-            Typically 40–70% of values are zeroed, creating{" "}
-            <em>sparse activations</em> that help the network focus on the
-            strongest detected features.
+          <p className="callout [overflow-wrap:anywhere]">
+            <span className="tag">NOTE</span>
+            Typically 40&ndash;70% of values are zeroed, creating <em>sparse activations</em> that
+            help the network focus on the strongest detected features.
           </p>
-        </div>
 
-        {/* Right: visualizations */}
-        <div className="flex w-full shrink-0 flex-col items-center gap-5 lg:w-auto">
-          {/* ReLU function chart */}
-          <div className="flex flex-col items-center gap-1.5">
-            <span className="text-xs text-foreground/55">
-              Interactive ReLU curve
-            </span>
-            <ChartContainer
-              config={chartConfig}
-              className="h-[200px] w-[280px]"
-            >
-              <LineChart data={reluData} margin={{ top: 8, right: 12, bottom: 4, left: -8 }}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="rgba(255,255,255,0.05)"
-                />
-                <ReferenceArea
-                  x1={-3}
-                  x2={0}
-                  fill="rgba(248, 113, 113, 0.04)"
-                  fillOpacity={1}
-                />
-                <XAxis
-                  dataKey="x"
-                  type="number"
-                  domain={[-3, 3]}
-                  ticks={[-3, -2, -1, 0, 1, 2, 3]}
-                  stroke="rgba(255,255,255,0.15)"
-                  tick={{ fontSize: 10, fill: "rgba(255,255,255,0.3)" }}
-                  axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
-                />
-                <YAxis
-                  domain={[-0.5, 3]}
-                  ticks={[0, 1, 2, 3]}
-                  stroke="rgba(255,255,255,0.15)"
-                  tick={{ fontSize: 10, fill: "rgba(255,255,255,0.3)" }}
-                  axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
-                />
-                <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)" />
-                <ReferenceLine x={0} stroke="rgba(255,255,255,0.15)" />
-                <ChartTooltip content={<ReluTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="reference"
-                  stroke="var(--color-reference)"
-                  strokeDasharray="4 4"
-                  strokeWidth={1}
-                  dot={false}
-                  activeDot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="negative"
-                  stroke="var(--color-negative)"
-                  strokeWidth={2.5}
-                  dot={false}
-                  activeDot={{ r: 4, fill: "#f87171", stroke: "rgba(0,0,0,0.3)", strokeWidth: 1 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="positive"
-                  stroke="var(--color-positive)"
-                  strokeWidth={2.5}
-                  dot={false}
-                  activeDot={{ r: 4, fill: "#4ade80", stroke: "rgba(0,0,0,0.3)", strokeWidth: 1 }}
-                />
-              </LineChart>
-            </ChartContainer>
-            <span className="text-[11px] text-foreground/55">
-              Hover to see input &rarr; output mapping
-            </span>
-          </div>
-
-          {/* Before → After heatmaps */}
-          <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-xs font-medium text-red-400">
-                Before ReLU
-              </span>
-              {beforeRelu ? (
-                <ActivationHeatmap data={beforeRelu} size={120} />
-              ) : (
-                <div className="h-[120px] w-[120px] rounded-md border border-border/50 bg-black" />
-              )}
-              <span className="text-[11px] text-foreground/55">
-                Contains negatives
-              </span>
-            </div>
-
-            <div className="flex flex-col items-center gap-1">
-              <Latex
-                math="\xrightarrow{\max(0,\,x)}"
-                className="hidden text-foreground/40 sm:block"
-              />
-              <Latex
-                math="\downarrow"
-                className="text-foreground/40 sm:hidden"
-              />
-            </div>
-
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-xs font-medium text-green-400">
-                After ReLU
-              </span>
-              {afterRelu ? (
-                <ActivationHeatmap data={afterRelu} size={120} />
-              ) : (
-                <div className="h-[120px] w-[120px] rounded-md border border-border/50 bg-black" />
-              )}
-              <span className="text-[11px] text-foreground/55">
-                Negatives zeroed
-              </span>
-            </div>
-          </div>
-
-          {/* Stats — single line below heatmaps */}
-          {stats && (
-            <div className="flex items-center gap-4 text-sm">
-              <span className="font-mono font-semibold text-red-400">{stats.negCount}</span>
-              <span className="text-foreground/55">zeroed</span>
-              <span className="text-foreground/15">|</span>
-              <span className="font-mono font-semibold text-foreground/60">{stats.negPercent}%</span>
-              <span className="text-foreground/55">sparsity</span>
-              <span className="text-foreground/15">|</span>
-              <span className="font-mono font-semibold text-green-400">{stats.activeNeurons}</span>
-              <span className="text-foreground/55">active</span>
-            </div>
-          )}
-        </div>
+          <p className="text-sm leading-[1.65] text-ink-3">
+            The gradient is just as simple:{" "}
+            <Latex math="\frac{\partial}{\partial x}\text{ReLU}(x) = \mathbf{1}_{x > 0}" />. It
+            passes gradients through for positive inputs and blocks them for negative ones, avoiding
+            the vanishing gradient problem of sigmoid and tanh. Applied element-wise, the shape is
+            preserved: <Latex math="(64, 28, 28) \xrightarrow{\text{ReLU}} (64, 28, 28)" />.
+          </p>
+        </motion.div>
       </div>
 
-      {/* Filter selection: clickable feature map thumbnails — full width */}
-      <div className="mt-6 space-y-3">
-        <p className="text-center text-xs text-foreground/55">
-          Select a filter — click any feature map below
-        </p>
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+      {/* Filter selection */}
+      <motion.figure {...reveal()} className="figure m-0 mt-16">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-2">
           {relu1Maps
             ? relu1Maps.map((fm, i) => (
                 <ActivationHeatmap
                   key={i}
                   data={fm}
                   size={56}
-                  label={`#${i + 1}`}
+                  label={`${i + 1}`}
                   onClick={() => setSelectedFilter(i)}
                   selected={i === selectedFilter}
                 />
@@ -288,15 +291,15 @@ export function ActivationSection() {
                   }`}
                   onClick={() => setSelectedFilter(i)}
                 >
-                  <div
-                    className="cursor-pointer border border-border/50 bg-black"
-                    style={{ width: 56, height: 56 }}
-                  />
-                  <span className="text-xs text-foreground/55">#{i + 1}</span>
+                  <div className="tile cursor-pointer" style={{ width: 56, height: 56 }} />
+                  <span className="font-mono text-[10px] text-ink-3">{i + 1}</span>
                 </div>
               ))}
         </div>
-      </div>
+        <figcaption className="figcap">
+          <b>FIG. 3.3</b> All {numFilters} rectified feature maps. Select one to compare it above.
+        </figcaption>
+      </motion.figure>
     </SectionWrapper>
   );
 }

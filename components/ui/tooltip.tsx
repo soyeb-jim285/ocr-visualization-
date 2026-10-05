@@ -43,8 +43,8 @@ function TooltipContent({
         sideOffset={sideOffset}
         forceMount
         className={cn(
-          "z-50 w-fit rounded-md bg-foreground px-3 py-1.5 text-xs text-background text-balance origin-(--radix-tooltip-content-transform-origin)",
-          "transition-all duration-200 ease-out",
+          "z-[60] w-fit rounded-[3px] border border-rule-strong bg-bg-raised px-2 py-1 font-mono text-[11px] text-ink text-balance origin-(--radix-tooltip-content-transform-origin)",
+          "transition-[opacity,transform] duration-150 ease-out",
           "data-[state=closed]:pointer-events-none data-[state=closed]:opacity-0 data-[state=closed]:scale-95",
           "data-[state=open]:opacity-100 data-[state=open]:scale-100",
           "data-[state=closed]:data-[side=bottom]:-translate-y-1 data-[state=closed]:data-[side=top]:translate-y-1 data-[state=closed]:data-[side=left]:translate-x-1 data-[state=closed]:data-[side=right]:-translate-x-1",

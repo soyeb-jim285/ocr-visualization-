@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { ConvLayerConfig, Activation, PoolingType } from "@/lib/model-lab/architecture";
 import {
   FILTER_OPTIONS,
@@ -10,6 +11,31 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Switch } from "@/components/ui/switch";
 
+/** Shared chip styling for ToggleGroupItems (overrides base toggle look). */
+export const CHIP =
+  "chip h-auto min-h-8 min-w-0 shrink justify-center rounded-[2px] border border-rule bg-transparent px-2.5 py-1 font-mono text-[11px] font-normal text-ink-2 hover:bg-transparent hover:text-ink data-[state=on]:bg-[color-mix(in_oklab,var(--sig)_14%,transparent)] data-[state=on]:text-ink";
+
+export function Field({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  /** Optional readout shown on the label row, right-aligned. */
+  value?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-1.5 flex items-baseline justify-between gap-2">
+        <label className="eyebrow !text-ink-3">{label}</label>
+        {value != null && <span className="readout text-ink">{value}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 interface LayerConfigProps {
   layer: ConvLayerConfig;
   onUpdate: (updates: Partial<ConvLayerConfig>) => void;
@@ -17,12 +43,8 @@ interface LayerConfigProps {
 
 export function LayerConfig({ layer, onUpdate }: LayerConfigProps) {
   return (
-    <div className="space-y-3 pt-3">
-      {/* Filters */}
-      <div>
-        <label className="mb-1 block text-[11px] uppercase tracking-wider text-foreground/35">
-          Filters
-        </label>
+    <div className="space-y-4 pt-4">
+      <Field label="FILTERS">
         <ToggleGroup
           type="single"
           value={String(layer.filters)}
@@ -31,22 +53,14 @@ export function LayerConfig({ layer, onUpdate }: LayerConfigProps) {
           className="flex flex-wrap gap-1"
         >
           {FILTER_OPTIONS.map((opt) => (
-            <ToggleGroupItem
-              key={opt}
-              value={String(opt)}
-              className="h-auto min-w-0 shrink rounded-md px-2.5 py-1 text-xs font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
-            >
+            <ToggleGroupItem key={opt} value={String(opt)} className={CHIP}>
               {opt}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </div>
+      </Field>
 
-      {/* Kernel size */}
-      <div>
-        <label className="mb-1 block text-[11px] uppercase tracking-wider text-foreground/35">
-          Kernel
-        </label>
+      <Field label="KERNEL">
         <ToggleGroup
           type="single"
           value={String(layer.kernelSize)}
@@ -55,22 +69,14 @@ export function LayerConfig({ layer, onUpdate }: LayerConfigProps) {
           className="flex flex-wrap gap-1"
         >
           {KERNEL_OPTIONS.map((opt) => (
-            <ToggleGroupItem
-              key={opt}
-              value={String(opt)}
-              className="h-auto min-w-0 shrink rounded-md px-2.5 py-1 text-xs font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
-            >
+            <ToggleGroupItem key={opt} value={String(opt)} className={CHIP}>
               {opt}×{opt}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </div>
+      </Field>
 
-      {/* Activation */}
-      <div>
-        <label className="mb-1 block text-[11px] uppercase tracking-wider text-foreground/35">
-          Activation
-        </label>
+      <Field label="ACTIVATION">
         <ToggleGroup
           type="single"
           value={layer.activation}
@@ -79,22 +85,14 @@ export function LayerConfig({ layer, onUpdate }: LayerConfigProps) {
           className="flex flex-wrap gap-1"
         >
           {ACTIVATION_OPTIONS.map((opt) => (
-            <ToggleGroupItem
-              key={opt}
-              value={opt}
-              className="h-auto min-w-0 shrink rounded-md px-2.5 py-1 text-xs font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
-            >
+            <ToggleGroupItem key={opt} value={opt} className={CHIP}>
               {opt}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </div>
+      </Field>
 
-      {/* Pooling */}
-      <div>
-        <label className="mb-1 block text-[11px] uppercase tracking-wider text-foreground/35">
-          Pooling
-        </label>
+      <Field label="POOLING">
         <ToggleGroup
           type="single"
           value={layer.pooling}
@@ -103,27 +101,21 @@ export function LayerConfig({ layer, onUpdate }: LayerConfigProps) {
           className="flex flex-wrap gap-1"
         >
           {POOLING_OPTIONS.map((opt) => (
-            <ToggleGroupItem
-              key={opt}
-              value={opt}
-              className="h-auto min-w-0 shrink rounded-md px-2.5 py-1 text-xs font-medium bg-white/5 text-foreground/40 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
-            >
+            <ToggleGroupItem key={opt} value={opt} className={CHIP}>
               {opt}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-      </div>
+      </Field>
 
-      {/* BatchNorm toggle */}
-      <div className="flex items-center gap-2">
+      <label className="flex cursor-pointer items-center gap-2.5">
         <Switch
           size="sm"
           checked={layer.batchNorm}
           onCheckedChange={(checked) => onUpdate({ batchNorm: checked })}
-          className="data-[state=checked]:bg-indigo-500"
         />
-        <span className="text-xs text-foreground/50">BatchNorm</span>
-      </div>
+        <span className="font-sans text-[13px] text-ink-2">Batch normalization</span>
+      </label>
     </div>
   );
 }

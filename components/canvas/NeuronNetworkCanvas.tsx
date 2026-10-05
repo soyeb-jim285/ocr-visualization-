@@ -19,6 +19,7 @@ import {
   _by,
   type HoveredNeuron,
 } from "@/lib/network/networkConstants";
+import { INK, INK3, ANNOTATION, RULE, RULE_STRONG } from "@/lib/theme";
 
 const noopSubscribe = () => () => {};
 
@@ -96,6 +97,9 @@ export function NeuronNetworkCanvas({
   const drawRef = useRef<() => void>(() => {});
 
   useEffect(() => {
+    // Canvas can't resolve var(); read the next/font family once, outside the RAF loop
+    const monoFamily = canvasRef.current ? getComputedStyle(canvasRef.current).getPropertyValue("--font-geist-mono").trim() : "";
+    const mono = `${monoFamily ? monoFamily + ", " : ""}ui-monospace, monospace`;
     const draw = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -158,7 +162,7 @@ export function NeuronNetworkCanvas({
         ctx.lineWidth = 0.6;
         for (let b = 0; b < ALPHA_BUCKETS; b++) {
           const a = (b + 0.5) / ALPHA_BUCKETS;
-          ctx.strokeStyle = `rgba(140,160,200,${a})`;
+          ctx.strokeStyle = `rgba(170,205,225,${a})`;
           ctx.stroke(bucketPaths[b]);
         }
       }
@@ -235,6 +239,7 @@ export function NeuronNetworkCanvas({
       {
         const r = l.radius;
         const TAU = 6.2832;
+        ctx.globalCompositeOperation = "lighter";
         for (let li = 0; li < LAYERS.length; li++) {
           const layer = LAYERS[li];
           const rgb = layer.rgb;
@@ -252,23 +257,28 @@ export function NeuronNetworkCanvas({
             const effectiveAct = activation * wClamp;
             const x = l.posX[idx], y = l.posY[idx];
 
-            // Glow
+            // Glow: two flat additive halos (no shadowBlur / per-node gradients)
             if (effectiveAct > 0.15) {
               ctx.beginPath();
-              ctx.arc(x, y, r * 2.2, 0, TAU);
-              ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${effectiveAct * 0.2})`;
+              ctx.arc(x, y, r * 3, 0, TAU);
+              ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${effectiveAct * 0.07})`;
+              ctx.fill();
+              ctx.beginPath();
+              ctx.arc(x, y, r * 1.9, 0, TAU);
+              ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${effectiveAct * 0.16})`;
               ctx.fill();
             }
 
-            // Body
+            // Body: active neurons are lit, inactive ones are just a hairline outline
             ctx.beginPath();
             ctx.arc(x, y, r, 0, TAU);
             if (effectiveAct > 0.01) {
-              ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.15 + effectiveAct * 0.85})`;
-            } else {
-              ctx.fillStyle = isHovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)";
+              ctx.fillStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.2 + effectiveAct * 0.8})`;
+              ctx.fill();
+            } else if (isHovered) {
+              ctx.fillStyle = "rgba(170,205,225,0.06)";
+              ctx.fill();
             }
-            ctx.fill();
 
             // Border
             const isThis = hovNeuronInLayer && hoveredNeuron?.neuronIdx === ni;
@@ -279,15 +289,19 @@ export function NeuronNetworkCanvas({
               ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.6)`;
               ctx.lineWidth = 1.5;
             } else {
-              const ba = effectiveAct > 0.01 ? 0.3 + effectiveAct * 0.5 : 0.12;
-              ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${ba})`;
-              ctx.lineWidth = 0.8;
+              if (effectiveAct > 0.01) {
+                ctx.strokeStyle = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${0.3 + effectiveAct * 0.5})`;
+              } else {
+                ctx.strokeStyle = RULE;
+              }
+              ctx.lineWidth = 1;
             }
             ctx.stroke();
           }
 
           // Output labels (only 10 max)
           if (layer.type === "output") {
+            ctx.globalCompositeOperation = "source-over";
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
             for (let ni = 0; ni < count; ni++) {
@@ -295,13 +309,30 @@ export function NeuronNetworkCanvas({
               const idx = startI + ni;
               const activation = acts?.[ni] ?? 0;
               const effectiveAct = activation * wClamp;
-              const la = effectiveAct > 0.3 ? 0.4 + effectiveAct * 0.6 : 0.25;
-              ctx.fillStyle = `rgba(255,255,255,${la})`;
-              ctx.font = effectiveAct > 0.5 ? "bold 10px system-ui,sans-serif" : "10px system-ui,sans-serif";
+              ctx.fillStyle = effectiveAct > 0.3 ? INK : INK3;
+              ctx.font = `${effectiveAct > 0.5 ? "600 " : ""}11px ${mono}`;
               ctx.fillText(outputLabels[ni], l.posX[idx] + r + 6, l.posY[idx]);
+            }
+
+            // Specimen pin: top class + confidence, leader line down to its neuron
+            const top = acts?.[0] ?? 0;
+            if (hasData && width >= 480 && outputLabels[0] && wClamp > 0.9 && top > 0) {
+              const px = l.posX[startI], py = l.posY[startI];
+              ctx.strokeStyle = ANNOTATION;
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(px, py - r - 2);
+              ctx.lineTo(px, py - 14);
+              ctx.stroke();
+              ctx.fillStyle = top < 0.5 ? INK3 : ANNOTATION;
+              ctx.textAlign = "right";
+              ctx.textBaseline = "bottom";
+              ctx.font = `11px ${mono}`;
+              ctx.fillText(`SPECIMEN: ${outputLabels[0]}${top < 0.5 ? " (low conf)" : ""} · ${top.toFixed(2)}`, px + 28, py - 15);
             }
           }
         }
+        ctx.globalCompositeOperation = "source-over";
       }
 
       // --- Layer labels ---
@@ -313,21 +344,34 @@ export function NeuronNetworkCanvas({
         const maxY = l.layerBottomY[li];
         const isHov = hoveredLayer === li;
         const dy = width < 500 && li % 2 ? 22 : 0; // stagger labels on narrow widths
+        const lit = hasData && waveProgress - li >= 1;
 
-        ctx.fillStyle = isHov ? layer.color : "rgba(255,255,255,0.4)";
-        ctx.font = isHov ? "bold 10px system-ui,sans-serif" : "10px system-ui,sans-serif";
-        ctx.fillText(layer.displayName, x, maxY + 16 + dy);
+        // 1px tick from the column to its label; signal-coloured when the layer is lit
+        ctx.strokeStyle = isHov || lit ? layer.color : RULE_STRONG;
+        ctx.globalAlpha = isHov ? 1 : lit ? 0.8 : 1;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 0.5, maxY + l.radius + 12);
+        ctx.lineTo(x + 0.5, maxY + 16 + dy);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        ctx.fillStyle = isHov ? INK : INK3;
+        ctx.font = `${isHov ? "500 " : ""}10.5px ${mono}`;
+        ctx.fillText(layer.displayName, x, maxY + 18 + dy);
 
         const unit = (layer.type === "conv" || layer.type === "relu" || layer.type === "pool") && layer.name !== "relu4" ? "ch" : "";
-        ctx.fillStyle = "rgba(255,255,255,0.15)";
-        ctx.font = "8px system-ui,sans-serif";
-        ctx.fillText(`${layer.totalNeurons}${unit ? " " + unit : " neurons"}`, x, maxY + 28 + dy);
+        if (width >= 480) {
+          ctx.fillStyle = "rgba(136,150,163,0.75)";
+          ctx.font = `10.5px ${mono}`;
+          ctx.fillText(`${layer.totalNeurons}${unit ? ` ${unit}` : " neurons"}`, x, maxY + 31 + dy);
+        }
 
         if (layer.totalNeurons > layer.displayNeurons) {
-          ctx.fillStyle = "rgba(255,255,255,0.12)";
+          ctx.fillStyle = INK3;
           for (let d = 0; d < 3; d++) {
             ctx.beginPath();
-            ctx.arc(x - 4 + d * 4, maxY + 8, 1, 0, 6.2832);
+            ctx.arc(x - 4 + d * 4, maxY + l.radius + 6, 1, 0, 6.2832);
             ctx.fill();
           }
         }
@@ -425,7 +469,7 @@ export function NeuronNetworkCanvas({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
-      style={{ width, height, cursor: "pointer" }}
+      style={{ width, height, cursor: "pointer", touchAction: "manipulation" }}
     />
   );
 }

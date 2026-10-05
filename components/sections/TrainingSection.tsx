@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { SectionWrapper } from "@/components/ui/SectionWrapper";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { LossCurve } from "@/components/visualizations/LossCurve";
@@ -14,6 +15,13 @@ import {
   type TrainingHistory,
   type WeightSnapshots,
 } from "@/lib/training/trainingData";
+
+const reveal = {
+  initial: { opacity: 0, y: 16 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-10% 0px" },
+  transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
+};
 
 export function TrainingSection() {
   const [history, setHistory] = useState<TrainingHistory | null>(null);
@@ -30,16 +38,21 @@ export function TrainingSection() {
   }, []);
 
   return (
-    <SectionWrapper id="training" fullHeight={false}>
+    <SectionWrapper id="training" fullHeight={false} sig="train">
       <SectionHeader
         step={9}
+        wide
+        tag="75 epochs · Adam · 980K images"
         title="How It Learned: Training"
         subtitle="The model wasn't born smart — it started with random weights and learned by seeing millions of examples. Over 75 epochs of training, it gradually improved its ability to recognize characters. Scrub through epochs to see how your drawing would be predicted at each stage."
       />
 
       {/* Theory introduction */}
-      <div className="mb-10 space-y-4 text-center lg:text-left">
-        <p className="text-base leading-relaxed text-foreground/65 sm:text-lg">
+      <motion.div
+        {...reveal}
+        className="mb-16 grid gap-x-6 gap-y-8 md:grid-cols-12"
+      >
+        <p className="prose-body min-w-0 md:col-span-6">
           Training is an iterative optimization: the model sees a batch of
           labeled examples, computes how wrong its predictions are (the{" "}
           <em>loss</em>), then adjusts every weight slightly to reduce that
@@ -47,23 +60,7 @@ export function TrainingSection() {
           here is <em>cross-entropy</em>, which heavily penalizes confident
           wrong answers.
         </p>
-
-        <div className="py-3">
-          <Latex
-            display
-            math="\mathcal{L} = -\sum_{i=1}^{K} y_i \log\!\left(\hat{y}_i\right) \qquad\qquad \theta \leftarrow \theta - \eta\,\nabla_\theta \mathcal{L}"
-          />
-        </div>
-
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
-          <span><Latex math="y_i" /> — true label (one-hot)</span>
-          <span><Latex math="\hat{y}_i" /> — predicted probability</span>
-          <span><Latex math="\theta" /> — all model weights</span>
-          <span><Latex math="\eta" /> — learning rate</span>
-          <span><Latex math="\nabla_\theta \mathcal{L}" /> — gradient</span>
-        </div>
-
-        <p className="text-sm leading-relaxed text-foreground/60">
+        <p className="prose-body min-w-0 md:col-span-6">
           The gradient <Latex math="\nabla_\theta \mathcal{L}" /> tells each
           weight how to change to reduce the loss. Backpropagation computes this
           efficiently using the chain rule, flowing error signals backward
@@ -72,48 +69,67 @@ export function TrainingSection() {
           ), the model converges over 75 epochs on EMNIST ByMerge + BanglaLekha-Isolated —
           roughly 980K training images of handwritten characters in English and Bengali.
         </p>
-      </div>
 
-      <div className="flex flex-col gap-12 sm:gap-20">
-        {/* Epoch network visualization - the star feature */}
-        <div>
-          <h3 className="mb-2 text-center text-lg font-medium text-foreground/70">
-            Your drawing through training
-          </h3>
-          <EpochNetworkVisualization />
+        <div className="formula min-w-0 flex-wrap gap-x-10 text-[0.85em] sm:text-[1em] md:col-span-12">
+          <Latex
+            display
+            math="\mathcal{L} = -\sum_{i=1}^{K} y_i \log\!\left(\hat{y}_i\right)"
+          />
+          <Latex display math="\theta \leftarrow \theta - \eta\,\nabla_\theta \mathcal{L}" />
+          <span className="eq-no">(9)</span>
         </div>
 
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 font-mono text-[11px] text-ink-3 md:col-span-12 md:grid-cols-5">
+          <div><Latex math="y_i" /> true label (one-hot)</div>
+          <div><Latex math="\hat{y}_i" /> predicted probability</div>
+          <div><Latex math="\theta" /> all model weights</div>
+          <div><Latex math="\eta" /> learning rate</div>
+          <div><Latex math="\nabla_\theta \mathcal{L}" /> gradient</div>
+        </dl>
+      </motion.div>
+
+      <div className="flex flex-col gap-12 sm:gap-16">
+        {/* Epoch network visualization - the star feature */}
+        <motion.figure {...reveal} className="figure m-0">
+          <EpochNetworkVisualization />
+          <figcaption className="figcap">
+            <b>FIG. 9.1</b> Your drawing through training. Same pixels, 75
+            checkpoints: drag the scrubber to watch the prediction sharpen.
+          </figcaption>
+        </motion.figure>
+
         {/* Loss curve */}
-        <div>
-          <h3 className="mb-6 text-center text-lg font-medium text-foreground/70">
-            Training progress
-          </h3>
+        <motion.figure {...reveal} className="figure m-0">
           {loadError ? (
             <div className="viz-empty-state h-48">
-              <p className="text-foreground/55">
-                Training history not available — run the training script first
-              </p>
+              <p>Training history not available — run the training script first</p>
             </div>
           ) : (
             <LossCurve history={history} />
           )}
-        </div>
+          <figcaption className="figcap">
+            <b>FIG. 9.2</b> Training progress. Solid is train, dashed is
+            validation; hover for per-epoch values.
+          </figcaption>
+        </motion.figure>
 
         {/* Weight evolution */}
-        <div>
-          <h3 className="mb-6 text-center text-lg font-medium text-foreground/70">
-            Weight evolution
-          </h3>
+        <motion.figure {...reveal} className="figure m-0">
           <WeightEvolution snapshots={snapshots} />
-        </div>
+          <figcaption className="figcap">
+            <b>FIG. 9.3</b> Weight evolution. Distribution of every weight in
+            the chosen layer at each snapshot epoch.
+          </figcaption>
+        </motion.figure>
 
         {/* Gradient flow */}
-        <div>
-          <h3 className="mb-6 text-center text-lg font-medium text-foreground/70">
-            Gradient flow
-          </h3>
+        <motion.figure {...reveal} className="figure m-0">
           <GradientFlow />
-        </div>
+          <figcaption className="figcap">
+            <b>FIG. 9.4</b> Gradient flow. RMS weight change per layer between
+            two snapshots, a proxy for the size of the gradient updates.
+          </figcaption>
+        </motion.figure>
       </div>
     </SectionWrapper>
   );

@@ -1,81 +1,71 @@
-"use client";
-
 const LINKS = [
-  {
-    label: "Source Code",
-    href: "https://github.com/soyeb-jim285/ocr-visualization",
-    icon: (
-      <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
-        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Model Weights",
-    href: "https://huggingface.co/soyeb-jim285/ocr-visualization-models",
-    icon: (
-      <svg viewBox="0 0 16 16" fill="currentColor" className="h-4 w-4">
-        <path d="M8 1a7 7 0 100 14A7 7 0 008 1zM2 8a6 6 0 1112 0A6 6 0 012 8z" />
-        <path d="M8 4a1 1 0 011 1v2.586l1.707 1.707a1 1 0 01-1.414 1.414l-2-2A1 1 0 017 8V5a1 1 0 011-1z" />
-      </svg>
-    ),
-  },
+  { label: "Source", href: "https://github.com/soyeb-jim285/ocr-visualization" },
+  { label: "Weights", href: "https://huggingface.co/soyeb-jim285/ocr-visualization-models" },
 ];
 
 export function FooterSection() {
   return (
-    <footer className="relative mt-8 border-t border-border/40">
-      <div
-        className="mx-auto px-4 py-12 sm:px-6 sm:py-16"
-        style={{ maxWidth: "var(--content-max-width)" }}
-      >
-        <p className="mb-8 text-center text-xs text-foreground/55">
-          Built with Next.js · React · TypeScript · ONNX Runtime · Tailwind CSS · Zustand · Framer Motion · Three.js
+    <footer className="relative border-t border-rule">
+      <div className="mx-auto max-w-[1200px] px-4 md:px-16 min-[1400px]:px-8">
+        <div className="grid gap-10 py-24 md:grid-cols-12 md:gap-x-6">
+          <div className="md:col-span-5">
+            <p className="font-serif text-3xl text-ink">Neural Network X-Ray</p>
+            <p className="caption mt-3">
+              Inference: in-browser · WASM · no data leaves this tab
+            </p>
+          </div>
+
+          <div className="md:col-span-4">
+            <ul className="caption space-y-1.5">
+              <li>
+                [1]{" "}
+                <a
+                  href="https://www.nist.gov/itl/products-and-services/emnist-dataset"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link-mono"
+                >
+                  EMNIST ByMerge (Cohen et al., 2017)
+                </a>
+              </li>
+              <li>
+                [2]{" "}
+                <a
+                  href="https://data.mendeley.com/datasets/hf6sf8zrkc/2"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link-mono"
+                >
+                  BanglaLekha-Isolated
+                </a>
+              </li>
+            </ul>
+            <p className="caption mt-4">146 classes · ~980K images · 75 epochs</p>
+          </div>
+
+          <ul className="flex gap-6 md:col-span-3 md:flex-col md:gap-2">
+            {LINKS.map(({ label, href }) => (
+              <li key={label}>
+                <a href={href} target="_blank" rel="noopener noreferrer" className="link-mono">
+                  {label} ↗
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="caption pb-8">
+          Next.js · React · ONNX Runtime Web · Framer Motion · Tailwind
         </p>
+        <p className="pb-16 font-serif text-[clamp(1.5rem,3vw,2rem)] italic text-ink-3">
+          Every layer, in the open.
+        </p>
+      </div>
 
-        {/* Links */}
-        <div className="mb-8 flex flex-wrap items-center justify-center gap-4">
-          {LINKS.map(({ label, href, icon }) => (
-            <a
-              key={label}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-lg border border-border/50 px-4 py-2 text-sm text-foreground/60 transition-colors hover:border-accent-primary/50 hover:text-foreground"
-            >
-              {icon}
-              {label}
-            </a>
-          ))}
-        </div>
-
-        {/* Divider + attribution */}
-        <div className="flex flex-col items-center gap-2 pt-6">
-          <p className="text-xs text-foreground/50">
-            Trained on{" "}
-            <a
-              href="https://www.nist.gov/itl/products-and-services/emnist-dataset"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline decoration-foreground/15 underline-offset-2 hover:text-foreground/80"
-            >
-              EMNIST ByMerge
-            </a>
-            {" + "}
-            <a
-              href="https://data.mendeley.com/datasets/hf6sf8zrkc/2"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline decoration-foreground/15 underline-offset-2 hover:text-foreground/80"
-            >
-              BanglaLekha-Isolated
-            </a>
-            {" "}— 146 character classes, ~980K training images, 75 epochs
-          </p>
-          <p className="text-xs text-foreground/50">
-            Inference runs entirely in your browser via WebAssembly.
-          </p>
-        </div>
+      <div className="border-t border-rule">
+        <p className="caption mx-auto max-w-[1200px] px-4 py-4 md:px-16 min-[1400px]:px-8">
+          © soyeb-jim285
+        </p>
       </div>
     </footer>
   );

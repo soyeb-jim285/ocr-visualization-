@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useMemo, useState } from "react";
 import { viridis } from "@/lib/network/networkConstants";
+
 interface ActivationHeatmapProps {
   data: number[][];
   size?: number;
@@ -28,6 +29,9 @@ export function ActivationHeatmap({
     for (const row of data) for (const v of row) { if (v < mn) mn = v; if (v > mx) mx = v; }
     return { min: mn, max: mx };
   }, [data]);
+
+  // Dead channel: every value is zero (X-ray tile with a dashed outline)
+  const dead = max === 0 && min === 0;
 
   // Mount the canvas only once the cell is near the viewport (one-shot).
   useEffect(() => {
@@ -70,34 +74,53 @@ export function ActivationHeatmap({
     ctx.putImageData(imageData, 0, 0);
   }, [visible, data, rows, cols, min, max]);
 
+  const interactive = !!onClick;
+
   return (
     <div
       className={`group flex flex-col items-center gap-1 ${
-        onClick ? "cursor-pointer" : ""
+        interactive ? "cursor-pointer" : ""
       }`}
       onClick={onClick}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-pressed={interactive ? !!selected : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
     >
-      <div ref={boxRef} style={{ width: size, height: size }}>
+      <div
+        ref={boxRef}
+        className={`tile overflow-hidden border border-rule transition-[border-color] duration-150 ${
+          interactive && !selected ? "group-hover:border-rule-strong" : ""
+        }`}
+        data-selected={selected ? "true" : undefined}
+        data-dead={dead ? "true" : undefined}
+        style={{ width: size, height: size }}
+      >
         {visible && (
           <canvas
             ref={canvasRef}
             width={cols}
             height={rows}
-            className={`block rounded-md transition-all ${
-              selected
-                ? "ring-2 ring-accent-primary/80 shadow-[0_0_0_1px_rgba(99,102,241,0.32)]"
-                : "ring-1 ring-white/16 group-hover:ring-accent-primary/45"
-            }`}
-            style={{
-              width: size,
-              height: size,
-              imageRendering: "pixelated",
-            }}
+            className="block h-full w-full"
+            style={{ imageRendering: "pixelated" }}
           />
         )}
       </div>
       {label && (
-        <span className="text-xs text-foreground/40 group-hover:text-foreground/60">
+        <span
+          className={`font-mono text-[10px] leading-none transition-colors duration-150 ${
+            selected ? "text-sig" : "text-ink-3 group-hover:text-ink"
+          }`}
+        >
           {label}
         </span>
       )}

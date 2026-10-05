@@ -48,10 +48,8 @@ export function PatchGrid({
       onClick={onClick}
     >
       <div
-        className={`overflow-hidden border ${
-          highlight
-            ? "border-accent-primary shadow-md shadow-accent-primary/20"
-            : "border-border/60"
+        className={`overflow-hidden rounded-[2px] border ${
+          highlight ? "border-sig" : "border-rule-strong"
         }`}
         style={{ lineHeight: 0 }}
       >
@@ -102,7 +100,7 @@ export function PatchGrid({
         </div>
       </div>
       {label && (
-        <span className="text-xs text-foreground/40">{label}</span>
+        <span className="font-mono text-[11px] text-ink-3">{label}</span>
       )}
     </div>
   );

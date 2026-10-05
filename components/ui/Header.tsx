@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useUIStore } from "@/stores/uiStore";
 import { SECTION_IDS } from "@/hooks/useScrollSection";
 
@@ -17,12 +19,37 @@ const SECTION_LABELS = [
   "Model Lab",
 ];
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
 export function Header() {
   const activeSection = useUIStore((s) => s.activeSection);
+  const barRef = useRef<HTMLDivElement>(null);
 
   const lastSection = SECTION_LABELS.length - 1;
   const safeActiveSection = Math.min(Math.max(activeSection, 0), lastSection);
   const activeLabel = SECTION_LABELS[safeActiveSection] ?? SECTION_LABELS[0];
+
+  // Top hairline progress: writes the transform directly, no React state per scroll
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+      if (barRef.current) barRef.current.style.transform = `scaleX(${p})`;
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
 
   const scrollToSection = (index: number) => {
     const sectionId = SECTION_IDS[index];
@@ -32,63 +59,90 @@ export function Header() {
   };
 
   return (
-    <div className="fixed left-0 right-0 top-0 z-50">
-      {/* Section dots - desktop */}
-      <nav aria-label="Sections" className="hidden items-center justify-center gap-1 bg-background/70 py-2 backdrop-blur-lg md:flex">
-        {SECTION_LABELS.map((label, i) => (
-          <button
-            key={i}
-            onClick={() => scrollToSection(i)}
-            aria-label={label}
-            className={`group flex items-center gap-1.5 rounded-full px-2 py-1 text-xs transition-all ${
-              activeSection === i
-                ? "bg-accent-primary/10 text-accent-primary"
-                : "text-foreground/55 hover:text-foreground/80"
-            }`}
-          >
-            <div
-              className={`h-1.5 w-1.5 rounded-full transition-all ${
-                activeSection === i
-                  ? "bg-accent-primary"
-                  : "bg-foreground/20 group-hover:bg-foreground/40"
-              }`}
-            />
-            <span className={activeSection === i ? "" : "hidden lg:inline"}>
-              {label}
-            </span>
-          </button>
-        ))}
+    <>
+      {/* Reading progress hairline */}
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-40 h-px bg-rule">
+        <div ref={barRef} className="h-full origin-left bg-phosphor" style={{ transform: "scaleX(0)" }} />
+      </div>
+
+      {/* Desktop index rail */}
+      <nav
+        aria-label="Sections"
+        className="group/rail fixed left-6 top-5 z-40 hidden md:block"
+      >
+        <button
+          type="button"
+          onClick={() => scrollToSection(0)}
+          className="font-mono text-[11px] font-medium tracking-[0.12em] text-ink transition-colors duration-150 hover:text-phosphor"
+        >
+          NNXR
+        </button>
+        <ol className="mt-6 border-l border-rule">
+          {SECTION_LABELS.map((label, i) => {
+            const active = safeActiveSection === i;
+            return (
+              <li key={label}>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection(i)}
+                  aria-label={label}
+                  aria-current={active ? "location" : undefined}
+                  className={`group relative flex h-6 items-center pl-3 font-mono text-[11px] transition-colors duration-150 hover:text-ink ${
+                    active ? "text-phosphor" : "text-ink-3"
+                  }`}
+                >
+                  <span
+                    aria-hidden
+                    className={`absolute left-0 top-1/2 h-px w-2 origin-left transition-transform duration-200 ${
+                      active ? "scale-x-[2.5] bg-phosphor" : "bg-ink-4"
+                    }`}
+                  />
+                  <span className="w-5 pl-1">{pad(i)}</span>
+                  <span
+                    className={`absolute left-10 whitespace-nowrap rounded-[2px] bg-bg/80 px-1.5 transition-opacity duration-150 group-hover/rail:opacity-100 group-focus-within/rail:opacity-100 ${
+                      active ? "opacity-0 min-[1536px]:opacity-100" : "opacity-0"
+                    }`}
+                  >
+                    {label}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
       </nav>
 
       {/* Compact mobile section navigator */}
-      <div className="mx-2 mt-1 flex items-center justify-between rounded-full border border-border/50 bg-background/72 px-2 py-1 shadow-lg shadow-black/25 backdrop-blur-xl md:hidden">
+      <div className="fixed inset-x-4 top-3 z-40 flex h-11 items-center justify-between rounded-[4px] border border-rule bg-bg-raised md:hidden">
         <button
           type="button"
           onClick={() => scrollToSection(Math.max(0, safeActiveSection - 1))}
           disabled={safeActiveSection <= 0}
-          className="relative after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] rounded-full px-2 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-foreground/60 transition disabled:opacity-30"
+          aria-label="Previous section"
+          className="flex size-11 items-center justify-center text-ink-2 transition-colors disabled:opacity-30"
         >
-          Prev
+          <ChevronLeft className="size-4" />
         </button>
 
         <button
           type="button"
           onClick={() => scrollToSection(safeActiveSection)}
-          className="relative after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] rounded-full border border-border/60 bg-black/20 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-foreground/68"
+          className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink"
           aria-label={`Current section: ${activeLabel}`}
         >
-          {safeActiveSection + 1}/{SECTION_LABELS.length} - {activeLabel}
+          {pad(safeActiveSection + 1)}/{SECTION_LABELS.length} · {activeLabel}
         </button>
 
         <button
           type="button"
           onClick={() => scrollToSection(Math.min(lastSection, safeActiveSection + 1))}
           disabled={safeActiveSection >= lastSection}
-          className="relative after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] rounded-full px-2 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-foreground/60 transition disabled:opacity-30"
+          aria-label="Next section"
+          className="flex size-11 items-center justify-center text-ink-2 transition-colors disabled:opacity-30"
         >
-          Next
+          <ChevronRight className="size-4" />
         </button>
       </div>
-    </div>
+    </>
   );
 }

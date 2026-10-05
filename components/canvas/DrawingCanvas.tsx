@@ -30,6 +30,7 @@ export function DrawingCanvas({
   const { infer, cancel: cancelInference } = useInference();
   const hasFiredFirstDrawRef = useRef(false);
   const [shareState, setShareState] = useState<"idle" | "copied">("idle");
+  const [pressed, setPressed] = useState(false);
 
   const canvasSize = displaySize ?? (variant === "hero" ? 320 : 108);
   const lineWidth = variant === "hero" ? 16 : 11;
@@ -97,20 +98,34 @@ export function DrawingCanvas({
     setTimeout(() => setShareState("idle"), 2000);
   }, []);
 
+  const isHero = variant === "hero";
+  const tickStep = canvasSize / 28;
+
+  const endStroke = useCallback(() => {
+    setPressed(false);
+    stopDrawing();
+  }, [stopDrawing]);
+
   return (
-    <div className={`flex flex-col items-center ${variant === "hero" ? "gap-3" : "gap-1"}`}>
+    <div className={`flex flex-col ${isHero ? "gap-3" : "items-center gap-1"}`}>
+      {isHero && (
+        <div className="flex items-baseline justify-between font-mono text-[10.5px] tracking-[0.06em] text-ink-3">
+          <span>FIG. 0 · SPECIMEN</span>
+          <span>280 × 280 → 28 × 28</span>
+        </div>
+      )}
       <div
-        className={`relative overflow-hidden border bg-black ${
-          variant === "hero"
-            ? "rounded-3xl border-border/80 shadow-lg shadow-accent-primary/15"
-            : "rounded border-border/50"
+        style={pressed && isHero ? { boxShadow: "0 0 0 1px rgba(143,227,255,0.35), 0 0 28px rgba(143,227,255,0.14)" } : undefined}
+        className={`relative overflow-hidden bg-black ${
+          isHero ? "rounded-[2px] border border-rule transition-shadow duration-200" : "rounded-[2px] border border-rule-strong"
         }`}
       >
+        {/* Glow is CSS-only: canvas pixels feed the model, so ink must stay pure white */}
         <canvas
           ref={canvasRef}
           width={INTERNAL_SIZE}
           height={INTERNAL_SIZE}
-          className="cursor-crosshair touch-none"
+          className="block cursor-crosshair touch-none"
           style={{
             width: canvasSize,
             height: canvasSize,
@@ -118,62 +133,70 @@ export function DrawingCanvas({
           }}
           onPointerDown={(e) => {
             e.currentTarget.setPointerCapture(e.pointerId);
+            setPressed(true);
             startDrawing(e.nativeEvent);
           }}
           onPointerMove={(e) => draw(e.nativeEvent)}
-          onPointerUp={() => stopDrawing()}
-          onPointerCancel={() => stopDrawing()}
+          onPointerUp={endStroke}
+          onPointerCancel={endStroke}
           aria-label="Drawing canvas for character input"
         />
 
-        {/* Draw hint overlay */}
-        {!hasDrawn && variant === "hero" && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="text-xl text-foreground/60">
-              Draw a letter or digit
-            </p>
-          </div>
+        {isHero && (
+          <>
+            {/* 28-step ticks along the top and left edge */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-1.5"
+              style={{ background: `repeating-linear-gradient(90deg, var(--rule) 0 1px, transparent 1px ${tickStep}px)` }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-0 w-1.5"
+              style={{ background: `repeating-linear-gradient(0deg, var(--rule) 0 1px, transparent 1px ${tickStep}px)` }}
+            />
+            {/* Ink-down underline */}
+            <div
+              aria-hidden
+              className={`pointer-events-none absolute inset-x-0 bottom-0 h-px origin-left bg-phosphor transition-transform duration-200 ${pressed ? "scale-x-100" : "scale-x-0"}`}
+            />
+            {!hasDrawn && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <p className="font-serif text-xl italic text-ink-3">Draw a letter or digit</p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {variant === "hero" ? (
+      {isHero ? (
         <>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={clear}
-              className="rounded-lg border border-border/80 px-4 py-2.5 text-sm text-foreground/65 transition-colors hover:border-accent-primary hover:text-foreground"
-            >
-              Clear
-            </button>
-            {hasDrawn && (
-              <button
-                onClick={share}
-                className="rounded-lg border border-border/80 px-4 py-2.5 text-sm text-foreground/65 transition-colors hover:border-accent-primary hover:text-foreground"
-              >
-                {shareState === "copied" ? "Copied!" : "Share"}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-5">
+              <button onClick={clear} className="text-btn py-2">
+                Clear
               </button>
-            )}
+              {hasDrawn && (
+                <button onClick={share} className="text-btn py-2">
+                  {shareState === "copied" ? "Copied!" : "Share"}
+                </button>
+              )}
+            </div>
+            <ImageUploader />
           </div>
-          <p className="text-center font-mono text-[10px] tracking-wider text-foreground/55">
+          <p className="font-mono text-[11px] tracking-[0.04em] text-ink-3">
             A–Z &middot; a–z &middot; 0–9 &middot; ক–হ &middot; compound characters
           </p>
         </>
       ) : (
         <div className="flex w-full items-center justify-between gap-1">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={clear}
-              className="inline-flex h-6 items-center rounded-sm border border-border/60 bg-transparent px-2 text-[10px] font-medium text-foreground/60 transition-colors hover:bg-foreground/10 hover:text-foreground"
-            >
-              Clear
+          <div className="flex items-center gap-3">
+            <button onClick={clear} className="text-btn py-1.5">
+              CLEAR
             </button>
             {hasDrawn && (
-              <button
-                onClick={share}
-                className="inline-flex h-6 items-center rounded-sm border border-border/60 bg-transparent px-2 text-[10px] font-medium text-foreground/60 transition-colors hover:bg-foreground/10 hover:text-foreground"
-                title="Copy share link"
-              >
-                {shareState === "copied" ? "Copied!" : "Share"}
+              <button onClick={share} className="text-btn py-1.5" title="Copy share link">
+                {shareState === "copied" ? "COPIED" : "SHARE"}
               </button>
             )}
           </div>

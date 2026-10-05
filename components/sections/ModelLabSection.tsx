@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { SectionWrapper } from "@/components/ui/SectionWrapper";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ArchitectureBuilder } from "@/components/model-lab/ArchitectureBuilder";
@@ -23,6 +24,7 @@ import type * as TF from "@tensorflow/tfjs";
 
 export function ModelLabSection() {
   const store = useModelLabStore;
+  const reduce = useReducedMotion();
   const phase = useModelLabStore((s) => s.phase);
   const hasTrainedModel = useModelLabStore((s) => s.hasTrainedModel);
   const trainingMode = useModelLabStore((s) => s.trainingMode);
@@ -372,17 +374,35 @@ export function ModelLabSection() {
     };
   }, [store]);
 
+  const trained = phase === "trained" || hasTrainedModel;
+  const status =
+    phase === "idle"
+      ? "IDLE"
+      : phase === "trained"
+        ? "TRAINED"
+        : phase === "error"
+          ? "ERROR"
+          : "RUNNING";
+
   return (
-    <SectionWrapper id="model-lab" fullHeight={false}>
+    <SectionWrapper id="model-lab" fullHeight={false} sig="lab">
       <SectionHeader
         step={10}
+        wide
         title="Model Lab"
+        tag={`Workspace · ${status}`}
         subtitle="Design your own CNN architecture, choose a dataset, and train it live in the browser. After training, draw characters to compare your model's predictions with the pre-trained model."
       />
 
-      <div className="flex flex-col gap-8 lg:flex-row lg:gap-10">
-        {/* Left column: Architecture + Training controls */}
-        <div className="w-full space-y-6 lg:w-[380px] lg:shrink-0">
+      <motion.div
+        initial={reduce ? false : { opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-8% 0px" }}
+        transition={{ duration: reduce ? 0.15 : 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="grid gap-10 lg:grid-cols-12 lg:gap-x-10"
+      >
+        {/* Left: builder + controls */}
+        <div className="min-w-0 space-y-10 lg:col-span-5 xl:col-span-4">
           <ArchitectureBuilder />
           <TrainingControls
             onTrain={handleTrain}
@@ -391,9 +411,9 @@ export function ModelLabSection() {
           />
         </div>
 
-        {/* Right column: Charts + Inference */}
-        <div className="min-w-0 flex-1 space-y-6">
-          {(phase === "trained" || hasTrainedModel) && (
+        {/* Right: results */}
+        <div className="min-w-0 space-y-10 self-start lg:col-span-7 xl:sticky xl:top-8 xl:col-span-8">
+          {trained && (
             <ExportPanel
               onExportModel={handleExportModel}
               onExportReport={handleExportReport}
@@ -404,13 +424,17 @@ export function ModelLabSection() {
 
           <TrainingChart ref={chartContainerRef} />
 
-          {(phase === "trained" || hasTrainedModel) && (
-            <ModelLabInference />
-          )}
+          {trained && <ModelLabInference />}
 
           {phase === "idle" && <NetworkDiagram />}
+
+          {phase === "idle" && !hasTrainedModel && (
+            <div className="viz-empty-state min-h-[120px]">
+              Press Train to watch loss and accuracy fall, epoch by epoch
+            </div>
+          )}
         </div>
-      </div>
+      </motion.div>
     </SectionWrapper>
   );
 }

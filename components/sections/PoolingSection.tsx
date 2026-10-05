@@ -13,6 +13,8 @@ import { ActivationHeatmap } from "@/components/visualizations/ActivationHeatmap
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { Latex } from "@/components/ui/Latex";
 import { viridis } from "@/lib/network/networkConstants";
+import { Reveal } from "@/components/visualizations/FeatureMapGrid";
+import { PHOSPHOR, ANNOTATION } from "@/lib/theme";
 
 /* ── Constants ───────────────────────────────────────────────────── */
 
@@ -86,9 +88,11 @@ function PoolingViz({
       const y = row * 2 * CELL_B;
       const size = 2 * CELL_B;
 
-      ctx.fillStyle = "rgba(6, 182, 212, 0.2)";
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = PHOSPHOR;
       ctx.fillRect(x, y, size, size);
-      ctx.strokeStyle = "#06b6d4";
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = PHOSPHOR;
       ctx.lineWidth = 2;
       ctx.strokeRect(x + 1, y + 1, size - 2, size - 2);
     }
@@ -118,9 +122,11 @@ function PoolingViz({
       const x = col * CELL_A;
       const y = row * CELL_A;
 
-      ctx.fillStyle = "rgba(245, 158, 11, 0.25)";
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = ANNOTATION;
       ctx.fillRect(x, y, CELL_A, CELL_A);
-      ctx.strokeStyle = "#f59e0b";
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = ANNOTATION;
       ctx.lineWidth = 2;
       ctx.strokeRect(x + 1, y + 1, CELL_A - 2, CELL_A - 2);
     }
@@ -201,22 +207,22 @@ function PoolingViz({
     <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
       {/* Before pooling */}
       <div className="flex flex-col items-center gap-2">
-        <span className="text-xs font-medium text-foreground/60">
-          Before Pooling
-        </span>
-        <canvas
-          ref={beforeRef}
-          width={CANVAS_SIZE}
-          height={CANVAS_SIZE}
-          className="cursor-crosshair rounded-md border border-border/60"
-          style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
-          onMouseMove={handleBeforeMove}
-          onMouseLeave={clearHover}
-        />
-        <span className="font-mono text-[11px] text-foreground/55">
+        <span className="font-mono text-[11px] tracking-[0.08em] text-sig">BEFORE</span>
+        <div className="well plate-marks p-1.5">
+          <canvas
+            ref={beforeRef}
+            width={CANVAS_SIZE}
+            height={CANVAS_SIZE}
+            className="block cursor-crosshair"
+            style={{ width: CANVAS_SIZE, height: CANVAS_SIZE, imageRendering: "pixelated" }}
+            onMouseMove={handleBeforeMove}
+            onMouseLeave={clearHover}
+          />
+        </div>
+        <span className="caption min-h-[1.5em]">
           {BEFORE_GRID}&times;{BEFORE_GRID}
           {hoverPool && (
-            <span className="text-cyan-400">
+            <span className="text-phosphor">
               {" "}
               [{hoverPool.row * 2}:{hoverPool.row * 2 + 1}, {hoverPool.col * 2}
               :{hoverPool.col * 2 + 1}]
@@ -228,19 +234,17 @@ function PoolingViz({
       {/* 2×2 pool grid with live values */}
       <div className="flex flex-col items-center gap-2">
         <div
-          className={`grid grid-cols-2 gap-0.5 rounded border p-1.5 transition-colors ${
-            isLive
-              ? "border-cyan-400/40 bg-cyan-950/20"
-              : "border-accent-tertiary/30 bg-surface"
+          className={`grid grid-cols-2 gap-px border p-1 transition-colors duration-150 ${
+            isLive ? "border-phosphor/60" : "border-rule"
           }`}
         >
           {displayValues.map((v, i) => (
             <div
               key={i}
-              className={`flex h-7 w-7 items-center justify-center rounded-sm font-mono text-[10px] transition-colors ${
+              className={`flex h-8 w-9 items-center justify-center font-mono text-[11px] transition-colors duration-150 ${
                 i === displayMaxIdx
-                  ? "bg-accent-tertiary font-bold text-background"
-                  : "bg-border/30 text-foreground/30"
+                  ? "bg-sig font-medium text-bg"
+                  : "bg-bg-lift text-ink-3"
               }`}
             >
               {isLive ? v.toFixed(2) : v}
@@ -249,29 +253,29 @@ function PoolingViz({
         </div>
         <Latex
           math="\xrightarrow{\max}"
-          className="hidden text-foreground/40 sm:block"
+          className="hidden text-ink-3 sm:block"
         />
-        <Latex math="\downarrow" className="text-foreground/40 sm:hidden" />
+        <Latex math="\downarrow" className="text-ink-3 sm:hidden" />
       </div>
 
       {/* After pooling */}
       <div className="flex flex-col items-center gap-2">
-        <span className="text-xs font-medium text-foreground/60">
-          After Pooling
-        </span>
-        <canvas
-          ref={afterRef}
-          width={CANVAS_SIZE}
-          height={CANVAS_SIZE}
-          className="cursor-crosshair rounded-md border border-border/60"
-          style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
-          onMouseMove={handleAfterMove}
-          onMouseLeave={clearHover}
-        />
-        <span className="font-mono text-[11px] text-foreground/55">
+        <span className="font-mono text-[11px] tracking-[0.08em] text-sig">AFTER</span>
+        <div className="well plate-marks p-1.5">
+          <canvas
+            ref={afterRef}
+            width={CANVAS_SIZE}
+            height={CANVAS_SIZE}
+            className="block cursor-crosshair"
+            style={{ width: CANVAS_SIZE, height: CANVAS_SIZE, imageRendering: "pixelated" }}
+            onMouseMove={handleAfterMove}
+            onMouseLeave={clearHover}
+          />
+        </div>
+        <span className="caption min-h-[1.5em]">
           {AFTER_GRID}&times;{AFTER_GRID}
           {hoverPool && (
-            <span className="text-amber-400">
+            <span className="text-annotation">
               {" "}
               [{hoverPool.row}, {hoverPool.col}]
             </span>
@@ -286,7 +290,20 @@ function PoolingViz({
 
 export function PoolingSection() {
   const layerActivations = useInferenceStore((s) => s.layerActivations);
-  const [selectedFilter, setSelectedFilter] = useState(0);
+  const [picked, setPicked] = useState<{ maps: unknown; i: number } | null>(null);
+  const liveMaps = layerActivations["relu2"] as number[][][] | undefined;
+  // default to the highest-energy channel; a manual pick holds only for the current drawing
+  const bestFilter = useMemo(() => {
+    let best = 0, bestE = -1;
+    liveMaps?.forEach((fm, i) => {
+      let e = 0;
+      for (const r of fm) for (const v of r) e += v > 0 ? v : 0;
+      if (e > bestE) { bestE = e; best = i; }
+    });
+    return best;
+  }, [liveMaps]);
+  const selectedFilter = picked && picked.maps === liveMaps ? picked.i : bestFilter;
+  const setSelectedFilter = (i: number) => setPicked({ maps: liveMaps, i });
 
   // Before pooling (relu2 = 28x28x64) and after pooling (pool1 = 14x14x64)
   const relu2Maps = layerActivations["relu2"] as number[][][] | undefined;
@@ -306,119 +323,113 @@ export function PoolingSection() {
   }, [beforePool, afterPool]);
 
   return (
-    <SectionWrapper id="pooling">
+    <SectionWrapper id="pooling" sig="pool">
       <SectionHeader
         step={5}
+        tag="Pool1 · 64 ch · 28×28 → 14×14"
         title="Compressing Information: Max Pooling"
-        subtitle="Max pooling slides a 2×2 window across each feature map and keeps only the maximum value. This halves the spatial dimensions while retaining the strongest activations — making the model more efficient and somewhat invariant to small shifts in position."
+        subtitle="Max pooling slides a 2×2 window across each feature map and keeps only the maximum value. This halves the spatial dimensions while retaining the strongest activations, making the model more efficient and somewhat invariant to small shifts in position."
       />
 
-      <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:gap-12">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-12 lg:grid-cols-12">
         {/* Left: theory text */}
-        <div className="flex-1 space-y-4 text-center lg:text-left">
-          <p className="text-base leading-relaxed text-foreground/65 sm:text-lg">
+        <Reveal className="min-w-0 space-y-5 lg:col-span-9 lg:col-start-4">
+          <p className="prose-body">
             After activation, the feature maps still carry full spatial
-            resolution. <em>Max pooling</em> compresses each map by partitioning
+            resolution. <em className="text-ink">Max pooling</em> compresses each map by partitioning
             it into non-overlapping 2&times;2 regions and keeping only the
             largest value from each. This achieves two goals: it reduces the
             number of parameters downstream (preventing overfitting) and
-            introduces <em>translation invariance</em> — small shifts in the
+            introduces <em className="text-ink">translation invariance</em>: small shifts in the
             input produce identical pooled outputs.
           </p>
 
-          {/* Main equation */}
-          <div className="py-3">
+          <div className="formula !text-[0.9em] [scrollbar-width:thin] [scrollbar-color:var(--rule-strong)_transparent]">
             <Latex
               display
               math="P(i,j) = \max_{(m,n)\,\in\,R_{i,j}} A(m,n)"
             />
+            <span className="eq-no">(5)</span>
           </div>
 
-          {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
-            <span>
-              <Latex math="A" /> — input activation map
-            </span>
-            <span>
-              <Latex math="R_{i,j}" /> — 2&times;2 pooling region
-            </span>
-            <span>
-              <Latex math="P" /> — pooled output
-            </span>
-          </div>
+          <ul className="space-y-1 text-sm text-ink-3">
+            <li><Latex math="A" /> input activation map</li>
+            <li><Latex math="R_{i,j}" /> 2&times;2 pooling region</li>
+            <li><Latex math="P" /> pooled output</li>
+          </ul>
 
-          <p className="text-sm leading-relaxed text-foreground/60">
+          <p className="prose-body !text-sm">
             With stride 2, each 2&times;2 window produces one output value,
             halving both dimensions:{" "}
             <Latex math="(64, 28, 28) \xrightarrow{2{\times}2\;\text{max pool}} (64, 14, 14)" />
-            . This is a 75% reduction in spatial size — from{" "}
+            . This is a 75% reduction in spatial size, from{" "}
             <Latex math="28^2 = 784" /> to <Latex math="14^2 = 196" /> values
-            per channel — with zero learnable parameters. The operation is
+            per channel, with zero learnable parameters. The operation is
             purely structural: no weights, no bias, just a hard{" "}
             <Latex math="\max" />.
           </p>
-        </div>
+        </Reveal>
 
         {/* Right: interactive visualization */}
-        <div className="flex w-full shrink-0 flex-col items-center gap-5 lg:w-auto">
-          {hasData && afterPool ? (
-            <>
-              <PoolingViz beforeData={beforePool} afterData={afterPool} />
-
-              {/* Stats — single line */}
-              {stats && (
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="font-mono font-semibold text-foreground/60">
-                    {stats.beforeSize}
-                  </span>
-                  <span className="text-foreground/55">values</span>
-                  <span className="text-accent-tertiary">&rarr;</span>
-                  <span className="font-mono font-semibold text-accent-tertiary">
-                    {stats.afterSize}
-                  </span>
-                  <span className="text-foreground/55">values</span>
-                  <span className="text-foreground/15">|</span>
-                  <span className="font-mono font-semibold text-green-400">
-                    75%
-                  </span>
-                  <span className="text-foreground/55">reduction</span>
+        <Reveal delay={0.16} className="min-w-0 lg:col-span-9 lg:col-start-4">
+          <div className="figure">
+            <div className="flex justify-center overflow-x-auto pb-1">
+              {hasData && afterPool ? (
+                <PoolingViz beforeData={beforePool} afterData={afterPool} />
+              ) : (
+                <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
+                  {[["BEFORE", "28×28"], ["AFTER", "14×14"]].map(([t, d]) => (
+                    <div key={t} className="flex flex-col items-center gap-2">
+                      <span className="font-mono text-[11px] tracking-[0.08em] text-sig">{t}</span>
+                      <div className="viz-empty-state !min-h-0 text-center text-xs" style={{ width: 152, height: 152 }}>
+                        <span className="px-3 font-serif italic">Draw something to light this up</span>
+                      </div>
+                      <span className="caption">{d}</span>
+                    </div>
+                  ))}
                 </div>
               )}
-
-              <span className="text-[11px] text-foreground/55">
-                Hover either map to see the 2&times;2 pooling region
-              </span>
-            </>
-          ) : (
-            <div className="flex flex-col items-center gap-5 sm:flex-row sm:gap-6">
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-xs font-medium text-foreground/60">Before Pooling</span>
-                <div className="rounded-md border border-border/50 bg-black" style={{ width: 140, height: 140 }} />
-                <span className="font-mono text-[11px] text-foreground/55">28&times;28</span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-xs font-medium text-foreground/60">After Pooling</span>
-                <div className="rounded-md border border-border/50 bg-black" style={{ width: 140, height: 140 }} />
-                <span className="font-mono text-[11px] text-foreground/55">14&times;14</span>
-              </div>
             </div>
-          )}
-        </div>
+
+            {stats && (
+              <dl className="mt-6 grid grid-cols-3 border-y border-rule py-3 text-center">
+                <div>
+                  <dd className="font-mono text-lg tabular-nums text-ink">{stats.beforeSize}</dd>
+                  <dt className="font-mono text-[11px] text-ink-3">values in</dt>
+                </div>
+                <div>
+                  <dd className="font-mono text-lg tabular-nums text-sig">{stats.afterSize}</dd>
+                  <dt className="font-mono text-[11px] text-ink-3">values out</dt>
+                </div>
+                <div>
+                  <dd className="font-mono text-lg tabular-nums text-ink">75%</dd>
+                  <dt className="font-mono text-[11px] text-ink-3">reduction</dt>
+                </div>
+              </dl>
+            )}
+            <p className="figcap">
+              <b>FIG. 5.1</b> Filter {String(selectedFilter + 1).padStart(3, "0")}. Hover or tap either map to see the 2&times;2 pooling region.
+            </p>
+          </div>
+        </Reveal>
       </div>
 
-      {/* Filter selection: clickable thumbnails — full width */}
-      <div className="mt-6 space-y-3">
-        <p className="text-center text-xs text-foreground/55">
-          Select a filter — click any feature map below
-        </p>
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+      {/* Specimen gallery */}
+      <Reveal className="figure mt-16">
+        <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+          <p className="font-serif text-xl italic text-ink-2">
+            All {numFilters} channels, pooled
+          </p>
+          <p className="caption">Select a filter to inspect it above.</p>
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] justify-items-center gap-x-2 gap-y-3">
           {pool1Maps
             ? pool1Maps.map((fm, i) => (
                 <ActivationHeatmap
                   key={i}
                   data={fm}
                   size={56}
-                  label={`#${i + 1}`}
+                  label={String(i + 1).padStart(3, "0")}
                   onClick={() => setSelectedFilter(i)}
                   selected={i === selectedFilter}
                 />
@@ -426,22 +437,19 @@ export function PoolingSection() {
             : Array.from({ length: numFilters }, (_, i) => (
                 <div
                   key={i}
-                  className={`flex flex-col items-center gap-1 ${
-                    i === selectedFilter ? "opacity-100" : "opacity-40"
+                  className={`tile cursor-pointer border border-rule bg-bg-inset ${
+                    i === selectedFilter ? "opacity-100" : "opacity-50"
                   }`}
+                  data-selected={i === selectedFilter ? "true" : undefined}
+                  style={{ width: 56, height: 56 }}
                   onClick={() => setSelectedFilter(i)}
-                >
-                  <div
-                    className="cursor-pointer border border-border/50 bg-black"
-                    style={{ width: 56, height: 56 }}
-                  />
-                  <span className="text-xs text-foreground/55">
-                    #{i + 1}
-                  </span>
-                </div>
+                />
               ))}
         </div>
-      </div>
+        <p className="figcap">
+          <b>FIG. 5.2</b> Pool1 output, 14×14 per channel.
+        </p>
+      </Reveal>
     </SectionWrapper>
   );
 }

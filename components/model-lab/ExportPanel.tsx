@@ -2,14 +2,34 @@
 
 import { useState } from "react";
 import { Download, FileJson, Image as ImageIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 interface ExportPanelProps {
   onExportModel: () => void;
   onExportReport: () => void;
   onExportChart: () => Promise<void>;
   modelFormat: "ONNX" | "TF.js";
+}
+
+function ExportButton({
+  icon,
+  label,
+  format,
+  onClick,
+  disabled,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  format: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className="btn-ghost">
+      {icon}
+      {label}
+      <span className="font-mono text-[11px] text-ink-3">{format}</span>
+    </button>
+  );
 }
 
 export function ExportPanel({
@@ -30,36 +50,17 @@ export function ExportPanel({
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
-      <Button variant="outline" size="sm" onClick={onExportModel} className="text-foreground/60 hover:text-foreground/80">
-        <Download className="h-3.5 w-3.5" />
-        Model
-        <Badge variant="secondary" className="ml-1 rounded bg-white/8 px-1.5 py-0.5 text-[10px] font-medium text-foreground/40">
-          {modelFormat}
-        </Badge>
-      </Button>
-
-      <Button variant="outline" size="sm" onClick={onExportReport} className="text-foreground/60 hover:text-foreground/80">
-        <FileJson className="h-3.5 w-3.5" />
-        Report
-        <Badge variant="secondary" className="ml-1 rounded bg-white/8 px-1.5 py-0.5 text-[10px] font-medium text-foreground/40">
-          JSON
-        </Badge>
-      </Button>
-
-      <Button
-        variant="outline"
-        size="sm"
+    <div className="flex flex-wrap items-center gap-2 border-y border-rule py-3">
+      <span className="eyebrow mr-2">EXPORT</span>
+      <ExportButton icon={<Download className="size-3.5" />} label="Model" format={modelFormat} onClick={onExportModel} />
+      <ExportButton icon={<FileJson className="size-3.5" />} label="Report" format="JSON" onClick={onExportReport} />
+      <ExportButton
+        icon={<ImageIcon className="size-3.5" />}
+        label={chartExporting ? "Exporting…" : "Chart"}
+        format="PNG"
         onClick={handleChartExport}
         disabled={chartExporting}
-        className="text-foreground/60 hover:text-foreground/80"
-      >
-        <ImageIcon className="h-3.5 w-3.5" />
-        {chartExporting ? "Exporting..." : "Chart"}
-        <Badge variant="secondary" className="ml-1 rounded bg-white/8 px-1.5 py-0.5 text-[10px] font-medium text-foreground/40">
-          PNG
-        </Badge>
-      </Button>
+      />
     </div>
   );
 }

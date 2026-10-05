@@ -1,20 +1,37 @@
 "use client";
 
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { SectionWrapper } from "@/components/ui/SectionWrapper";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { Latex } from "@/components/ui/Latex";
 import { viridis } from "@/lib/network/networkConstants";
+import { BG_INSET, INK, SIG } from "@/lib/theme";
 
 /* ── Constants ───────────────────────────────────────────────────── */
 
 const GRID_COLS = 32; // 32×16 = 512 neurons
 const GRID_ROWS = 16;
-const CELL = 12; // px per cell
-const GRID_W = GRID_COLS * CELL; // 384px
-const GRID_H = GRID_ROWS * CELL; // 192px
-const STRIP_H = 14;
+const CELL = 16; // px per cell (canvas scales to container width)
+const GRID_W = GRID_COLS * CELL; // 512px
+const GRID_H = GRID_ROWS * CELL; // 256px
+const STRIP_W = 512;
+const STRIP_H = 20;
+
+/* ── Reveal helper ───────────────────────────────────────────────── */
+
+function useReveal(delay = 0) {
+  const reduce = useReducedMotion();
+  return reduce
+    ? {}
+    : {
+        initial: { opacity: 0, y: 12 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true, margin: "-12% 0px" },
+        transition: { duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] as const },
+      };
+}
 
 /* ── Flattened input strip ───────────────────────────────────────── */
 
@@ -36,7 +53,7 @@ function InputStrip({ pool2Maps }: { pool2Maps: number[][][] }) {
     for (const v of flatValues) { if (v < mn) mn = v; if (v > mx) mx = v; }
     const range = mx - mn || 1;
 
-    const w = GRID_W;
+    const w = STRIP_W;
     const img = ctx.createImageData(w, STRIP_H);
     const px = img.data;
     for (let x = 0; x < w; x++) {
@@ -53,18 +70,14 @@ function InputStrip({ pool2Maps }: { pool2Maps: number[][][] }) {
   }, [flatValues]);
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-[11px] text-foreground/55">
-        Flattened input (12,544 values)
-      </span>
-      <canvas
-        ref={canvasRef}
-        width={GRID_W}
-        height={STRIP_H}
-        className="rounded-sm border border-border/40"
-        style={{ width: GRID_W, height: STRIP_H }}
-      />
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={STRIP_W}
+      height={STRIP_H}
+      className="block w-full"
+      style={{ aspectRatio: `${STRIP_W} / ${STRIP_H}`, imageRendering: "pixelated" }}
+      aria-label="Flattened input vector of 12,544 values"
+    />
   );
 }
 
@@ -102,33 +115,35 @@ function NeuronGrid({ activations }: { activations: number[] }) {
         const v = activations[idx] ?? 0;
         const t = (v - min) / range;
         const [red, green, blue] = viridis(t);
-        ctx.fillStyle = `rgb(${red},${green},${blue})`;
+        ctx.fillStyle = v <= 0 ? BG_INSET : `rgb(${red},${green},${blue})`;
         ctx.fillRect(c * CELL, r * CELL, CELL, CELL);
 
         // Subtle grid line
-        ctx.strokeStyle = "rgba(0,0,0,0.15)";
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(c * CELL, r * CELL, CELL, CELL);
+        ctx.strokeStyle = "rgba(3,5,7,0.45)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(c * CELL + 0.5, r * CELL + 0.5, CELL - 1, CELL - 1);
       }
     }
 
     // Hover highlight
     if (hover) {
       const { row, col } = hover;
-      ctx.strokeStyle = "#fff";
+      ctx.strokeStyle = INK;
       ctx.lineWidth = 2;
       ctx.strokeRect(col * CELL + 1, row * CELL + 1, CELL - 2, CELL - 2);
     }
 
-    // Highlight top 5 neurons with small corner marks
+    // Highlight top 5 neurons in the dense signal color
     for (let i = 0; i < topNeurons.length; i++) {
       const { i: idx } = topNeurons[i];
       const r = Math.floor(idx / GRID_COLS), c = idx % GRID_COLS;
-      const isHovered = hover?.idx === idx;
-      if (isHovered) continue;
-      ctx.strokeStyle = i === 0 ? "#6366f1" : "rgba(99,102,241,0.4)";
-      ctx.lineWidth = i === 0 ? 2 : 1;
+      if (hover?.idx === idx) continue;
+      ctx.strokeStyle = SIG.dense;
+      ctx.lineWidth = i === 0 ? 2.5 : 1.5;
       ctx.strokeRect(c * CELL + 1, r * CELL + 1, CELL - 2, CELL - 2);
+      ctx.strokeStyle = "rgba(3,5,7,.9)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(c * CELL + 3, r * CELL + 3, CELL - 6, CELL - 6);
     }
   }, [activations, min, max, hover, topNeurons]);
 
@@ -142,60 +157,55 @@ function NeuronGrid({ activations }: { activations: number[] }) {
   const sparsity = ((1 - active / 512) * 100).toFixed(1);
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      {/* Grid */}
-      <div className="flex flex-col items-center gap-1">
-        <span className="text-[11px] text-foreground/55">
-          Hidden layer — 512 neurons (32&times;16)
-        </span>
-        <canvas
-          ref={canvasRef}
-          width={GRID_W}
-          height={GRID_H}
-          className="cursor-crosshair rounded-md border border-border/60"
-          style={{ width: GRID_W, height: GRID_H, imageRendering: "pixelated" }}
-          onMouseMove={handleMove}
-          onMouseLeave={() => setHover(null)}
-        />
-      </div>
+    <div className="flex flex-col gap-4">
+      <canvas
+        ref={canvasRef}
+        width={GRID_W}
+        height={GRID_H}
+        className="block w-full cursor-crosshair"
+        style={{ aspectRatio: `${GRID_W} / ${GRID_H}`, imageRendering: "pixelated" }}
+        onMouseMove={handleMove}
+        onMouseLeave={() => setHover(null)}
+        aria-label="Hidden layer activations, 512 neurons"
+      />
 
-      {/* Hover info */}
-      <div className="h-5 text-center font-mono text-xs text-foreground/50">
+      {/* Hover readout */}
+      <div className="readout h-5 px-1 text-ink-2">
         {hover ? (
           <>
-            neuron <span className="text-accent-primary">#{hover.idx}</span>
+            neuron <span className="text-sig">#{hover.idx}</span>
             {" = "}
-            <span className={activations[hover.idx] > 0 ? "text-green-400" : "text-red-400"}>
-              {activations[hover.idx].toFixed(4)}
-            </span>
+            <span className="text-ink">{activations[hover.idx].toFixed(4)}</span>
+            {activations[hover.idx] <= 0 && <span className="text-ink-3"> · off</span>}
           </>
         ) : (
-          <span className="text-foreground/25">Hover to inspect neurons</span>
+          <span className="text-ink-2">Hover a cell to inspect a neuron</span>
         )}
       </div>
 
-      {/* Top neurons + stats */}
-      <div className="flex flex-col items-center gap-2">
-        <div className="flex items-center gap-4 text-sm">
-          <span className="font-mono font-semibold text-green-400">{active}</span>
-          <span className="text-foreground/55">active</span>
-          <span className="text-foreground/15">|</span>
-          <span className="font-mono font-semibold text-foreground/60">{sparsity}%</span>
-          <span className="text-foreground/55">sparse</span>
-          <span className="text-foreground/15">|</span>
-          <span className="font-mono font-semibold text-accent-primary">6.4M</span>
-          <span className="text-foreground/55">params</span>
-        </div>
+      {/* Stats */}
+      <dl className="grid grid-cols-3 gap-4 border-t border-rule pt-4">
+        {[
+          { v: String(active), l: "neurons firing", c: "text-sig" },
+          { v: `${sparsity}%`, l: "zeroed by ReLU", c: "text-ink" },
+          { v: "6.4M", l: "parameters", c: "text-ink" },
+        ].map((s) => (
+          <div key={s.l}>
+            <dd className={`font-serif text-3xl font-light leading-none tabular-nums sm:text-4xl ${s.c}`}>{s.v}</dd>
+            <dt className="caption mt-2">{s.l}</dt>
+          </div>
+        ))}
+      </dl>
 
-        {/* Top 5 neurons */}
-        <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 font-mono text-[11px] text-foreground/55">
-          <span className="text-foreground/20">top:</span>
+      {/* Top neurons */}
+      <div>
+        <p className="caption mb-2">TOP 5</p>
+        <div className="grid grid-cols-5 gap-2">
           {topNeurons.map(({ v, i }, rank) => (
-            <span key={i} className={rank === 0 ? "text-accent-primary" : ""}>
-              #{i}
-              <span className="text-foreground/20">=</span>
-              {v.toFixed(2)}
-            </span>
+            <div key={i} className={`readout ${rank === 0 ? "text-sig" : "text-ink-2"}`}>
+              <div>#{i}</div>
+              <div className="text-ink-3">{v.toFixed(2)}</div>
+            </div>
           ))}
         </div>
       </div>
@@ -211,19 +221,60 @@ export function FullyConnectedSection() {
   const pool2Maps = layerActivations["pool2"] as number[][][] | undefined;
 
   const hasData = !!relu4 && !!pool2Maps;
+  const textReveal = useReveal(0);
+  const figReveal = useReveal(0.16);
 
   return (
-    <SectionWrapper id="fully-connected">
+    <SectionWrapper id="fully-connected" sig="dense" mirror>
       <SectionHeader
         step={7}
+        tag="Dense · 12,544 → 512"
         title="Making Decisions: Dense Layers"
         subtitle="The spatial features are flattened into a single vector of 12,544 values, then compressed to 512 neurons. Each neuron is connected to every input — it sees the entire character at once. The network is now making decisions about what character this is."
       />
 
-      <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:gap-12">
-        {/* Left: theory text */}
-        <div className="flex-1 space-y-4 text-center lg:text-left">
-          <p className="text-base leading-relaxed text-foreground/65 sm:text-lg">
+      <div className="grid gap-x-6 gap-y-14 lg:grid-cols-12">
+        {/* Figure (left on desktop, mirrored plate) */}
+        <motion.div className="figure order-2 lg:col-span-7 lg:order-1" {...figReveal}>
+          <p className="caption mb-2 flex items-baseline justify-between gap-4">
+            <span>FLATTENED INPUT</span>
+            <span>12,544 values</span>
+          </p>
+          <div className="well plate-marks p-1.5">
+            {hasData ? (
+              <InputStrip pool2Maps={pool2Maps} />
+            ) : (
+              <div className="w-full bg-bg-inset" style={{ aspectRatio: `${STRIP_W} / ${STRIP_H}` }} />
+            )}
+          </div>
+
+          <div className="my-5 flex items-center gap-4 text-ink-3">
+            <span className="h-px flex-1 bg-rule" />
+            <Latex math="\downarrow\; W \cdot \mathbf{x} + \mathbf{b}" className="text-ink-2" />
+            <span className="h-px flex-1 bg-rule" />
+          </div>
+
+          <p className="caption mb-2 flex items-baseline justify-between gap-4">
+            <span>HIDDEN LAYER · 512 NEURONS</span>
+            <span>32×16</span>
+          </p>
+          <div className="well plate-marks p-1.5">
+            {hasData ? (
+              <NeuronGrid activations={relu4} />
+            ) : (
+              <div className="viz-empty-state" style={{ aspectRatio: `${GRID_W} / ${GRID_H}` }}>
+                Draw something to light this up
+              </div>
+            )}
+          </div>
+          <p className="figcap">
+            <b>FIG. 7.1</b> Each cell is one neuron after ReLU. Dark cells are off; amber outlines mark the five strongest.
+          </p>
+        </motion.div>
+
+        {/* Theory text */}
+        <motion.div className="order-1 space-y-6 lg:col-span-5 lg:order-2" {...textReveal}>
+          <p className="prose-body">
             Convolutional layers extract <em>where</em> features are. Dense
             layers decide <em>what</em> they mean. First, the 256 feature maps
             of size 7&times;7 are flattened into a single vector of 12,544
@@ -232,23 +283,22 @@ export function FullyConnectedSection() {
             followed by ReLU.
           </p>
 
-          {/* Main equation */}
-          <div className="py-3">
+          <div className="formula">
             <Latex
               display
               math="\mathbf{h} = \text{ReLU}\!\left(\,W\,\mathbf{x} + \mathbf{b}\,\right)"
             />
+            <span className="eq-no">(7)</span>
           </div>
 
-          {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
-            <span><Latex math="\mathbf{x}" /> — flattened input (12,544)</span>
-            <span><Latex math="W" /> — weight matrix</span>
-            <span><Latex math="\mathbf{b}" /> — bias vector</span>
-            <span><Latex math="\mathbf{h}" /> — hidden activations (512)</span>
-          </div>
+          <ul className="caption space-y-1.5">
+            <li><Latex math="\mathbf{x}" /> — flattened input (12,544)</li>
+            <li><Latex math="W" /> — weight matrix</li>
+            <li><Latex math="\mathbf{b}" /> — bias vector</li>
+            <li><Latex math="\mathbf{h}" /> — hidden activations (512)</li>
+          </ul>
 
-          <p className="text-sm leading-relaxed text-foreground/60">
+          <p className="prose-body text-[0.9375rem] text-ink-3">
             The weight matrix <Latex math="W" /> has shape{" "}
             <Latex math="512 \times 12{,}544" />, giving{" "}
             <Latex math="512 \times 12{,}544 + 512 = 6{,}423{,}040" /> learnable
@@ -259,51 +309,7 @@ export function FullyConnectedSection() {
             then maps the 512 hidden units to the 146 output logits:{" "}
             <Latex math="(512) \xrightarrow{W_2} (146)" />.
           </p>
-        </div>
-
-        {/* Right: visualization */}
-        <div className="flex w-full shrink-0 flex-col items-center gap-4 lg:w-auto">
-          <div className="flex flex-col items-center gap-4">
-            {hasData ? (
-              <>
-                <InputStrip pool2Maps={pool2Maps} />
-
-                {/* Arrow: flatten + dense */}
-                <div className="flex flex-col items-center gap-0.5">
-                  <Latex
-                    math="\downarrow\; W \cdot \mathbf{x} + \mathbf{b}"
-                    className="text-foreground/30"
-                  />
-                </div>
-
-                <NeuronGrid activations={relu4} />
-              </>
-            ) : (
-              <>
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-[11px] text-foreground/55">
-                    Flattened input (12,544 values)
-                  </span>
-                  <div className="rounded-sm border border-border/40 bg-black" style={{ width: GRID_W, height: STRIP_H }} />
-                </div>
-
-                <div className="flex flex-col items-center gap-0.5">
-                  <Latex
-                    math="\downarrow\; W \cdot \mathbf{x} + \mathbf{b}"
-                    className="text-foreground/30"
-                  />
-                </div>
-
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-[11px] text-foreground/55">
-                    Hidden layer — 512 neurons (32&times;16)
-                  </span>
-                  <div className="rounded-md border border-border/60 bg-black" style={{ width: GRID_W, height: GRID_H }} />
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+        </motion.div>
       </div>
     </SectionWrapper>
   );

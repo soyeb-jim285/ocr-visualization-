@@ -16,7 +16,7 @@ export function Latex({ math, display = false, className }: LatexProps) {
   });
   return (
     <span
-      className={display ? `block max-w-full overflow-x-auto ${className ?? ""}` : className}
+      className={display ? `block max-w-full overflow-x-auto text-ink-2 ${className ?? ""}` : className}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

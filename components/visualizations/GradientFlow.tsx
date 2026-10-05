@@ -21,14 +21,14 @@ const LAYERS = ["conv1", "conv2", "conv3", "dense1"];
 const SNAPSHOT_EPOCHS = [0, 1, 2, 5, 10, 15, 20, 25, 30, 40, 50, 60, 74];
 
 const LAYER_COLORS: Record<string, string> = {
-  conv1: "#06b6d4",
-  conv2: "#06b6d4",
-  conv3: "#8b5cf6",
-  dense1: "#6366f1",
+  conv1: "#7f8cff", // --sig-conv1
+  conv2: "#7f8cff",
+  conv3: "#35d0e6", // --sig-conv3
+  dense1: "#ffb347", // --sig-dense
 };
 
 const chartConfig = {
-  magnitude: { label: "Gradient Magnitude", color: "#8b5cf6" },
+  magnitude: { label: "Gradient Magnitude", color: "#f472b6" },
 } satisfies ChartConfig;
 
 /** Recursively flatten nested arrays */
@@ -102,108 +102,110 @@ export function GradientFlow() {
 
   if (!snapshots) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-surface">
-        <p className="text-foreground/30">Loading gradient data...</p>
+      <div className="viz-empty-state flex h-48 items-center justify-center">
+        <p>Loading gradient data...</p>
       </div>
     );
   }
 
   return (
-    <div ref={ref} className="flex flex-col items-center gap-6">
+    <div ref={ref} className="grid gap-6 md:grid-cols-12 md:gap-x-6">
       {/* Epoch selector */}
-      <div className="flex w-full max-w-lg flex-col items-center gap-2">
-        <span className="text-xs text-foreground/40">
-          Weight change between epochs{" "}
-          {availableEpochs[epochIdx - 1] ?? "?"} →{" "}
+      <div className="flex flex-col gap-3 md:col-span-4">
+        <span className="eyebrow">Weight change between epochs</span>
+        <p className="font-mono text-2xl tabular-nums text-ink">
+          {availableEpochs[epochIdx - 1] ?? "?"}
+          <span className="mx-2 text-ink-3">→</span>
           {availableEpochs[epochIdx] ?? "?"}
-        </span>
+        </p>
         <input
           type="range"
           min={1}
           max={availableEpochs.length - 1}
           value={epochIdx}
           onChange={(e) => setEpochIdx(parseInt(e.target.value))}
-          className="w-full max-w-xs accent-accent-primary"
+          className="mb-2 w-full"
+          aria-label="Epoch interval"
         />
+        <p className="callout mt-2">
+          <span className="tag">NOTE</span>
+          {epochIdx <= 2
+            ? "Early training — large weight updates across all layers as the network rapidly learns basic patterns."
+            : epochIdx <= 5
+              ? "Learning is slowing down in earlier layers as they settle on stable feature detectors."
+              : "Later epochs — weight changes become small and focused, fine-tuning rather than restructuring."}
+        </p>
       </div>
 
-      {/* Gradient flow bar chart */}
-      {chartData && (
-        <ChartContainer
-          config={chartConfig}
-          className="h-[180px] w-full max-w-lg rounded-xl border border-border bg-surface sm:h-[200px]"
-        >
-          <BarChart
-            data={chartData}
-            layout="vertical"
-            margin={{ top: 8, right: 48, bottom: 8, left: 56 }}
-          >
-            <XAxis
-              type="number"
-              tick={{ fill: "rgba(232,232,237,0.3)", fontSize: 9 }}
-              tickLine={false}
-              axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
-              tickFormatter={(v: number) => v.toExponential(1)}
+      <div className="flex min-w-0 flex-col gap-3 md:col-span-8">
+        {/* Direction */}
+        <div className="flex items-center gap-3 font-mono text-[11px] text-ink-3">
+          <span>OUTPUT</span>
+          <svg width="100" height="16" viewBox="0 0 100 16" fill="none" aria-hidden>
+            <path
+              d="M100 8H10M10 8l8-6M10 8l8 6"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-            <YAxis
-              type="category"
-              dataKey="name"
-              tick={{ fill: "rgba(232,232,237,0.5)", fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-              width={52}
-            />
-            <ChartTooltip
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const d = payload[0].payload as {
-                  name: string;
-                  magnitude: number;
-                };
-                return (
-                  <div className="rounded border border-border bg-surface px-2 py-1 text-xs shadow-lg">
-                    <span className="font-mono text-foreground/50">
-                      {d.name}
-                    </span>
-                    <span className="ml-2 font-mono font-bold text-foreground/80">
-                      {d.magnitude.toExponential(3)}
-                    </span>
-                  </div>
-                );
-              }}
-            />
-            <Bar dataKey="magnitude" radius={[0, 4, 4, 0]} barSize={24}>
-              {chartData.map((entry, i) => (
-                <Cell key={i} fill={entry.color} fillOpacity={0.7} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ChartContainer>
-      )}
-
-      {/* Direction arrow */}
-      <div className="flex items-center gap-2 text-sm text-foreground/30">
-        <span>Output</span>
-        <svg width="100" height="16" viewBox="0 0 100 16" fill="none">
-          <path
-            d="M100 8H10M10 8l8-6M10 8l8 6"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        <span>Input</span>
-        <span className="ml-2 text-xs">(gradient flows backwards)</span>
+          </svg>
+          <span>INPUT</span>
+          <span className="ml-2">gradient flows backwards</span>
+        </div>
+        {/* Gradient flow bar chart */}
+        {chartData && (
+          <div className="overflow-x-auto scrollbar-none">
+            <ChartContainer
+              config={chartConfig}
+              className="well h-[200px] w-full min-w-[320px] sm:h-[220px]"
+            >
+              <BarChart
+                data={chartData}
+                layout="vertical"
+                margin={{ top: 12, right: 48, bottom: 8, left: 56 }}
+              >
+                <XAxis
+                  type="number"
+                  tick={{ fill: "#8896a3", fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={{ stroke: "rgba(170,205,225,0.14)" }}
+                  tickFormatter={(v: number) => v.toExponential(1)}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tick={{ fill: "#b4c0ca", fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={52}
+                />
+                <ChartTooltip
+                  cursor={{ fill: "rgba(170,205,225,0.05)" }}
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null;
+                    const d = payload[0].payload as {
+                      name: string;
+                      magnitude: number;
+                    };
+                    return (
+                      <div className="rounded-[3px] border border-rule-strong bg-bg-raised px-2 py-1 font-mono text-[11px] text-ink">
+                        <span className="text-ink-3">{d.name}</span>
+                        <span className="ml-2">{d.magnitude.toExponential(3)}</span>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar dataKey="magnitude" radius={[0, 2, 2, 0]} barSize={22}>
+                  {chartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} fillOpacity={0.85} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </div>
+        )}
       </div>
-
-      <p className="max-w-md text-center text-sm text-foreground/40">
-        {epochIdx <= 2
-          ? "Early training — large weight updates across all layers as the network rapidly learns basic patterns."
-          : epochIdx <= 5
-            ? "Learning is slowing down in earlier layers as they settle on stable feature detectors."
-            : "Later epochs — weight changes become small and focused, fine-tuning rather than restructuring."}
-      </p>
     </div>
   );
 }

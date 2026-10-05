@@ -7,6 +7,9 @@ import {
 } from "./modelUtils";
 import type { InferenceResult } from "./predict";
 
+ort.env.wasm.numThreads = 1;
+ort.env.logLevel = "error";
+
 /** Cache for loaded epoch checkpoint sessions */
 const sessionCache = new Map<number, ort.InferenceSession>();
 

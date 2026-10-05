@@ -286,95 +286,119 @@ export function EpochNetworkVisualization() {
   const allLoaded = loadedCount >= PREFETCH_EPOCHS.length;
   const hasActivations = Object.keys(epochActivations).length > 0;
 
+  const pct = (currentEpoch / (TOTAL_EPOCHS - 1)) * 100;
+
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col gap-4">
       {!allLoaded && (
-        <div className="flex w-full max-w-xl flex-col items-center gap-1">
-          <div className="flex w-full items-center justify-between text-xs text-foreground/30">
-            <span>Loading epoch models...</span>
+        <div className="flex w-full flex-col gap-1.5">
+          <div className="flex w-full items-center justify-between font-mono text-[11px] text-ink-3">
+            <span>LOADING CHECKPOINTS</span>
             <span>{loadedCount}/{PREFETCH_EPOCHS.length}</span>
           </div>
-          <div className="h-1 w-full overflow-hidden rounded-full bg-surface-elevated">
+          <div className="h-px w-full bg-rule">
             <div
-              className="h-full rounded-full bg-accent-primary/50 transition-all duration-300"
-              style={{ width: `${(loadedCount / PREFETCH_EPOCHS.length) * 100}%` }}
+              className="h-px origin-left bg-phosphor transition-transform duration-300"
+              style={{ transform: `scaleX(${loadedCount / PREFETCH_EPOCHS.length})` }}
             />
           </div>
         </div>
       )}
 
-      <div className="relative w-full" style={{ height: 780 }}>
-        <div ref={containerRef} className="absolute inset-0">
-          {hasInput && hasActivations ? (
-            <NeuronNetworkCanvas
-              width={containerSize.w}
-              height={containerSize.h}
-              activationMapRef={activationMapRef}
-              outputLabelsRef={outputLabelsRef}
-              hoveredLayerRef={hoveredLayerRef}
-              hoveredNeuronRef={hoveredNeuronRef}
-              waveRef={waveRef}
-              showSignals={false}
-              drawTrigger={drawTrigger}
-              onHoverLayer={onHoverLayer}
-              onHoverNeuron={onHoverNeuron}
-              onClickLayer={onClickLayer}
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center">
-              <p className="text-sm text-foreground/20">
-                {hasInput ? "Loading..." : "Draw a character to see network activations evolve"}
-              </p>
-            </div>
+      <div className="well plate-marks relative overflow-x-auto scrollbar-none">
+        {!(hasInput && hasActivations) && (
+          <div className="flex h-[300px] items-center justify-center px-6 text-center lg:h-[360px]">
+            <p className="font-serif text-xl italic text-ink-3 sm:text-2xl">
+              {!hasInput ? "Draw something to light this up" : error ? (
+                <>
+                  {error}.{" "}
+                  <button type="button" className="underline" onClick={() => runAtEpoch(currentEpoch)}>
+                    Retry
+                  </button>
+                </>
+              ) : "Loading…"}
+            </p>
+          </div>
+        )}
+        <div
+          className={
+            hasInput && hasActivations
+              ? "relative h-[560px] min-w-[720px] sm:h-[680px] lg:h-[780px]"
+              : "absolute inset-0"
+          }
+          aria-hidden={!(hasInput && hasActivations)}
+        >
+          <div ref={containerRef} className="absolute inset-0">
+            {hasInput && hasActivations ? (
+              <NeuronNetworkCanvas
+                width={containerSize.w}
+                height={containerSize.h}
+                activationMapRef={activationMapRef}
+                outputLabelsRef={outputLabelsRef}
+                hoveredLayerRef={hoveredLayerRef}
+                hoveredNeuronRef={hoveredNeuronRef}
+                waveRef={waveRef}
+                showSignals={false}
+                drawTrigger={drawTrigger}
+                onHoverLayer={onHoverLayer}
+                onHoverNeuron={onHoverNeuron}
+                onClickLayer={onClickLayer}
+              />
+            ) : null}
+          </div>
+
+          {hasInput && (
+            <>
+              <div className="pointer-events-none absolute left-4 top-4 z-10 font-mono text-[11px] text-ink-3">
+                <p className="tracking-[0.08em]">PREDICTION</p>
+                {topPrediction && (
+                  <motion.div
+                    key={topPrediction.label}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                    className="flex items-baseline gap-3"
+                  >
+                    <span className="font-serif text-5xl leading-none text-annotation">
+                      {topPrediction.label}
+                    </span>
+                    <span className="text-xs tabular-nums text-ink">
+                      {(topPrediction.confidence * 100).toFixed(1)}%
+                    </span>
+                  </motion.div>
+                )}
+                {isLoading && (
+                  <span className="mt-1 inline-block size-1.5 rounded-full bg-phosphor" />
+                )}
+              </div>
+
+              <div className="pointer-events-none absolute right-4 top-4 z-10 text-right font-mono text-[11px] text-ink-3">
+                <p className="tracking-[0.08em]">EPOCH</p>
+                <p className="text-3xl leading-none tabular-nums text-ink">
+                  {String(currentEpoch).padStart(3, "0")}
+                  <span className="ml-1 text-[11px] text-ink-3">/ {TOTAL_EPOCHS - 1}</span>
+                </p>
+              </div>
+            </>
           )}
         </div>
-
-        {hasInput && (
-          <>
-            <div className="pointer-events-none absolute left-4 top-4 z-10">
-              {topPrediction && (
-                <motion.div
-                  key={topPrediction.label}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex items-baseline gap-2"
-                >
-                  <span className="text-4xl font-bold text-accent-primary drop-shadow-lg">
-                    {topPrediction.label}
-                  </span>
-                  <span className="font-mono text-sm text-foreground/50">
-                    {(topPrediction.confidence * 100).toFixed(1)}%
-                  </span>
-                </motion.div>
-              )}
-              {isLoading && (
-                <div className="mt-1 h-4 w-4 animate-spin rounded-full border-2 border-accent-primary border-t-transparent" />
-              )}
-            </div>
-
-            <div className="pointer-events-none absolute right-4 top-4 z-10">
-              <span className="font-mono text-lg font-bold text-foreground/60">
-                Epoch {currentEpoch}
-              </span>
-            </div>
-          </>
-        )}
       </div>
 
-      <div className="flex w-full max-w-xl items-center gap-3">
+      {/* Transport */}
+      <div className="flex w-full items-center gap-4">
         <button
           onClick={() => setIsPlaying(!isPlaying)}
           disabled={!hasInput}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-surface text-foreground/60 transition-colors hover:bg-surface-elevated hover:text-foreground disabled:opacity-30"
+          className="btn-ghost size-11 shrink-0 !px-0 text-phosphor sm:size-9"
           aria-label={isPlaying ? "Pause" : "Play"}
         >
           {isPlaying ? (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-              <rect x="2" y="1" width="3.5" height="12" rx="1" />
-              <rect x="8.5" y="1" width="3.5" height="12" rx="1" />
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor" aria-hidden>
+              <rect x="2" y="1" width="3.5" height="12" />
+              <rect x="8.5" y="1" width="3.5" height="12" />
             </svg>
           ) : (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor" aria-hidden>
               <path d="M3 1.5v11l9-5.5z" />
             </svg>
           )}
@@ -387,19 +411,18 @@ export function EpochNetworkVisualization() {
             max={TOTAL_EPOCHS - 1}
             value={currentEpoch}
             onChange={(e) => handleEpochChange(parseInt(e.target.value))}
-            className="w-full accent-accent-primary"
+            className="w-full"
+            style={{ ["--fill" as string]: `${pct}%` }}
             disabled={!hasInput}
+            aria-label="Training epoch"
           />
-          <div className="flex w-full justify-between px-0.5">
+          <div className="flex w-full flex-wrap justify-between gap-2">
             {[0, 10, 20, 30, 50, 74].map((e) => (
               <button
                 key={e}
                 onClick={() => { handleEpochChange(e); setIsPlaying(false); }}
-                className={`rounded px-1.5 py-0.5 font-mono text-[10px] transition-colors ${
-                  currentEpoch === e
-                    ? "bg-accent-primary/20 text-accent-primary"
-                    : "text-foreground/30 hover:text-foreground/50"
-                }`}
+                data-selected={currentEpoch === e}
+                className="chip !h-6 !min-h-0 !px-1.5 !text-[10.5px] max-sm:!min-h-8"
               >
                 {e}
               </button>
@@ -409,11 +432,11 @@ export function EpochNetworkVisualization() {
       </div>
 
       {error && (
-        <p className="text-sm text-accent-negative/60">{error}</p>
+        <p className="font-mono text-[11px] text-annotation">{error}</p>
       )}
 
       {!hasInput && (
-        <p className="text-sm text-foreground/30">
+        <p className="font-mono text-[11px] text-ink-3">
           Draw a character above to see how the model improves across training epochs
         </p>
       )}

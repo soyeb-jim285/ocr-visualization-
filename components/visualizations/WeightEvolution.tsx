@@ -18,7 +18,7 @@ const LAYERS = ["conv1", "conv2", "conv3", "dense1"];
 const HIST_BINS = 50;
 
 const chartConfig = {
-  count: { label: "Count", color: "#8b5cf6" },
+  count: { label: "Count", color: "#f472b6" },
 } satisfies ChartConfig;
 
 /** Recursively flatten any nested array into a flat number array */
@@ -127,9 +127,9 @@ function KernelGrid({
           const idx = f * kSize * kSize + r * kSize + c;
           const val = weights[idx] ?? 0;
           const norm = (val / absMax + 1) / 2;
-          const red = Math.round(norm * 220);
-          const blue = Math.round((1 - norm) * 220);
-          ctx.fillStyle = `rgb(${red}, 40, ${blue})`;
+          const red = Math.round(norm * 255);
+          const blue = Math.round((1 - norm) * 255);
+          ctx.fillStyle = `rgb(${red}, ${Math.round(70 + 40 * (1 - Math.abs(norm * 2 - 1)))}, ${blue})`;
           ctx.fillRect(
             ox + c * cellPx,
             oy + r * cellPx,
@@ -144,17 +144,18 @@ function KernelGrid({
   if (numFilters === 0) return null;
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <span className="text-xs text-foreground/40">
-        Kernel weights (diverging: blue=negative, red=positive)
+    <div className="flex flex-col gap-2">
+      <span className="caption">
+        Conv1 kernels · blue = negative, red = positive
       </span>
-      <canvas
-        ref={canvasRef}
-        width={totalW}
-        height={totalH}
-        className="rounded-lg border border-border"
-        style={{ imageRendering: "pixelated" }}
-      />
+      <div className="well w-fit max-w-full overflow-x-auto p-2 scrollbar-none">
+        <canvas
+          ref={canvasRef}
+          width={totalW}
+          height={totalH}
+          style={{ imageRendering: "pixelated" }}
+        />
+      </div>
     </div>
   );
 }
@@ -194,58 +195,57 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
 
   if (!snapshots) {
     return (
-      <div className="flex h-48 items-center justify-center rounded-xl border border-border bg-surface">
-        <p className="text-foreground/30">Weight snapshots not loaded</p>
+      <div className="viz-empty-state flex h-48 items-center justify-center">
+        <p>Weight snapshots not loaded</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      {/* Layer selector */}
-      <div className="flex gap-2">
-        {LAYERS.map((layer) => (
-          <button
-            key={layer}
-            onClick={() => setSelectedLayer(layer)}
-            className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
-              selectedLayer === layer
-                ? "border-accent-secondary/50 bg-accent-secondary/15 text-accent-secondary"
-                : "border-border text-foreground/40 hover:text-foreground/60"
-            }`}
-          >
-            {layer}
-          </button>
-        ))}
-      </div>
-
-      {/* Epoch scrubber */}
-      <div className="flex w-full max-w-lg flex-col items-center gap-2">
-        <div className="flex w-full justify-between text-xs text-foreground/40">
-          <span>Epoch 0 (random)</span>
-          <span>Epoch 74 (trained)</span>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        {/* Layer selector */}
+        <div className="flex flex-col gap-2">
+          <span className="eyebrow">Layer</span>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Layer">
+            {LAYERS.map((layer) => (
+              <button
+                key={layer}
+                onClick={() => setSelectedLayer(layer)}
+                data-selected={selectedLayer === layer}
+                className="chip"
+              >
+                {layer}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex w-full gap-1">
-          {availableEpochs.map((epoch) => (
-            <button
-              key={epoch}
-              onClick={() => setSelectedEpoch(epoch)}
-              className={`flex-1 rounded py-2 text-[10px] font-mono transition-all sm:py-3 sm:text-xs ${
-                selectedEpoch === epoch
-                  ? "bg-accent-secondary font-bold text-background"
-                  : "bg-surface text-foreground/40 hover:bg-surface-elevated"
-              }`}
-            >
-              {epoch}
-            </button>
-          ))}
+
+        {/* Epoch scrubber */}
+        <div className="flex w-full flex-col gap-2 md:max-w-lg">
+          <div className="flex w-full justify-between font-mono text-[11px] text-ink-3">
+            <span>EPOCH 0 · random</span>
+            <span>EPOCH 74 · trained</span>
+          </div>
+          <div className="flex w-full gap-1" role="group" aria-label="Epoch">
+            {availableEpochs.map((epoch) => (
+              <button
+                key={epoch}
+                onClick={() => setSelectedEpoch(epoch)}
+                data-selected={selectedEpoch === epoch}
+                className="chip !min-w-0 flex-1 !px-0 justify-center !text-[10.5px] sm:!text-[11px] max-sm:!min-h-11"
+              >
+                {epoch}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {stats ? (
         <>
-          {/* Stats cards */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {/* Stats */}
+          <dl className="grid grid-cols-2 border-y border-rule md:grid-cols-4">
             {[
               { label: "Mean", value: stats.mean },
               { label: "Std Dev", value: stats.std },
@@ -254,98 +254,92 @@ export function WeightEvolution({ snapshots }: WeightEvolutionProps) {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="flex flex-col items-center rounded-lg border border-border bg-surface px-4 py-3"
+                className="flex flex-col gap-1 border-rule px-1 py-4 odd:border-r md:border-r md:px-5 md:first:pl-1 md:last:border-r-0"
               >
-                <span className="text-xs text-foreground/40">
-                  {stat.label}
-                </span>
-                <span className="font-mono text-lg font-bold text-accent-secondary">
+                <dt className="caption">{stat.label}</dt>
+                <dd className="m-0 font-mono text-xl tabular-nums text-sig">
                   {stat.value.toFixed(4)}
-                </span>
+                </dd>
               </div>
             ))}
-          </div>
+          </dl>
 
-          {/* Weight distribution histogram (recharts) */}
-          {histData && (
-            <div className="flex w-full flex-col items-center gap-2">
-              <span className="text-xs text-foreground/40">
-                Weight distribution
-              </span>
-              <ChartContainer
-                config={chartConfig}
-                className="h-[120px] w-full max-w-md rounded-lg border border-border bg-surface sm:h-[140px]"
-              >
-                <BarChart
-                  data={histData}
-                  margin={{ top: 8, right: 8, bottom: 4, left: 8 }}
-                  barCategoryGap={0}
-                  barGap={0}
+          <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-stretch">
+            {/* Weight distribution histogram (recharts) */}
+            {histData && (
+              <div className="flex min-w-0 flex-col gap-2">
+                <span className="caption">Weight distribution</span>
+                <ChartContainer
+                  config={chartConfig}
+                  className="well h-[200px] w-full flex-1 !aspect-auto sm:h-[260px] md:h-auto md:min-h-[260px]"
                 >
-                  <XAxis
-                    dataKey="binCenter"
-                    type="number"
-                    domain={[-globalMaxAbs, globalMaxAbs]}
-                    tick={{ fill: "rgba(232,232,237,0.3)", fontSize: 9 }}
-                    tickLine={false}
-                    axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
-                    tickCount={5}
-                    tickFormatter={(v: number) => v.toFixed(2)}
-                  />
-                  <YAxis hide />
-                  <ReferenceLine
-                    x={0}
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeDasharray="4 4"
-                  />
-                  <ChartTooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const d = payload[0].payload as {
-                        binCenter: number;
-                        count: number;
-                      };
-                      return (
-                        <div className="rounded border border-border bg-surface px-2 py-1 text-xs shadow-lg">
-                          <span className="text-foreground/50">
-                            {d.binCenter.toFixed(4)}
-                          </span>
-                          <span className="ml-2 font-mono text-accent-secondary">
-                            {d.count}
-                          </span>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Bar dataKey="count" radius={[1, 1, 0, 0]}>
-                    {histData.map((entry, i) => (
-                      <Cell
-                        key={i}
-                        fill={
-                          entry.isNegative
-                            ? "rgba(96, 165, 250, 0.7)"
-                            : "rgba(239, 68, 68, 0.7)"
-                        }
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ChartContainer>
-            </div>
-          )}
+                  <BarChart
+                    data={histData}
+                    margin={{ top: 8, right: 28, bottom: 4, left: 8 }}
+                    barCategoryGap={0}
+                    barGap={0}
+                  >
+                    <XAxis
+                      dataKey="binCenter"
+                      type="number"
+                      domain={[-globalMaxAbs, globalMaxAbs]}
+                      tick={{ fill: "#8896a3", fontSize: 11 }}
+                      tickLine={false}
+                      axisLine={{ stroke: "rgba(170,205,225,0.14)" }}
+                      tickCount={5}
+                      tickFormatter={(v: number) => v.toFixed(2)}
+                    />
+                    <YAxis hide />
+                    <ReferenceLine
+                      x={0}
+                      stroke="rgba(170,205,225,0.3)"
+                      strokeDasharray="4 4"
+                    />
+                    <ChartTooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0].payload as {
+                          binCenter: number;
+                          count: number;
+                        };
+                        return (
+                          <div className="rounded-[3px] border border-rule-strong bg-bg-raised px-2 py-1 font-mono text-[11px] text-ink">
+                            <span className="text-ink-3">
+                              {d.binCenter.toFixed(4)}
+                            </span>
+                            <span className="ml-2 text-sig">{d.count}</span>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="count" radius={[1, 1, 0, 0]}>
+                      {histData.map((entry, i) => (
+                        <Cell
+                          key={i}
+                          fill={entry.isNegative ? "#7f8cff" : "#ff6b4a"}
+                          fillOpacity={0.8}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            )}
 
-          {/* Kernel visualizer for conv1 */}
-          {stats.flatWeights && selectedLayer === "conv1" && (
-            <KernelGrid weights={stats.flatWeights} shape={stats.shape} />
-          )}
+            {/* Kernel visualizer for conv1 */}
+            {stats.flatWeights && selectedLayer === "conv1" && (
+              <KernelGrid weights={stats.flatWeights} shape={stats.shape} />
+            )}
+          </div>
         </>
       ) : (
-        <p className="text-sm text-foreground/30">
+        <p className="caption">
           No snapshot available for {selectedLayer} at epoch {selectedEpoch}
         </p>
       )}
 
-      <p className="max-w-md text-center text-sm text-foreground/40">
+      <p className="callout">
+        <span className="tag">NOTE</span>
         {selectedEpoch === 0
           ? "At epoch 0, weights are random — the network has no idea what it's looking at."
           : selectedEpoch < 10

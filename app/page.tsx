@@ -4,10 +4,8 @@ import { NeuronNetworkSection } from "@/components/sections/NeuronNetworkSection
 import { ModelLabWrapper } from "@/components/sections/ModelLabWrapper";
 
 import { FooterSection } from "@/components/sections/FooterSection";
-import { ViewToggle } from "@/components/ui/ViewToggle";
 import { ScrollTracker } from "@/components/ui/ScrollTracker";
 import { Header } from "@/components/ui/Header";
-import { NetworkView3D } from "@/components/three/NetworkView3D";
 import { LazySection } from "@/components/ui/LazySection";
 
 // matches LazySection fallbackHeight so layout does not jump while the chunk loads
@@ -55,10 +53,8 @@ export default function Home() {
       <EpochPrefetcher />
 
       <Header />
-      <ViewToggle />
       <ScrollTracker />
-      <NetworkView3D />
-      <main className="relative pb-16 sm:pb-20">
+      <main className="relative">
         <NeuronNetworkSection />
         <LazySection id="pixel-view">
           <PixelViewSection />

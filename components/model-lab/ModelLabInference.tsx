@@ -16,6 +16,7 @@ import {
 import { useModelLabStore } from "@/stores/modelLabStore";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { EMNIST_CLASSES } from "@/lib/model/classes";
+import { INK3, RULE, SIG } from "@/lib/theme";
 
 // Precompute label maps to avoid creating new arrays in selectors
 const DIGIT_LABELS = "0123456789".split("");
@@ -29,11 +30,11 @@ const LABEL_MAPS: Record<string, string[]> = {
 };
 
 const customConfig = {
-  prob: { label: "Confidence", color: "#6366f1" },
+  prob: { label: "Confidence", color: SIG.lab },
 } satisfies ChartConfig;
 
 const onnxConfig = {
-  prob: { label: "Confidence", color: "#06b6d4" },
+  prob: { label: "Confidence", color: SIG.dense },
 } satisfies ChartConfig;
 
 function getTop5(prediction: number[] | null, labelMap: string[]) {
@@ -59,22 +60,21 @@ function PredictionChart({
 }) {
   if (data.length === 0) {
     return (
-      <div className="flex-1">
-        <h4 className="mb-2 text-xs font-semibold" style={{ color }}>
+      <div className="min-w-0 flex-1">
+        <h4 className="eyebrow mb-2" style={{ color }}>
           {title}
         </h4>
-        <p className="text-xs text-foreground/30">
-          Draw something above to compare
-        </p>
+        <div className="viz-empty-state !min-h-[160px]">Draw something to light this up</div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1">
-      <h4 className="mb-2 text-xs font-semibold" style={{ color }}>
+    <div className="min-w-0 flex-1">
+      <h4 className="eyebrow mb-2" style={{ color }}>
         {title}
       </h4>
+      <div className="well plate-marks p-2">
       <ChartContainer
         config={config}
         className="h-[160px] w-full min-w-0 overflow-hidden"
@@ -86,21 +86,21 @@ function PredictionChart({
         >
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="rgba(255,255,255,0.05)"
+            stroke={RULE}
             horizontal={false}
           />
           <XAxis
             type="number"
             domain={[0, 100]}
-            tick={{ fill: "rgba(232,232,237,0.35)", fontSize: 9 }}
+            tick={{ fill: INK3, fontSize: 11, fontFamily: "monospace" }}
             tickLine={false}
-            axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+            axisLine={{ stroke: RULE }}
             tickFormatter={(v: number) => `${v}%`}
           />
           <YAxis
             type="category"
             dataKey="label"
-            tick={{ fill: "rgba(232,232,237,0.6)", fontSize: 11, fontFamily: "monospace" }}
+            tick={{ fill: "#b4c0ca", fontSize: 11, fontFamily: "monospace" }}
             tickLine={false}
             axisLine={false}
             width={30}
@@ -110,8 +110,8 @@ function PredictionChart({
               if (!active || !payload?.length) return null;
               const d = payload[0];
               return (
-                <div className="rounded-lg border border-border/70 bg-surface-elevated/95 px-3 py-2 shadow-lg backdrop-blur-sm">
-                  <p className="font-mono text-xs" style={{ color }}>
+                <div className="rounded-[3px] border border-rule-strong bg-bg-raised px-2 py-1">
+                  <p className="font-mono text-[11px]" style={{ color }}>
                     {d.payload.label}: {d.value}%
                   </p>
                 </div>
@@ -121,11 +121,11 @@ function PredictionChart({
           <Bar
             dataKey="prob"
             fill={color}
-            radius={[0, 4, 4, 0]}
-            opacity={0.7}
+            radius={[0, 2, 2, 0]}
           />
         </BarChart>
       </ChartContainer>
+      </div>
     </div>
   );
 }
@@ -148,27 +148,25 @@ export function ModelLabInference() {
   );
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-foreground/70">
-        Test Your Model
-      </h3>
-      <p className="text-xs text-foreground/35">
-        Draw on the canvas at the top of the page — your custom model&apos;s
-        predictions will appear here alongside the pre-trained model.
+    <div className="figure space-y-4">
+      <h3 className="font-serif text-xl text-ink">Test your model</h3>
+      <p className="font-sans text-sm leading-relaxed text-ink-2">
+        Draw on the canvas at the top of the page. Your custom model&apos;s
+        predictions appear here next to the pre-trained model.
       </p>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
+      <div className="flex flex-col gap-4 md:flex-row md:gap-6">
         <PredictionChart
           title="Your Model"
           data={customTop5}
           config={customConfig}
-          color="#6366f1"
+          color={SIG.lab}
         />
         <PredictionChart
           title="Pre-trained (ONNX)"
           data={onnxTop5}
           config={onnxConfig}
-          color="#06b6d4"
+          color={SIG.dense}
         />
       </div>
     </div>

@@ -61,7 +61,7 @@ export function ImageUploader({ compact = false }: ImageUploaderProps) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="inline-flex h-6 w-6 items-center justify-center rounded-sm border border-border/60 bg-transparent text-foreground/60 transition-colors hover:bg-foreground/10 hover:text-foreground"
+          className="relative inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-rule bg-transparent text-ink-2 transition-colors duration-150 after:absolute after:-inset-2 hover:border-rule-strong hover:text-phosphor"
           aria-label="Upload image"
           title="Upload image"
         >
@@ -103,29 +103,16 @@ export function ImageUploader({ compact = false }: ImageUploaderProps) {
       }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
-      className={`flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-4 py-2 text-sm transition-colors ${
-        isDragging
-          ? "border-accent-primary bg-accent-primary/10 text-accent-primary"
-          : "border-border text-foreground/40 hover:border-foreground/40 hover:text-foreground/60"
-      }`}
-      onClick={() => inputRef.current?.click()}
+      className="inline-flex"
     >
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        className="opacity-60"
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        data-dragging={isDragging}
+        className="link-mono py-2 data-[dragging=true]:text-phosphor"
       >
-        <path
-          d="M14 10v3a1 1 0 01-1 1H3a1 1 0 01-1-1v-3M11 5L8 2 5 5M8 2v9"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <span>or upload an image</span>
+        {isDragging ? "drop to read" : "or upload an image"}
+      </button>
       <input
         ref={inputRef}
         type="file"

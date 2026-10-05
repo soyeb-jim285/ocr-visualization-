@@ -16,7 +16,7 @@ pnpm start        # Run production server
 ## Architecture
 
 ### Stack
-Next.js 16.1.6, React 19, TypeScript, Tailwind CSS 4 (@theme inline in globals.css), Zustand 5, Framer Motion 12, ONNX Runtime Web (WASM, single-threaded), Three.js + R3F for optional 3D view.
+Next.js 16.1.6, React 19, TypeScript, Tailwind CSS 4 (@theme inline in globals.css), Zustand 5, Framer Motion 12, ONNX Runtime Web (WASM, single-threaded). 
 
 ### Inference Pipeline
 1. **Draw** → `DrawingCanvas` captures strokes on 280×280 internal canvas
@@ -52,7 +52,7 @@ Legacy: `public/models/emnist-cnn` (only referenced by `scripts/`) and `public/m
 
 **`inferenceStore`**: inputTensor, layerActivations, prediction, topPrediction, selectedNeuron, isInferring
 **`modelLabStore`**: state for the Model Lab section (`components/model-lab`)
-**`uiStore`**: viewMode (2d/3d), activeSection, scrollProgress, modelLoaded, heroStage
+**`uiStore`**: activeSection, scrollProgress, modelLoaded, heroStage
 
 ## Theming (globals.css)
 

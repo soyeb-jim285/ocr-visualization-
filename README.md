@@ -8,7 +8,7 @@ Draw a character and watch each layer process it in real time: input pixels, con
 
 - Real-time in-browser inference with ONNX Runtime Web (WASM)
 - Per-layer visual sections explaining the full CNN pipeline
-- 2D network view + optional 3D architecture view
+- Interactive 2D network view
 - Epoch playback to inspect how predictions evolve during training
 - Model Lab to build/train/export custom CNNs (browser, HF CPU, or GPU backend)
 - Shareable canvas state via compressed URL hash
@@ -20,7 +20,6 @@ Draw a character and watch each layer process it in real time: input pixels, con
 - Zustand for global state
 - ONNX Runtime Web for inference
 - TensorFlow.js (Model Lab browser training)
-- Three.js / React Three Fiber (3D view)
 
 ## Project Structure
 

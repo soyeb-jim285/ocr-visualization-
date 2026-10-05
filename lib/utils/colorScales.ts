@@ -36,28 +36,19 @@ export function viridisRGB(
   ];
 }
 
-/** Map value in [-max, max] to [r, g, b] using diverging blue-white-red */
+/** Map value in [-max, max] to [r, g, b]: indigo (neg) -> ink (zero) -> coral (pos), tuned for the dark film-base palette */
 export function divergingRGB(
   value: number,
   maxAbs: number,
 ): [number, number, number] {
   const bound = Math.max(maxAbs, 0.001);
   const t = Math.max(-1, Math.min(1, value / bound)); // -1..1
-  if (t < 0) {
-    // Blue to white
-    const s = -t; // 0..1
-    return [
-      (255 * (1 - s * 0.7)) | 0,
-      (255 * (1 - s * 0.6)) | 0,
-      255,
-    ];
-  } else {
-    // White to red
-    const s = t;
-    return [
-      255,
-      (255 * (1 - s * 0.6)) | 0,
-      (255 * (1 - s * 0.7)) | 0,
-    ];
-  }
+  const s = Math.abs(t);
+  // zero = ink #e9eef2, neg end = #7f8cff, pos end = #ff6b4a
+  const [r, g, b] = t < 0 ? [127, 140, 255] : [255, 107, 74];
+  return [
+    (233 + (r - 233) * s) | 0,
+    (238 + (g - 238) * s) | 0,
+    (242 + (b - 242) * s) | 0,
+  ];
 }

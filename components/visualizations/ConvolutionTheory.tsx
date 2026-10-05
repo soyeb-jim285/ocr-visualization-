@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { useConv1Weights } from "@/hooks/useConv1Weights";
@@ -7,6 +8,7 @@ import { Latex } from "@/components/ui/Latex";
 import { PatchGrid } from "@/components/visualizations/PatchGrid";
 import { ActivationHeatmap } from "@/components/visualizations/ActivationHeatmap";
 import { viridis } from "@/lib/network/networkConstants";
+import { PHOSPHOR, ANNOTATION } from "@/lib/theme";
 
 /** Grayscale color function for input pixel values (0-1 range) */
 function grayscaleColor(val: number): [number, number, number] {
@@ -17,7 +19,7 @@ function grayscaleColor(val: number): [number, number, number] {
 
 /** Neutral dark background — just shows the numbers, no color encoding */
 function neutralColor(): [number, number, number] {
-  return [26, 26, 36]; // matches surface-elevated #1a1a24
+  return [17, 24, 33]; // matches bg-lift #111821
 }
 
 /** Smart number format: scientific notation for tiny values, fixed otherwise */
@@ -61,12 +63,18 @@ function elementwiseProducts(a: number[][], b: number[][]): number[][] {
   return a.map((row, r) => row.map((val, c) => val * b[r][c]));
 }
 
+/** Legend label: 2 decimals, 3 when the range is tiny; no "-0.00" */
+function fmtLegend(v: number, range: number) {
+  const s = v.toFixed(range < 0.05 ? 3 : 2);
+  return /^-0\.0+$/.test(s) ? s.slice(1) : s;
+}
+
 /** Viridis color bar: min-max normalization */
 function ViridisLegend({ min, max }: { min: number; max: number }) {
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      <span className="font-mono text-[10px] text-foreground/55">{max.toFixed(1)}</span>
-      <div className="flex flex-col" style={{ width: 12, height: 140 }}>
+    <div className="flex flex-col items-start gap-0.5">
+      <span className="font-mono text-[10px] text-ink-3">{fmtLegend(max, max - min)}</span>
+      <div className="flex flex-col" style={{ width: 6, height: 164 }}>
         {Array.from({ length: 32 }, (_, i) => {
           const t = 1 - i / 31; // 1 at top, 0 at bottom
           const [r, g, b] = viridis(t);
@@ -81,10 +89,17 @@ function ViridisLegend({ min, max }: { min: number; max: number }) {
           );
         })}
       </div>
-      <span className="font-mono text-[10px] text-foreground/55">{min.toFixed(1)}</span>
+      <span className="font-mono text-[10px] text-ink-3">{fmtLegend(min, max - min)}</span>
     </div>
   );
 }
+
+const reveal = (delay = 0) => ({
+  initial: { opacity: 0, y: 12 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-12% 0px" },
+  transition: { duration: 0.5, delay, ease: [0.16, 1, 0.3, 1] as const },
+});
 
 const GRID = 28;
 const CELL = 10;
@@ -212,9 +227,9 @@ export function ConvolutionTheory() {
 
     const overlayX = (kernelPos.col - 1) * CELL;
     const overlayY = (kernelPos.row - 1) * CELL;
-    ctx.fillStyle = "rgba(6, 182, 212, 0.15)";
+    ctx.fillStyle = "rgba(143, 227, 255, 0.15)";
     ctx.fillRect(overlayX, overlayY, 3 * CELL, 3 * CELL);
-    ctx.strokeStyle = "#06b6d4";
+    ctx.strokeStyle = PHOSPHOR;
     ctx.lineWidth = 2;
     ctx.strokeRect(overlayX, overlayY, 3 * CELL, 3 * CELL);
   }, [inputBaseImage, kernelPos, hasData]);
@@ -226,7 +241,7 @@ export function ConvolutionTheory() {
 
     ctx.putImageData(outputBaseImage, 0, 0);
 
-    ctx.strokeStyle = "#f59e0b";
+    ctx.strokeStyle = ANNOTATION;
     ctx.lineWidth = 2;
     ctx.strokeRect(
       kernelPos.col * CELL,
@@ -297,142 +312,141 @@ export function ConvolutionTheory() {
     [outputMinMax]
   );
 
+  const op = (c: string) => <span className="px-1 text-ink-3">{c}</span>;
+
   return (
-    <div className="flex flex-col gap-10">
-      {/* Main layout: theory left, full visualization right */}
-      <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:gap-12">
-        {/* Left: theory text */}
-        <div className="flex-1 space-y-4 text-center lg:text-left">
-          <p className="text-base leading-relaxed text-foreground/65 sm:text-lg">
-            A convolution slides a small learned filter (called a <em>kernel</em>) across every
-            position of the input image. At each position, it computes the dot product between the
+    <div className="flex flex-col gap-16">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-12 lg:gap-x-6">
+        {/* Left: theory */}
+        <motion.div {...reveal()} className="min-w-0 space-y-6 lg:col-span-5">
+          <p className="prose-body">
+            A convolution slides a small learned filter, called a <em>kernel</em>, across every
+            position of the input image. At each position it computes the dot product between the
             kernel weights and the overlapping image patch, producing a single output value. Our
-            network uses 64 different 3&times;3 kernels — each one learns to detect a different
+            network uses 64 different 3&times;3 kernels, and each one learns to detect a different
             pattern like edges, corners, or curves.
           </p>
 
-          {/* Main equation */}
-          <div className="py-3">
+          <div className="formula">
             <Latex
               display
               math="O(i,j) = \sum_{m=0}^{2}\sum_{n=0}^{2} I(i{+}m,\, j{+}n) \cdot K(m,n) + b"
             />
+            <span className="eq-no">(2)</span>
           </div>
 
-          {/* Equation legend */}
-          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
-            <span><Latex math="I" /> — input patch</span>
-            <span><Latex math="K" /> — kernel weights</span>
-            <span><Latex math="b" /> — bias</span>
-            <span><Latex math="O" /> — output value</span>
-          </div>
+          <dl className="grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-1.5 text-sm">
+            {[
+              ["I", "input patch"],
+              ["K", "kernel weights"],
+              ["b", "bias"],
+              ["O", "output value"],
+            ].map(([sym, desc]) => (
+              <div key={sym} className="contents">
+                <dt className="text-ink">
+                  <Latex math={sym} />
+                </dt>
+                <dd className="font-mono text-[11px] text-ink-3">{desc}</dd>
+              </div>
+            ))}
+          </dl>
 
-          <p className="text-sm leading-relaxed text-foreground/60">
-            With <Latex math="\text{padding}=1" />, the 3&times;3 kernel can be centered on every
-            pixel — including edges, where zero-padded values fill in. This preserves the spatial
-            dimensions:{" "}
-            <Latex math="(1, 28, 28) \xrightarrow{64\text{ filters}} (64, 28, 28)" />.
-            Total parameters: <Latex math="64 \times (3 \times 3 + 1) = 640" />.
-            A later activation step (ReLU) will clip negatives to zero, but here we show
-            the raw convolution output.
+          <p className="callout [overflow-wrap:anywhere]">
+            <span className="tag">NOTE</span>
+            With <Latex math="\text{padding}=1" /> the kernel centers on every pixel, edges
+            included, so the spatial size is preserved. Raw output is shown here; ReLU comes next.
           </p>
-        </div>
 
-        {/* Right: full visualization */}
-        <div className="flex w-full shrink-0 flex-col items-center gap-4 lg:w-auto">
+          <p className="text-sm leading-[1.65] text-ink-3">
+            <Latex math="(1, 28, 28) \xrightarrow{64\text{ filters}} (64, 28, 28)" />. Total
+            parameters:{" "}
+            <span className="inline-block max-w-full overflow-x-auto align-bottom">
+              <Latex math="64 \times (3 \times 3 + 1) = 640" />
+            </span>
+            .
+          </p>
+        </motion.div>
+
+        {/* Right: walkthrough figure */}
+        <motion.figure {...reveal(0.16)} className="figure m-0 min-w-0 lg:col-span-7">
           {hasData ? (
-            <div className="space-y-4">
-              {/* Top row: input → feature map */}
-              <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center sm:gap-6">
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-xs text-foreground/55">Input (28&times;28)</span>
-                  <canvas
-                    ref={inputCanvasRef}
-                    width={CANVAS}
-                    height={CANVAS}
-                    className="cursor-crosshair rounded-md border border-border/60"
-                    style={{
-                      width: 196,
-                      height: 196,
-                      imageRendering: "pixelated",
-                    }}
-                    onClick={handleCanvasClick}
-                  />
-                  <span className="text-[11px] text-foreground/55">Cyan = current 3&times;3 patch</span>
+            <div className="space-y-8">
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:gap-5">
+                <div className="flex flex-col gap-2">
+                  <span className="font-mono text-[11px] text-ink-2">
+                    INPUT <span className="text-ink-3">28&times;28</span>
+                  </span>
+                  <div className="well plate-marks">
+                    <canvas
+                      ref={inputCanvasRef}
+                      width={CANVAS}
+                      height={CANVAS}
+                      className="block cursor-crosshair"
+                      style={{ width: 196, height: 196, imageRendering: "pixelated" }}
+                      onClick={handleCanvasClick}
+                    />
+                  </div>
+                  <span className="font-mono text-[11px] text-ink-3">3&times;3 patch</span>
                 </div>
 
-                <div className="text-foreground/25">
+                <div className="self-center text-ink-3 sm:pt-6">
                   <span className="hidden sm:inline"><Latex math="\longrightarrow" /></span>
                   <span className="sm:hidden"><Latex math="\downarrow" /></span>
                 </div>
 
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-xs text-foreground/55">
-                    Feature Map #{selectedFilter + 1}
+                <div className="flex flex-col gap-2">
+                  <span className="font-mono text-[11px] text-ink-2">
+                    FEATURE MAP {String(selectedFilter + 1).padStart(2, "0")}{" "}
+                    <span className="text-ink-3">28&times;28</span>
                   </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-2.5">
                     {outputMap ? (
-                      <canvas
-                        ref={outputCanvasRef}
-                        width={CANVAS}
-                        height={CANVAS}
-                        className="cursor-crosshair rounded-md border border-border/60"
-                        style={{
-                          width: 196,
-                          height: 196,
-                          imageRendering: "pixelated",
-                        }}
-                        onClick={handleCanvasClick}
-                      />
+                      <div className="well plate-marks">
+                        <canvas
+                          ref={outputCanvasRef}
+                          width={CANVAS}
+                          height={CANVAS}
+                          className="block cursor-crosshair"
+                          style={{ width: 196, height: 196, imageRendering: "pixelated" }}
+                          onClick={handleCanvasClick}
+                        />
+                      </div>
                     ) : (
-                      <div
-                        className="flex items-center justify-center border border-border/50"
-                        style={{ width: 196, height: 196 }}
-                      >
-                        <span className="text-xs text-foreground/20">No data</span>
+                      <div className="viz-empty-state" style={{ width: 196, height: 196 }}>
+                        No data
                       </div>
                     )}
                     {outputMap && <ViridisLegend min={outputMinMax.min} max={outputMinMax.max} />}
                   </div>
-                  <span className="text-[11px] text-foreground/55">
-                    Orange = output at [{kernelPos.row}, {kernelPos.col}]
+                  <span className="font-mono text-[11px] text-ink-3">
+                    output [{kernelPos.row}, {kernelPos.col}]
                   </span>
                 </div>
               </div>
 
-              {/* Inner workings label */}
-              <div className="flex items-center justify-center gap-2 text-foreground/25">
-                <Latex math="\downarrow" />
-                <span className="text-[11px] tracking-wide">
-                  Inner workings at [{kernelPos.row}, {kernelPos.col}] using filter #{selectedFilter + 1}
-                </span>
-                <Latex math="\downarrow" />
-              </div>
-
-              {/* Bottom row: patch math */}
-              <div>
-                <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-2.5">
+              {/* Inner workings */}
+              <div className="border-t border-rule-faint pt-5">
+                <p className="mb-4 font-mono text-[11px] tracking-[0.04em] text-ink-3">
+                  <span className="text-sig">INNER WORKINGS</span> at [{kernelPos.row}, {kernelPos.col}], filter {selectedFilter + 1}
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-4 sm:justify-start">
                   <PatchGrid
                     data={patch!}
                     colorFn={grayscaleColor}
                     cellSize={40}
                     showValues
-                    label="Input Patch"
+                    label="Input patch"
                   />
-
-                  <span className="text-foreground/30"><Latex math="\times" /></span>
-
+                  <span className="text-ink-3"><Latex math="\times" /></span>
                   <PatchGrid
                     data={kernel}
                     colorFn={neutralColor}
                     cellSize={40}
                     showValues
                     valueFormat={smartFormat}
-                    label={`Kernel #${selectedFilter + 1}`}
+                    label={`Kernel ${selectedFilter + 1}`}
                   />
-
-                  <span className="text-foreground/30"><Latex math="=" /></span>
-
+                  <span className="text-ink-3"><Latex math="=" /></span>
                   <PatchGrid
                     data={products!}
                     colorFn={neutralColor}
@@ -441,12 +455,10 @@ export function ConvolutionTheory() {
                     valueFormat={smartFormat}
                     label="Products"
                   />
-
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-[11px] text-foreground/55"><Latex math="\scriptstyle\sum + b" /></span>
-                    <span className="text-foreground/30"><Latex math="\longrightarrow" /></span>
+                  <div className="flex flex-col items-center gap-0.5 text-ink-3">
+                    <span className="text-[11px]"><Latex math="\scriptstyle\sum + b" /></span>
+                    <Latex math="\longrightarrow" />
                   </div>
-
                   <PatchGrid
                     data={[[rawConvValue ?? 0]]}
                     colorFn={outputCellColorFn}
@@ -454,91 +466,72 @@ export function ConvolutionTheory() {
                     showValues
                     valueFormat={smartFormat}
                     label="Output"
+                    highlight
                   />
                 </div>
 
-                {/* Compact sum breakdown */}
                 {rawConvValue !== null && productsSum !== null && (
-                  <div className="mt-3 flex flex-col items-center gap-1 font-mono text-xs text-foreground/55">
-                    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
-                      <span>
-                        <span className="text-foreground/25">Σ(products)</span>{" "}
-                        = {smartFormat(productsSum)}
-                      </span>
-                      <span className="text-foreground/25">+</span>
-                      <span>
-                        <span className="text-foreground/25">bias</span>{" "}
-                        {smartFormat(bias)}
-                      </span>
-                      <span className="text-foreground/25">=</span>
-                      <span className="text-accent-primary">{smartFormat(rawConvValue)}</span>
-                    </div>
-                  </div>
+                  <p className="mt-4 flex flex-wrap items-center justify-center font-mono text-xs text-ink-2 sm:justify-start">
+                    <span><span className="text-ink-3">&Sigma;(products)</span> {smartFormat(productsSum)}</span>
+                    {op("+")}
+                    <span><span className="text-ink-3">bias</span> {smartFormat(bias)}</span>
+                    {op("=")}
+                    <span className="text-sig">{smartFormat(rawConvValue)}</span>
+                  </p>
                 )}
               </div>
 
               {/* Controls */}
-              <div className="flex items-center justify-center gap-3">
-                <button
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="flex items-center gap-1.5 rounded-lg border border-accent-tertiary/30 bg-accent-tertiary/10 px-3 py-1.5 text-sm font-medium text-accent-tertiary transition-colors hover:bg-accent-tertiary/20"
-                >
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button onClick={() => setIsPlaying(!isPlaying)} className="btn-primary">
                   {isPlaying ? (
                     <>
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1" width="4" height="12" rx="1" /><rect x="8" y="1" width="4" height="12" rx="1" /></svg>
+                      <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor"><rect x="2" y="1" width="4" height="12" /><rect x="8" y="1" width="4" height="12" /></svg>
                       Pause
                     </>
                   ) : (
                     <>
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M3 1.5v11l9-5.5z" /></svg>
+                      <svg width="12" height="12" viewBox="0 0 14 14" fill="currentColor"><path d="M3 1.5v11l9-5.5z" /></svg>
                       Play
                     </>
                   )}
                 </button>
-                <button
-                  onClick={step}
-                  className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground/60 transition-colors hover:border-foreground/40"
-                >
-                  Step
-                </button>
+                <button onClick={step} className="btn-ghost">Step</button>
                 <button
                   onClick={() => {
                     setKernelPos({ row: 0, col: 0 });
                     setIsPlaying(false);
                   }}
-                  className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground/60 transition-colors hover:border-foreground/40"
+                  className="btn-ghost"
                 >
                   Reset
                 </button>
-                <span className="font-mono text-[10px] text-foreground/55">
+                <span className="readout ml-auto min-w-0 shrink">
                   [{kernelPos.row}, {kernelPos.col}]
                 </span>
               </div>
             </div>
           ) : (
-            <div className="flex h-48 items-center justify-center">
-              <p className="text-foreground/55">
-                Draw a character above to see activations
-              </p>
-            </div>
+            <div className="viz-empty-state">Draw something to light this up</div>
           )}
-        </div>
+          <figcaption className="figcap [overflow-wrap:anywhere]">
+            <b>FIG. 2.1</b> Click either canvas to move the kernel. Cyan marks the 3&times;3 patch,
+            orange the output pixel it produces.
+          </figcaption>
+        </motion.figure>
       </div>
 
-      {/* Filter selection: clickable feature map thumbnails — full width */}
+      {/* Filter selection */}
       {hasData && (
-        <div className="space-y-3">
-          <p className="text-center text-xs text-foreground/55">
-            Select a filter — click any feature map below
-          </p>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+        <motion.figure {...reveal()} className="figure m-0">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-2">
             {conv1Maps
               ? conv1Maps.map((fm, i) => (
                   <ActivationHeatmap
                     key={i}
                     data={fm}
                     size={56}
-                    label={`#${i + 1}`}
+                    label={`${i + 1}`}
                     onClick={() => setSelectedFilter(i)}
                     selected={i === selectedFilter}
                   />
@@ -550,19 +543,16 @@ export function ConvolutionTheory() {
                       i === selectedFilter ? "opacity-100" : "opacity-40"
                     }`}
                   >
-                    <div
-                      className="border border-border/50"
-                      style={{
-                        width: 56,
-                        height: 56,
-                        backgroundColor: "var(--surface)",
-                      }}
-                    />
-                    <span className="text-xs text-foreground/55">#{i + 1}</span>
+                    <div className="tile" style={{ width: 56, height: 56 }} />
+                    <span className="font-mono text-[10px] text-ink-3">{i + 1}</span>
                   </div>
                 ))}
           </div>
-        </div>
+          <figcaption className="figcap">
+            <b>FIG. 2.2</b> All 64 filters applied to your drawing. Select a feature map to inspect
+            its kernel above.
+          </figcaption>
+        </motion.figure>
       )}
     </div>
   );

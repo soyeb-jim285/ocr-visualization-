@@ -2,9 +2,46 @@
 
 import { SectionWrapper } from "@/components/ui/SectionWrapper";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { FeatureMapGrid } from "@/components/visualizations/FeatureMapGrid";
+import { FeatureMapGrid, Reveal } from "@/components/visualizations/FeatureMapGrid";
 import { useInferenceStore } from "@/stores/inferenceStore";
 import { Latex } from "@/components/ui/Latex";
+
+function Placeholder({ n }: { n: number }) {
+  return (
+    <div className="grid grid-cols-4 justify-items-center gap-x-2 gap-y-3 sm:grid-cols-8">
+      {Array.from({ length: n }, (_, i) => (
+        <div key={i} className="tile border border-rule bg-bg-inset opacity-50" style={{ width: 56, height: 56 }} />
+      ))}
+    </div>
+  );
+}
+
+function Stage({
+  fig,
+  title,
+  meta,
+  children,
+  note,
+}: {
+  fig: string;
+  title: string;
+  meta: string;
+  children: React.ReactNode;
+  note?: React.ReactNode;
+}) {
+  return (
+    <Reveal className="figure">
+      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+        <p className="font-serif text-xl italic text-ink-2">{title}</p>
+        <p className="caption">{meta}</p>
+      </div>
+      <div className="well plate-marks p-3 sm:p-4">{children}</div>
+      <p className="figcap">
+        <b>{fig}</b> {note}
+      </p>
+    </Reveal>
+  );
+}
 
 export function DeeperLayersSection() {
   const layerActivations = useInferenceStore((s) => s.layerActivations);
@@ -13,157 +50,104 @@ export function DeeperLayersSection() {
   const pool2Maps = layerActivations["pool2"] as number[][][] | undefined;
 
   return (
-    <SectionWrapper id="deeper-layers">
+    <SectionWrapper id="deeper-layers" sig="conv3">
       <SectionHeader
         step={6}
+        tag="Conv3 · 256 ch · 14×14"
         title="Going Deeper: Third Convolution"
-        subtitle="After pooling compressed the spatial dimensions to 14×14, a third convolution layer reads all 128 pooled feature maps. It learns to detect high-level character parts — loops, crossbars, serifs — that require combining many simpler patterns."
+        subtitle="After pooling compressed the spatial dimensions to 14×14, a third convolution layer reads all 128 pooled feature maps. It learns to detect high-level character parts (loops, crossbars, serifs) that require combining many simpler patterns."
       />
 
       {/* Theory introduction */}
-      <div className="mb-10 space-y-4 text-center lg:text-left">
-        <p className="text-base leading-relaxed text-foreground/65 sm:text-lg">
-          Each successive layer has a larger <em>receptive field</em> — by layer
-          3, each neuron integrates information from a wide region of the
-          original input. The third convolution reads all 128 channels from pool1
-          and produces 256 new feature maps, followed by ReLU and a second
-          pooling step that further compresses spatial dimensions to 7&times;7.
-        </p>
-
-        <div className="py-3">
-          <Latex
-            display
-            math="\underbrace{(128,14,14)}_{\text{pool1}} \xrightarrow{\text{conv3}} \underbrace{(256,14,14)}_{\text{conv3}} \xrightarrow{\text{ReLU}} \underbrace{(256,14,14)}_{\text{relu3}} \xrightarrow{\text{pool}} \underbrace{(256,7,7)}_{\text{pool2}}"
-          />
+      <Reveal className="mb-16 grid grid-cols-1 gap-x-6 gap-y-6 lg:grid-cols-12">
+        <div className="min-w-0 space-y-5 lg:col-span-9 lg:col-start-4">
+          <p className="prose-body">
+            Each successive layer has a larger <em className="text-ink">receptive field</em>: by layer
+            3, each neuron integrates information from a wide region of the
+            original input. The third convolution reads all 128 channels from pool1
+            and produces 256 new feature maps, followed by ReLU and a second
+            pooling step that further compresses spatial dimensions to 7&times;7.
+          </p>
+          <ul className="space-y-1 text-sm text-ink-3">
+            <li>
+              Conv3: <Latex math="256 \times (3 \times 3 \times 128 + 1) = 295{,}168" /> params
+            </li>
+            <li>
+              Output: <Latex math="256 \times 7 \times 7 = 12{,}544" /> values
+            </li>
+          </ul>
         </div>
-
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm text-foreground/55 lg:justify-start">
-          <span>
-            Conv3: <Latex math="256 \times (3 \times 3 \times 128 + 1) = 295{,}168" /> params
-          </span>
-          <span>
-            Output: <Latex math="256 \times 7 \times 7 = 12{,}544" /> values
-          </span>
-        </div>
-
-        <p className="text-sm leading-relaxed text-foreground/60">
-          The filter count doubles again — 64, 128, 256 — while pooling halves
-          the spatial dimensions. The total information capacity stays roughly
-          constant, but shifts from <em>spatial detail</em> to{" "}
-          <em>semantic richness</em>. By the final pooling output, the network
-          has distilled your 28&times;28 drawing into 256 compact 7&times;7
-          feature maps — a dense, abstract representation ready for
-          classification.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-10 sm:gap-16">
-        {/* Conv3: 256 filters, 14x14 */}
-        <div>
-          <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
-            <span className="rounded-full bg-accent-secondary/10 px-3 py-1 text-sm font-medium text-accent-secondary">
-              Conv3 Output
-            </span>
-            <span className="text-xs text-foreground/55 sm:text-sm">
-              256 filters &middot; 14&times;14
-            </span>
-          </div>
-          {conv3Maps ? (
-            <FeatureMapGrid
-              featureMaps={conv3Maps.slice(0, 32)}
-              layerName="conv3"
-              columns={8}
-              columnsSm={4}
-              cellSize={56}
+        <div className="min-w-0 lg:col-span-9 lg:col-start-4">
+          <div className="formula !mt-0 !text-[0.9em] [scrollbar-width:thin] [scrollbar-color:var(--rule-strong)_transparent]">
+            <Latex
+              display
+              math="\underbrace{(128,14,14)}_{\text{pool1}} \xrightarrow{\text{conv3}} \underbrace{(256,14,14)}_{\text{conv3}} \xrightarrow{\text{ReLU}} \underbrace{(256,14,14)}_{\text{relu3}} \xrightarrow{\text{pool}} \underbrace{(256,7,7)}_{\text{pool2}}"
             />
-          ) : (
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-              {Array.from({ length: 32 }, (_, i) => (
-                <div key={i} className="flex flex-col items-center gap-1 opacity-40">
-                  <div className="border border-border/50 bg-black" style={{ width: 56, height: 56 }} />
-                </div>
-              ))}
-            </div>
-          )}
-          {conv3Maps && conv3Maps.length > 32 && (
-            <p className="mt-2 text-center text-xs text-foreground/55">
-              Showing 32 of {conv3Maps.length} feature maps
-            </p>
-          )}
-        </div>
-
-        {/* ReLU3: 256 filters, 14x14 */}
-        <div>
-          <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
-            <span className="rounded-full bg-accent-tertiary/10 px-3 py-1 text-sm font-medium text-accent-tertiary">
-              After ReLU
-            </span>
-            <span className="text-xs text-foreground/55 sm:text-sm">
-              256 feature maps &middot; 14&times;14 &middot; negatives zeroed
-            </span>
+            <span className="eq-no">(6)</span>
           </div>
+          <p className="callout">
+            <span className="tag">NOTE</span>
+            Filters double (64, 128, 256) while pooling halves the spatial size.
+            Capacity stays roughly constant but shifts from spatial detail to
+            semantic richness: your 28&times;28 drawing becomes 256 compact
+            7&times;7 maps.
+          </p>
+        </div>
+      </Reveal>
+
+      <div className="flex flex-col gap-14 sm:gap-16">
+        <Stage
+          fig="FIG. 6.1"
+          title="Conv3 output"
+          meta="256 filters · 14×14"
+          note={
+            conv3Maps && conv3Maps.length > 32
+              ? `Showing 32 of ${conv3Maps.length} feature maps. Tap one to enlarge.`
+              : "Tap a map to enlarge."
+          }
+        >
+          {conv3Maps ? (
+            <FeatureMapGrid featureMaps={conv3Maps.slice(0, 32)} layerName="conv3" columns={8} columnsSm={4} cellSize={56} />
+          ) : (
+            <Placeholder n={32} />
+          )}
+        </Stage>
+
+        <Stage
+          fig="FIG. 6.2"
+          title="After ReLU"
+          meta="256 feature maps · 14×14 · negatives zeroed"
+          note={
+            relu3Maps && relu3Maps.length > 32
+              ? `Showing 32 of ${relu3Maps.length} feature maps. Dashed tiles are silent.`
+              : "Dashed tiles are silent."
+          }
+        >
           {relu3Maps ? (
-            <>
-              <FeatureMapGrid
-                featureMaps={relu3Maps.slice(0, 32)}
-                layerName="relu3"
-                columns={8}
-                columnsSm={4}
-                cellSize={56}
-              />
-              {relu3Maps.length > 32 && (
-                <p className="mt-2 text-center text-xs text-foreground/55">
-                  Showing 32 of {relu3Maps.length} feature maps
-                </p>
-              )}
-            </>
+            <FeatureMapGrid featureMaps={relu3Maps.slice(0, 32)} layerName="relu3" columns={8} columnsSm={4} cellSize={56} />
           ) : (
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-              {Array.from({ length: 32 }, (_, i) => (
-                <div key={i} className="flex flex-col items-center gap-1 opacity-40">
-                  <div className="border border-border/50 bg-black" style={{ width: 56, height: 56 }} />
-                </div>
-              ))}
-            </div>
+            <Placeholder n={32} />
           )}
-        </div>
+        </Stage>
 
-        {/* Pool2: 256 filters, 7x7 */}
-        <div>
-          <div className="mb-4 flex flex-wrap items-center gap-2 sm:gap-3">
-            <span className="rounded-full bg-accent-warning/10 px-3 py-1 text-sm font-medium text-accent-warning">
-              After Pooling
-            </span>
-            <span className="text-xs text-foreground/55 sm:text-sm">
-              256 feature maps &middot; 7&times;7 each
-            </span>
-          </div>
-          {pool2Maps ? (
+        <Stage
+          fig="FIG. 6.3"
+          title="After pooling"
+          meta="256 feature maps · 7×7 each"
+          note={
             <>
-              <FeatureMapGrid
-                featureMaps={pool2Maps.slice(0, 16)}
-                layerName="pool2"
-                columns={8}
-                columnsSm={4}
-                cellSize={56}
-              />
-                <p className="mt-3 text-center text-sm text-foreground/55">
-                  These compact 7&times;7 feature maps will be flattened into a
-                  single vector of{" "}
-                  <Latex math="7 \times 7 \times 256 = 12{,}544" /> values for the
-                  dense layers.
-                </p>
-              </>
+              Flattened into one vector of{" "}
+              <Latex math="7 \times 7 \times 256 = 12{,}544" /> values for the
+              dense layers.
+            </>
+          }
+        >
+          {pool2Maps ? (
+            <FeatureMapGrid featureMaps={pool2Maps.slice(0, 16)} layerName="pool2" columns={8} columnsSm={4} cellSize={56} />
           ) : (
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-              {Array.from({ length: 16 }, (_, i) => (
-                <div key={i} className="flex flex-col items-center gap-1 opacity-40">
-                  <div className="border border-border/50 bg-black" style={{ width: 56, height: 56 }} />
-                </div>
-              ))}
-            </div>
+            <Placeholder n={16} />
           )}
-        </div>
+        </Stage>
       </div>
     </SectionWrapper>
   );

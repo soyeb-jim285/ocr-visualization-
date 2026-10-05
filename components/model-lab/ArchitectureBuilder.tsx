@@ -21,7 +21,7 @@ import {
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { useModelLabStore } from "@/stores/modelLabStore";
-import { LayerConfig } from "./LayerConfig";
+import { LayerConfig, Field, CHIP } from "./LayerConfig";
 import { MAX_CONV_LAYERS } from "@/lib/model-lab/architecture";
 import type { Activation, ConvLayerConfig } from "@/lib/model-lab/architecture";
 import { Accordion, AccordionItem, AccordionContent } from "@/components/ui/accordion";
@@ -77,46 +77,44 @@ function SortableConvLayer({
       ref={setNodeRef}
       style={style}
       value={layer.id}
-      className="rounded-lg border border-border/50 bg-black/20"
+      className="rounded-[3px] border border-rule bg-bg-inset transition-colors data-[state=open]:border-rule-strong"
     >
-      {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2">
-        {/* Drag handle */}
+      <div className="flex min-h-11 items-center gap-2 px-2">
         <button
           type="button"
-          className="shrink-0 cursor-grab touch-none text-foreground/20 hover:text-foreground/40 active:cursor-grabbing"
+          aria-label={`Reorder layer ${index + 1}`}
+          className="flex size-7 shrink-0 cursor-grab touch-none items-center justify-center text-ink-4 transition-colors hover:text-ink-2 active:cursor-grabbing"
           {...attributes}
           {...listeners}
         >
           <GripVertical size={14} />
         </button>
 
-        <span className="shrink-0 font-mono text-[10px] text-foreground/55">
-          {index + 1}
+        <span className="shrink-0 font-mono text-[11px] text-sig">
+          {String(index + 1).padStart(2, "0")}
         </span>
 
-        <AccordionPrimitive.Trigger className="flex flex-1 items-center gap-1.5 text-left text-xs font-medium text-foreground/65 hover:text-foreground/80 [&[data-state=open]>svg]:rotate-90">
+        <AccordionPrimitive.Trigger className="flex min-h-9 flex-1 items-center gap-1.5 text-left font-mono text-[11px] text-ink-2 transition-colors hover:text-ink [&[data-state=open]>svg]:rotate-90">
           <ChevronRight
             size={12}
-            className="shrink-0 text-foreground/30 transition-transform duration-200"
+            className="shrink-0 text-ink-3 transition-transform duration-200"
           />
           {summary}
         </AccordionPrimitive.Trigger>
 
-        {/* Remove */}
         <Button
           variant="ghost"
           size="icon-xs"
+          aria-label={`Remove layer ${index + 1}`}
           onClick={() => removeConvLayer(layer.id)}
           disabled={total <= 1}
-          className="text-foreground/25 hover:text-red-400 hover:bg-transparent"
+          className="text-ink-3 hover:bg-transparent hover:text-annotation"
         >
           <Trash2 size={14} />
         </Button>
       </div>
 
-      {/* Expanded config */}
-      <AccordionContent className="border-t border-border/30 px-3 pb-3 pt-0">
+      <AccordionContent className="border-t border-rule px-3 pb-4 pt-0">
         <LayerConfig
           layer={layer}
           onUpdate={(updates) => updateConvLayer(layer.id, updates)}
@@ -171,26 +169,33 @@ export function ArchitectureBuilder() {
     [setExpandedLayerId],
   );
 
+  const params =
+    paramCount < 1e6
+      ? `${(paramCount / 1e3).toFixed(1)}K`
+      : `${(paramCount / 1e6).toFixed(1)}M`;
+
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-foreground/70">Architecture</h3>
+    <div className="figure space-y-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="font-serif text-xl text-ink">Architecture</h3>
+        <span className="readout">
+          {params} <span className="text-ink-3">params</span>
+        </span>
+      </div>
 
       {/* Spatial dim flow */}
-      <div className="flex flex-wrap items-center gap-1 text-[11px] text-foreground/55">
-        <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono">
-          28×28×1
-        </span>
+      <div className="flex flex-wrap items-center gap-1 font-mono text-[11px] text-ink-2">
+        <span className="rounded-[2px] border border-rule px-1.5 py-0.5">28×28×1</span>
         {spatialDims.slice(1).map((dim, i) => (
           <span key={i} className="flex items-center gap-1">
-            <span className="text-foreground/20">&rarr;</span>
-            <span className="rounded bg-white/5 px-1.5 py-0.5 font-mono">
+            <span className="text-ink-4">&rarr;</span>
+            <span className="rounded-[2px] border border-rule px-1.5 py-0.5">
               {dim.height}×{dim.width}×{convLayers[i]?.filters ?? "?"}
             </span>
           </span>
         ))}
       </div>
 
-      {/* Conv layers stack */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -218,107 +223,82 @@ export function ArchitectureBuilder() {
               />
             ))}
 
-            {/* Add layer */}
             {convLayers.length < MAX_CONV_LAYERS && (
-              <Button
-                variant="outline"
+              <button
+                type="button"
                 onClick={addConvLayer}
-                className="w-full border-dashed border-border/40 text-xs text-foreground/55 hover:border-indigo-500/40 hover:text-indigo-400 hover:bg-transparent"
+                className="flex min-h-11 w-full items-center justify-center gap-2 rounded-[3px] border border-dashed border-rule-strong font-mono text-[11px] text-ink-2 transition-colors hover:border-sig hover:text-ink"
               >
                 <Plus size={14} />
-                Add Conv Layer
-              </Button>
+                Add conv layer
+              </button>
             )}
           </Accordion>
         </SortableContext>
       </DndContext>
 
       {/* Dense config */}
-      <div className="rounded-lg border border-border/50 bg-black/20 px-3 py-3">
-        <h4 className="mb-2 text-xs font-semibold text-foreground/55">
-          Dense Layer
-        </h4>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
-              Width
-            </label>
+      <div className="rounded-[3px] border border-rule bg-bg-inset p-4">
+        <h4 className="eyebrow mb-4">DENSE LAYER</h4>
+        <div className="grid grid-cols-2 gap-5">
+          <Field label="WIDTH" value={dense.width}>
             <Slider
               value={[dense.width]}
               onValueChange={([v]) => setDenseConfig({ width: v })}
               min={64}
               max={1024}
               step={64}
-              className="my-2 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:border-indigo-500 [&_[data-slot=slider-thumb]]:size-3"
+              className="my-2"
             />
-            <span className="block text-center font-mono text-[10px] text-foreground/55">
-              {dense.width}
-            </span>
-          </div>
-          <div>
-            <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
-              Dropout
-            </label>
+          </Field>
+          <Field label="DROPOUT" value={dense.dropout.toFixed(2)}>
             <Slider
               value={[dense.dropout]}
               onValueChange={([v]) => setDenseConfig({ dropout: v })}
               min={0}
               max={0.7}
               step={0.05}
-              className="my-2 [&_[data-slot=slider-range]]:bg-indigo-500 [&_[data-slot=slider-thumb]]:border-indigo-500 [&_[data-slot=slider-thumb]]:size-3"
+              className="my-2"
             />
-            <span className="block text-center font-mono text-[10px] text-foreground/55">
-              {dense.dropout.toFixed(2)}
-            </span>
-          </div>
+          </Field>
         </div>
-        <div className="mt-2">
-          <label className="mb-1 block text-[10px] uppercase tracking-wider text-foreground/55">
-            Activation
-          </label>
-          <ToggleGroup
-            type="single"
-            value={dense.activation}
-            onValueChange={(v) => v && setDenseConfig({ activation: v as Activation })}
-            spacing={1}
-            className="flex flex-wrap gap-1"
-          >
-            {ACTIVATION_OPTIONS.map((act) => (
-              <ToggleGroupItem
-                key={act}
-                value={act}
-                className="h-auto min-w-0 shrink rounded-md px-2 py-1 text-xs font-medium bg-white/5 text-foreground/55 hover:bg-white/10 hover:text-foreground/60 data-[state=on]:bg-indigo-500/20 data-[state=on]:text-indigo-400"
-              >
-                {act}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+        <div className="mt-4">
+          <Field label="ACTIVATION">
+            <ToggleGroup
+              type="single"
+              value={dense.activation}
+              onValueChange={(v) => v && setDenseConfig({ activation: v as Activation })}
+              spacing={1}
+              className="flex flex-wrap gap-1"
+            >
+              {ACTIVATION_OPTIONS.map((act) => (
+                <ToggleGroupItem key={act} value={act} className={CHIP}>
+                  {act}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </Field>
         </div>
       </div>
 
-      {/* Param count */}
-      <div className="text-center font-mono text-xs text-foreground/55">
-        {paramCount < 1e6
-          ? `${(paramCount / 1e3).toFixed(1)}K`
-          : `${(paramCount / 1e6).toFixed(1)}M`}{" "}
-        parameters
-      </div>
-
-      {/* Errors & warnings */}
       {errors.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-1" role="alert">
           {errors.map((err, i) => (
-            <p key={i} className="text-xs text-red-400">
+            <p key={i} className="font-mono text-[11px] text-annotation">
               {err}
             </p>
           ))}
         </div>
       )}
       {warnings.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-2">
           {warnings.map((warn, i) => (
-            <p key={i} className="text-xs text-yellow-400/70">
-              {warn}
+            <p
+              key={i}
+              className="flex items-start gap-2 rounded-[3px] border border-[var(--accent-warning)]/40 bg-[color-mix(in_oklab,var(--accent-warning)_8%,transparent)] px-3 py-2 font-mono text-[12px] leading-snug text-accent-warning"
+            >
+              <span className="shrink-0 font-semibold tracking-[0.06em]">WARN</span>
+              <span>{warn}</span>
             </p>
           ))}
         </div>

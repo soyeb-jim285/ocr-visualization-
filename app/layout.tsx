@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Newsreader, Noto_Sans_Bengali } from "next/font/google";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
 import { ModelProvider } from "@/components/providers/ModelProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +14,23 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  axes: ["opsz"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+// Fallback for the Bengali glyphs in the hero cycler
+const notoBengali = Noto_Sans_Bengali({
+  variable: "--font-bn",
+  subsets: ["bengali"],
+  display: "swap",
+});
+
+export const viewport: Viewport = { themeColor: "#06080b", colorScheme: "dark" };
 
 export const metadata: Metadata = {
   title: "Neural Network X-Ray | Interactive CNN Visualization",
@@ -51,7 +68,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} ${notoBengali.variable} antialiased`}
       >
         <TooltipProvider delayDuration={0}>
           <SmoothScrollProvider>

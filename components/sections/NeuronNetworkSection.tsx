@@ -10,7 +10,6 @@ import {
 } from "react";
 import { motion, useDragControls, type PanInfo } from "framer-motion";
 import { DrawingCanvas } from "@/components/canvas/DrawingCanvas";
-import { ImageUploader } from "@/components/canvas/ImageUploader";
 import { NeuronNetworkCanvas } from "@/components/canvas/NeuronNetworkCanvas";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -31,6 +30,7 @@ import {
   type HoveredNeuron,
 } from "@/lib/network/networkConstants";
 import { useSharedCanvas } from "@/hooks/useSharedCanvas";
+import { PHOSPHOR, BG_INSET } from "@/lib/theme";
 
 // ---------------------------------------------------------------------------
 // NeuronHeatmapTooltipContent
@@ -61,7 +61,7 @@ function NeuronHeatmapTooltipContent({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const w = canvas.width, h = canvas.height;
-    ctx.fillStyle = "#111118";
+    ctx.fillStyle = BG_INSET;
     ctx.fillRect(0, 0, w, h);
 
     if (isInput && inputTensor) {
@@ -77,7 +77,7 @@ function NeuronHeatmapTooltipContent({
       const r0 = Math.floor(pr * 28 / patchRows), r1 = Math.floor((pr + 1) * 28 / patchRows);
       const px = c0 * cellW, py = r0 * cellH;
       const pw = (c1 - c0) * cellW, ph = (r1 - r0) * cellH;
-      ctx.strokeStyle = "#6366f1"; ctx.lineWidth = 2; ctx.strokeRect(px, py, pw, ph);
+      ctx.strokeStyle = PHOSPHOR; ctx.lineWidth = 2; ctx.strokeRect(px, py, pw, ph);
       ctx.fillStyle = "rgba(0,0,0,0.5)";
       ctx.fillRect(0, 0, w, py); ctx.fillRect(0, py + ph, w, h - py - ph);
       ctx.fillRect(0, py, px, ph); ctx.fillRect(px + pw, py, w - px - pw, ph);
@@ -167,12 +167,12 @@ function NeuronHeatmapTooltipContent({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="text-[11px] font-semibold" style={{ color: layer.color }}>{layer.displayName} — {label}</div>
+      <div className="font-mono text-[11px] font-medium" style={{ color: layer.color }}>{layer.displayName} · {label}</div>
       <canvas ref={canvasRef} width={canvasSize} height={isDense || isOutput ? 40 : canvasSize}
-        className="rounded-md"
+        className="rounded-[2px] border border-rule"
         style={{ width: canvasSize, height: isDense || isOutput ? 40 : canvasSize, imageRendering: (isInput || isConv3D) ? "pixelated" : "auto", display: "block" }}
       />
-      {valueText && <div className="font-mono text-[10px] text-foreground/50">{valueText}</div>}
+      {valueText && <div className="font-mono text-[11px] text-ink-2">{valueText}</div>}
     </div>
   );
 }
@@ -186,17 +186,17 @@ function LayerTooltipContent({ layer, activationMap }: { layer: NeuronLayerDef; 
   const meanAct = acts ? acts.reduce((s, v) => s + v, 0) / acts.length : 0;
   return (
     <div className="flex items-center gap-3 whitespace-nowrap">
-      <div className="h-2.5 w-2.5 rounded-full" style={{ background: layer.color }} />
+      <div className="size-2 rotate-45" style={{ background: layer.color }} />
       <div>
-        <div className="text-[13px] font-semibold text-foreground">{layer.displayName}</div>
-        <div className="text-[11px] text-foreground/40">{layer.description}</div>
+        <div className="font-serif text-[15px] text-ink">{layer.displayName}</div>
+        <div className="font-mono text-[11px] text-ink-3">{layer.description}</div>
       </div>
-      <div className="font-mono text-[11px] text-foreground/30">
+      <div className="font-mono text-[11px] text-ink-3">
         {layer.totalNeurons.toLocaleString()} {(layer.type === "conv" || (layer.type === "relu" && layer.name !== "relu4") || layer.type === "pool") ? "ch" : (layer.type === "input" ? "px" : "n")}
       </div>
       {acts && (
         <div className="font-mono text-[11px]">
-          <span className="text-foreground/30">avg: </span>
+          <span className="text-ink-3">avg </span>
           <span style={{ color: layer.color }}>{(meanAct * 100).toFixed(1)}%</span>
         </div>
       )}
@@ -248,7 +248,7 @@ function InspectorPanel({
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       const w = canvas.width, h = canvas.height;
-      ctx.fillStyle = "#111118"; ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = BG_INSET; ctx.fillRect(0, 0, w, h);
 
       if (layer.type === "input" && inputTensor) {
         const cellW = w / 28, cellH = h / 28;
@@ -260,12 +260,12 @@ function InspectorPanel({
       } else if (layer.type === "output" && prediction) {
         const sorted = prediction.map((v, i) => ({ v, i })).filter(d => !BYMERGE_MERGED_INDICES.has(d.i)).sort((a, b) => b.v - a.v);
         const barH = h / Math.min(sorted.length, 20);
-        ctx.font = "11px system-ui,sans-serif";
+        ctx.font = "11px ui-monospace,monospace";
         for (let j = 0; j < Math.min(sorted.length, 20); j++) {
           const d = sorted[j]; const barW = (d.v / Math.max(sorted[0].v, 0.001)) * (w - 60);
           const [cr, cg, cb] = viridis(d.v / Math.max(sorted[0].v, 0.001));
           ctx.fillStyle = `rgb(${cr},${cg},${cb})`; ctx.fillRect(40, j * barH + 2, barW, barH - 4);
-          ctx.fillStyle = "#e8e8ed"; ctx.textAlign = "right"; ctx.fillText(EMNIST_CLASSES[d.i], 35, j * barH + barH / 2 + 4);
+          ctx.fillStyle = "#e9eef2"; ctx.textAlign = "right"; ctx.fillText(EMNIST_CLASSES[d.i], 35, j * barH + barH / 2 + 4);
           ctx.textAlign = "left"; ctx.fillText(`${(d.v * 100).toFixed(1)}%`, 40 + barW + 4, j * barH + barH / 2 + 4);
         }
       } else if (activations && Array.isArray(activations[0])) {
@@ -293,7 +293,7 @@ function InspectorPanel({
           ctx.fillRect((i % cols) * cellW + 0.5, Math.floor(i / cols) * cellH + 0.5, cellW - 1, cellH - 1);
         }
       } else {
-        ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.font = "14px system-ui,sans-serif";
+        ctx.fillStyle = "#8896a3"; ctx.font = "italic 15px Georgia,serif";
         ctx.textAlign = "center"; ctx.fillText("Draw a character to see activations", w / 2, h / 2);
       }
     });
@@ -333,14 +333,14 @@ function InspectorPanel({
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
-        className="max-h-[90vh] gap-3 overflow-y-auto p-0 sm:max-w-[900px]"
-        style={{ borderColor: `${dl.color}40` }}
+        className="max-h-[90dvh] gap-4 overflow-y-auto p-0 sm:max-w-[900px]"
+        style={{ borderColor: `${dl.color}66` }}
       >
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle className="flex items-center gap-2.5 text-xl">
-            <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ background: dl.color }} />
+        <DialogHeader className="px-5 pt-6 pb-0 sm:px-6">
+          <p className="font-mono text-[11px] tracking-[0.08em]" style={{ color: dl.color }}>LAYER {String(inspectedLayerNumber(dl.name)).padStart(2, "0")}</p>
+          <DialogTitle className="flex flex-wrap items-baseline gap-x-3 font-serif text-3xl font-normal">
             {dl.displayName}
-            <span className="font-mono text-sm font-normal text-foreground/35">
+            <span className="font-mono text-xs font-normal text-ink-3">
               {dl.totalNeurons.toLocaleString()} {unitLabel}
             </span>
           </DialogTitle>
@@ -348,35 +348,35 @@ function InspectorPanel({
         </DialogHeader>
 
         {stats && (
-          <div className="mx-6 flex flex-wrap gap-x-5 gap-y-1 rounded-lg bg-foreground/[0.03] px-3 py-2 font-mono text-xs text-foreground/55">
-            <span>Min: <span className="text-foreground">{stats.min.toFixed(3)}</span></span>
-            <span>Max: <span className="text-foreground">{stats.max.toFixed(3)}</span></span>
-            <span>Mean: <span className="text-foreground">{stats.mean.toFixed(3)}</span></span>
-            <span>Active: <span className="text-green-500">{stats.activePercent.toFixed(1)}%</span></span>
+          <div className="mx-5 flex flex-wrap gap-x-5 gap-y-1 border-y border-rule py-2.5 font-mono text-xs text-ink-3 sm:mx-6">
+            <span>MIN <span className="text-ink">{stats.min.toFixed(3)}</span></span>
+            <span>MAX <span className="text-ink">{stats.max.toFixed(3)}</span></span>
+            <span>MEAN <span className="text-ink">{stats.mean.toFixed(3)}</span></span>
+            <span>ACTIVE <span className="text-accent-positive">{stats.activePercent.toFixed(1)}%</span></span>
           </div>
         )}
 
         {dl.type === "output" && snapshot.topPrediction && (
           <div
-            className="mx-6 flex items-center gap-4 rounded-lg border px-4 py-3"
-            style={{ background: `${dl.color}15`, borderColor: `${dl.color}30` }}
+            className="mx-5 flex items-center gap-5 border-y py-3 sm:mx-6"
+            style={{ borderColor: `${dl.color}55` }}
           >
-            <span className="text-4xl font-bold" style={{ color: dl.color }}>
+            <span className="font-serif text-6xl leading-none" style={{ color: dl.color }}>
               {EMNIST_CLASSES[snapshot.topPrediction.classIndex]}
             </span>
             <div>
-              <div className="text-sm text-foreground">
-                Predicted: <strong>{EMNIST_CLASSES[snapshot.topPrediction.classIndex]}</strong>
+              <div className="text-sm text-ink-2">
+                Predicted <strong className="font-medium text-ink">{EMNIST_CLASSES[snapshot.topPrediction.classIndex]}</strong>
               </div>
-              <div className="text-[13px] text-foreground/55">
-                Confidence: {(snapshot.topPrediction.confidence * 100).toFixed(1)}%
+              <div className="font-mono text-xs text-ink-3">
+                CONFIDENCE {(snapshot.topPrediction.confidence * 100).toFixed(1)}%
               </div>
             </div>
           </div>
         )}
 
         {dl.type === "output" && outputChartData.length > 0 ? (
-          <div className="px-6 pb-6">
+          <div className="px-5 pb-6 sm:px-6">
             <ChartContainer
               config={{ confidence: { label: "Confidence", color: dl.color } }}
               className="aspect-auto w-full [&_.recharts-cartesian-axis-tick_text]:fill-foreground [&_.recharts-label]:fill-muted-foreground"
@@ -392,7 +392,7 @@ function InspectorPanel({
                   style={{ fontSize: 14, fontFamily: "var(--font-geist-mono)" }}
                 />
                 <XAxis type="number" hide domain={[0, 100]} />
-                <Bar dataKey="confidence" fill="var(--color-confidence)" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="confidence" fill="var(--color-confidence)" radius={[0, 2, 2, 0]}>
                   <LabelList
                     dataKey="confidence"
                     position="right"
@@ -404,22 +404,23 @@ function InspectorPanel({
             </ChartContainer>
           </div>
         ) : (
-          <div className="flex gap-4 px-6 pb-6">
+          <div className="flex flex-col gap-4 px-5 pb-6 sm:flex-row sm:px-6">
             <canvas
               ref={mainCanvasRef}
               width={snapshot.channelCount > 0 ? 350 : 500}
               height={snapshot.channelCount > 0 ? 350 : 300}
-              className="shrink-0 rounded-lg"
+              className="max-w-full shrink-0 rounded-[2px] border border-rule"
               style={{
                 width: snapshot.channelCount > 0 ? 350 : "100%",
-                height: snapshot.channelCount > 0 ? 350 : 300,
+                height: snapshot.channelCount > 0 ? "auto" : 300,
+                aspectRatio: snapshot.channelCount > 0 ? "1 / 1" : undefined,
                 imageRendering: dl.type === "input" ? "pixelated" : "auto",
               }}
             />
             {snapshot.channelCount > 0 && (
               <div className="min-w-0 flex-1">
-                <p className="mb-2 text-xs text-foreground/40">
-                  {snapshot.channelCount} channels — click to inspect
+                <p className="mb-2 font-mono text-[11px] text-ink-3">
+                  {snapshot.channelCount} channels · click to inspect
                 </p>
                 <div className="flex max-h-[340px] flex-wrap gap-1 overflow-y-auto">
                   {Array.from({ length: snapshot.channelCount }, (_, i) => (
@@ -432,8 +433,8 @@ function InspectorPanel({
                     />
                   ))}
                 </div>
-                <p className="mt-1.5 font-mono text-[11px] text-foreground/30">
-                  Channel {selectedChannel}
+                <p className="mt-2 font-mono text-[11px] text-ink-3">
+                  CHANNEL {selectedChannel}
                 </p>
               </div>
             )}
@@ -442,6 +443,10 @@ function InspectorPanel({
       </DialogContent>
     </Dialog>
   );
+}
+
+function inspectedLayerNumber(name: string) {
+  return LAYERS.findIndex((l) => l.name === name);
 }
 
 function ChannelThumb({ chIdx, activations, selected, color, onClick }: {
@@ -466,8 +471,8 @@ function ChannelThumb({ chIdx, activations, selected, color, onClick }: {
   return (
     <canvas
       ref={canvasRef} width={40} height={40} onClick={onClick}
-      className="h-10 w-10 cursor-pointer rounded [image-rendering:pixelated]"
-      style={{ border: selected ? `2px solid ${color}` : "2px solid transparent" }}
+      className="h-10 w-10 cursor-pointer rounded-[2px] [image-rendering:pixelated]"
+      style={{ outline: selected ? `1px solid ${color}` : "none", outlineOffset: 2 }}
     />
   );
 }
@@ -484,6 +489,7 @@ export function NeuronNetworkSection() {
   const prediction = useInferenceStore(s => s.prediction);
   const topPrediction = useInferenceStore(s => s.topPrediction);
   const inferenceTimeMs = useInferenceStore(s => s.inferenceTimeMs);
+  const isInferring = useInferenceStore(s => s.isInferring);
   const heroStage = useUIStore(s => s.heroStage);
   const heroOffscreen = useUIStore(s => s.activeSection !== 0);
   const setHeroStage = useUIStore(s => s.setHeroStage);
@@ -530,34 +536,70 @@ export function NeuronNetworkSection() {
     }
   }, [hasData, isDrawingStage, setHeroStage]);
 
+  const isMobile = viewport.w > 0 && viewport.w < 640;
+  const stacked = viewport.w < 1024; // copy above the card instead of beside it
+
   const expandedCanvasSize = useMemo(() => {
-    if (!viewport.w) return 320;
-    return clamp(Math.round(viewport.w * 0.55), 200, 360);
+    if (!viewport.w) return 300;
+    return viewport.w < 640 ? clamp(viewport.w - 32 - 18, 200, 340) : 328;
   }, [viewport.w]);
+  const floatingCanvasSize = isMobile ? 96 : 128;
 
-  const floatingCanvasSize = useMemo(() => {
-    if (!viewport.w) return 108;
-    return clamp(Math.round(viewport.w * 0.23), 92, 126);
-  }, [viewport.w]);
+  const heroPad = isMobile ? 8 : 16;
+  const expandedCardWidth = expandedCanvasSize + heroPad * 2 + 2;
+  const expandedCardHeight = expandedCanvasSize + heroPad * 2 + 112;
+  const floatingCardWidth = floatingCanvasSize + 18;
+  const floatingCardHeight = floatingCanvasSize + 104;
+  const CHIP = 40;
 
-  const expandedCardWidth = expandedCanvasSize + (viewport.w < 640 ? 24 : 56);
-  const floatingCardWidth = floatingCanvasSize + 10;
-  const floatingCardHeight = floatingCanvasSize + 40;
+  // Chip: once past the hero (or on phones) the floating card collapses so it never covers content
+  const [chipOpen, setChipOpen] = useState(false);
+  const collapsed = isRevealedStage && !chipOpen && (heroOffscreen || isMobile);
 
-  const expandedX = viewport.w ? (viewport.w - expandedCardWidth) / 2 : 16;
-  const expandedY = viewport.h ? Math.max(viewport.w < 640 ? 340 : 230, viewport.h * (viewport.w < 640 ? 0.18 : 0.24)) : 120;
+  // Content box of SectionWrapper-style container (max 1200, px 16/64/32)
+  const pad = viewport.w >= 1400 ? 32 : viewport.w >= 768 ? 64 : 16;
+  const boxW = Math.min(viewport.w, 1200);
+  const contentLeft = (viewport.w - boxW) / 2 + pad;
+  const contentW = boxW - pad * 2;
+
+  const [copyBottom, setCopyBottom] = useState(0);
+  const copyRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = copyRef.current;
+    if (!el) return;
+    const update = () => setCopyBottom(Math.round(el.getBoundingClientRect().bottom + window.scrollY));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const stageHeight = viewport.h
+    ? stacked
+      ? Math.max(viewport.h, copyBottom + 28 + expandedCardHeight + 40)
+      : Math.max(viewport.h, 720)
+    : 760;
+
+  const expandedX = !viewport.w
+    ? 16
+    : stacked
+      ? contentLeft
+      : contentLeft + contentW - expandedCardWidth;
+  const expandedY = !viewport.h
+    ? 120
+    : stacked
+      ? copyBottom + 28
+      : Math.max(72, (viewport.h - expandedCardHeight) / 2);
 
   const maxFloatingX = Math.max(12, viewport.w - floatingCardWidth - 12);
   const maxFloatingY = Math.max(12, viewport.h - floatingCardHeight - 12);
 
-  // Phones: bottom-left so the card doesn't cover the network
+  // Top-right on desktop (the index rail owns the left gutter); chip bottom-right on phones
   const defaultFloatingPos = useMemo(
-    () =>
-      viewport.w && viewport.w < 640
-        ? { x: 12, y: viewport.h - floatingCardHeight - 72 }
-        : { x: 16, y: 16 },
-    [viewport.w, viewport.h, floatingCardWidth, floatingCardHeight]
+    () => ({ x: Math.max(12, viewport.w - floatingCardWidth - 16), y: isMobile ? Math.max(12, viewport.h - floatingCardHeight - 72) : 64 }),
+    [viewport.w, viewport.h, floatingCardWidth, floatingCardHeight, isMobile]
   );
+  const chipPos = { x: Math.max(12, viewport.w - CHIP - 16), y: Math.max(12, viewport.h - CHIP - 20) };
 
   const floatingPos = customFloatingPos
     ? {
@@ -642,7 +684,7 @@ export function NeuronNetworkSection() {
     const measure = () => {
       if (containerRef.current) {
         const top = containerRef.current.getBoundingClientRect().top + window.scrollY;
-        const h = Math.max(400, window.innerHeight - top);
+        const h = Math.max(400, window.innerHeight - top - 48);
         containerRef.current.style.height = `${h}px`;
       }
       if (canvasContainerRef.current) {
@@ -704,7 +746,8 @@ export function NeuronNetworkSection() {
   );
 
   const inspectedLayer = inspectedLayerIdx !== null ? LAYERS[inspectedLayerIdx] : null;
-  const stageHeight = viewport.h ? Math.max(viewport.h, viewport.w < 640 ? 880 : 760) : 760;
+
+  const topChar = topPrediction ? EMNIST_CLASSES[topPrediction.classIndex] : null;
 
   return (
     <motion.section
@@ -712,16 +755,41 @@ export function NeuronNetworkSection() {
       className="relative overflow-hidden px-1 sm:px-3 md:px-5"
       initial={false}
       animate={{
-        minHeight: isDrawingStage ? stageHeight : Math.max(400, Math.min(560, viewport.h * 0.75)),
-        paddingTop: isDrawingStage ? 56 : (viewport.w < 640 ? 150 : 48),
-        paddingBottom: isDrawingStage ? 36 : (viewport.w < 640 ? 8 : 20),
+        minHeight: isDrawingStage ? stageHeight : 0,
+        paddingTop: isDrawingStage ? 56 : (isMobile ? 72 : 56),
+        paddingBottom: isDrawingStage ? 36 : 24,
       }}
       transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* Hero header */}
-      <div className="absolute inset-x-0 top-0 z-10 flex flex-col items-center px-4 pt-14 sm:pt-16">
-        <HeroHeader />
-      </div>
+      {/* Projector beam behind the drawing card (static, drawing stage only) */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 hidden transition-opacity duration-700 lg:block ${isDrawingStage ? "opacity-100" : "opacity-0"}`}
+        style={{ background: "radial-gradient(60% 50% at 70% 45%, rgba(143,227,255,0.10), transparent 70%)" }}
+      />
+
+      {/* Hero copy: fades up and out once the first stroke lands */}
+      <motion.div
+        initial={false}
+        animate={{ opacity: isDrawingStage ? 1 : 0, y: isDrawingStage ? 0 : -12 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+        aria-hidden={!isDrawingStage}
+        className={`absolute inset-x-0 top-0 z-10 ${stacked ? "pt-[88px]" : "flex items-center"} ${isDrawingStage ? "" : "pointer-events-none"}`}
+        style={stacked ? undefined : { height: stageHeight }}
+      >
+        <div className="mx-auto w-full max-w-[1200px] px-4 md:px-16 min-[1400px]:px-8">
+          <div ref={copyRef} style={stacked ? undefined : { maxWidth: Math.max(320, contentW - expandedCardWidth - 48) }}>
+            <HeroHeader />
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Revealed-state plate title, to the right of the index rail */}
+      <p
+        className={`pointer-events-none absolute left-24 top-5 z-10 hidden font-mono text-[11px] tracking-[0.12em] text-ink-3 transition-opacity duration-700 md:block ${isRevealedStage ? "opacity-100" : "opacity-0"}`}
+      >
+        NEURAL NETWORK X-RAY <span className="ml-3 text-phosphor">PLATE 0</span>
+      </p>
 
       <div
         className={`relative flex w-full items-stretch overflow-hidden ${
@@ -730,7 +798,7 @@ export function NeuronNetworkSection() {
         ref={containerRef}
       >
         <div
-          className={`relative min-w-0 flex-1 transition-opacity duration-700 motion-reduce:transition-none ${isDrawingStage ? "opacity-20" : ""}`}
+          className={`relative min-w-0 flex-1 transition-opacity duration-700 motion-reduce:transition-none ${isDrawingStage ? "opacity-0" : "lg:pr-[168px]"}`}
           ref={canvasContainerRef}
         >
           <NeuronNetworkCanvas
@@ -749,9 +817,6 @@ export function NeuronNetworkSection() {
 
           {isRevealedStage && (
             <>
-              <p className="pointer-events-none absolute inset-x-0 bottom-1 text-center text-xs text-foreground/55">
-                Hover or tap a neuron to inspect it
-              </p>
               {/* Neuron tooltip */}
               <Tooltip open={!!hoveredNeuron && hasData}>
                 <TooltipTrigger asChild>
@@ -763,7 +828,7 @@ export function NeuronNetworkSection() {
                     }}
                   />
                 </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={12} className="border-border/50 bg-surface p-2.5 shadow-xl backdrop-blur-xl [&>svg]:hidden">
+                <TooltipContent side="right" sideOffset={12} className="p-2.5 [&>svg]:hidden">
                   {hoveredNeuron && hasData && (
                     <NeuronHeatmapTooltipContent
                       neuron={hoveredNeuron}
@@ -781,7 +846,7 @@ export function NeuronNetworkSection() {
                 <TooltipTrigger asChild>
                   <div className="pointer-events-none absolute bottom-4 left-1/2 h-px w-px" />
                 </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={8} className="border-border/50 bg-surface p-2.5 shadow-xl backdrop-blur-xl [&>svg]:hidden">
+                <TooltipContent side="top" sideOffset={8} className="p-2.5 [&>svg]:hidden">
                   {hoveredLayer !== null && !hoveredNeuron && (
                     <LayerTooltipContent layer={LAYERS[hoveredLayer]} activationMap={activationMap} />
                   )}
@@ -803,8 +868,18 @@ export function NeuronNetworkSection() {
         />
       </div>
 
+      {/* FIG. 1 caption under the network */}
+      <p
+        className={`px-3 pt-3 font-mono text-[11px] leading-[1.5] tracking-[0.04em] text-ink-3 transition-opacity duration-700 md:text-center ${isRevealedStage ? "opacity-100" : "opacity-0"}`}
+      >
+        <b className="font-medium text-phosphor">FIG. 1</b>
+        {" — "}
+        {topChar && !isMobile ? <>Activations for the specimen &ldquo;{topChar}&rdquo;, </> : isMobile ? "" : "Activations, "}
+        {isMobile ? "Tap a neuron to inspect." : <>13 layers, 146-way output. Hover or tap a neuron to inspect.</>}
+      </p>
+
       <motion.div
-        drag={isRevealedStage}
+        drag={isRevealedStage && !collapsed}
         dragControls={dragControls}
         dragListener={false}
         dragElastic={0.08}
@@ -814,9 +889,11 @@ export function NeuronNetworkSection() {
         onAnimationComplete={handleCanvasTransitionComplete}
         initial={false}
         animate={{
-          ...(shouldUseFloatingLayout
-            ? { x: floatingPos.x, y: floatingPos.y, width: floatingCardWidth }
-            : { x: expandedX, y: expandedY, width: expandedCardWidth }),
+          ...(collapsed
+            ? { x: chipPos.x, y: chipPos.y, width: CHIP }
+            : shouldUseFloatingLayout
+              ? { x: floatingPos.x, y: floatingPos.y, width: floatingCardWidth }
+              : { x: expandedX, y: expandedY, width: expandedCardWidth }),
           // hide the big hero card once scrolled past the hero before first stroke
           opacity: isDrawingStage && heroOffscreen ? 0 : 1,
           pointerEvents: isDrawingStage && heroOffscreen ? "none" : "auto",
@@ -824,22 +901,46 @@ export function NeuronNetworkSection() {
         transition={{ type: "spring", stiffness: 260, damping: 28, mass: 0.6 }}
         className="fixed left-0 top-0 z-50"
       >
+        {collapsed && (
+          <button
+            type="button"
+            onClick={() => setChipOpen(true)}
+            className="relative flex size-10 items-center justify-center rounded-[4px] border border-rule-strong bg-bg-raised after:absolute after:-inset-1"
+            aria-label="Open drawing canvas"
+          >
+            <span className="font-serif text-xl leading-none text-annotation">{topChar ?? "?"}</span>
+          </button>
+        )}
+
         <div
-          className={`border ${
+          className={`plate-marks border ${collapsed ? "hidden" : ""} ${
             shouldUseFloatingLayout
-              ? "rounded-md border-border/50 bg-surface/92 p-1 shadow-lg shadow-black/30 backdrop-blur-xl"
-              : "rounded-xl border-border/60 bg-surface p-2 sm:p-4 md:p-5"
+              ? "rounded-[4px] border-rule-strong bg-bg-raised p-2"
+              : "well rounded-[4px] border-rule-strong p-2 sm:p-4"
           }`}
+          style={{ "--pm-c": "var(--phosphor)" } as React.CSSProperties}
         >
           {shouldUseFloatingLayout && (
-            <button
-              type="button"
-              onPointerDown={(event) => dragControls.start(event)}
-              className="mb-0.5 flex w-full cursor-grab touch-none justify-center py-2 active:cursor-grabbing"
-              aria-label="Move floating canvas"
-            >
-              <span className="h-0.5 w-5 rounded-full bg-foreground/25" />
-            </button>
+            <div className="mb-1.5 flex items-center justify-between">
+              <button
+                type="button"
+                onPointerDown={(event) => dragControls.start(event)}
+                className="flex cursor-grab touch-none items-center gap-2 py-1 active:cursor-grabbing"
+                aria-label="Move floating canvas"
+              >
+                <span aria-hidden className="grid grid-cols-2 gap-[3px]">
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <span key={i} className="size-[3px] rounded-full bg-ink-4" />
+                  ))}
+                </span>
+                <span className="font-mono text-[11px] tracking-[0.08em] text-ink-2">SPECIMEN</span>
+              </button>
+              {(heroOffscreen || isMobile) && (
+                <button type="button" onClick={() => setChipOpen(false)} className="text-btn relative px-1 after:absolute after:-inset-2" aria-label="Collapse canvas">
+                  –
+                </button>
+              )}
+            </div>
           )}
 
           <DrawingCanvas
@@ -850,20 +951,16 @@ export function NeuronNetworkSection() {
           />
 
           {shouldUseFloatingLayout && (
-            <p className="mt-0.5 text-center font-mono text-[10px] text-foreground/55" style={{ visibility: inferenceTimeMs !== null ? "visible" : "hidden" }}>
-              {inferenceTimeMs !== null ? (inferenceTimeMs < 1 ? "<1" : Math.round(inferenceTimeMs)) : "0"}ms
-            </p>
-          )}
-
-          {isDrawingStage && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25, duration: 0.5 }}
-              className="mt-3"
+            <p
+              className="mt-1.5 flex items-center gap-1.5 font-mono text-[11px] text-ink-2"
+              style={{ visibility: inferenceTimeMs !== null ? "visible" : "hidden" }}
             >
-              <ImageUploader />
-            </motion.div>
+              <span
+                aria-hidden
+                className={`inline-block size-1.5 rounded-full bg-annotation transition-opacity duration-300 ${isInferring ? "opacity-100" : "opacity-40"}`}
+              />
+              INFER {inferenceTimeMs !== null ? (inferenceTimeMs < 1 ? "<1" : Math.round(inferenceTimeMs)) : "0"} ms
+            </p>
           )}
         </div>
       </motion.div>
